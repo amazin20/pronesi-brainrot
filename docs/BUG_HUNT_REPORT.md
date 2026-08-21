@@ -1,0 +1,19 @@
+# BUG HUNT REPORT
+
+This file is append-only for discovered defects. Fixed defects remain documented.
+
+| ID | Severity | Problem | Reproduction / root cause | Fix | Verification | Status |
+|---|---|---|---|---|---|---|
+| BH-001 | CRITICAL | Camera-relative WASD absent in baseline | Baseline movement added world X/Z directly; camera basis was ignored. | Unified keyboard/joystick vector is projected through camera forward/right. | Architecture check + browser QA movement assertion. | FIXED |
+| BH-002 | CRITICAL | Static collision impulse ignored contact torque | Baseline static solver only changed linear velocity on one axis. | New OBB contact solver applies impulses at contact point with yaw inertia and friction. | Physics fuzz + architecture audit. | FIXED |
+| BH-003 | CRITICAL | High-speed tunneling risk | Baseline substeps depended only on linear speed and coarse AABB collision. | Adaptive substeps consider linear travel and angular travel, capped at 12; hostile wall test added. | `scripts/physics-fuzz.mjs`. | FIXED |
+| BH-004 | MAJOR | Spontaneous/never-ending rotation risk | Baseline had weak angular damping and no sleeping. | Per-profile angular damping, ground damping and sleeping threshold added. | 1200-step resting-body test must reach sleeping with near-zero angular velocity. | FIXED |
+| BH-005 | MAJOR | Grab did not fully model bounded torque/slip | Baseline spring force existed but torque and slip behavior were limited. | Surface-local grip point, bounded spring/damping/max force/max torque, one/two-hand state and slip timer. | Static audit + browser grip stress. | FIXED |
+| BH-006 | MAJOR | Walls could occupy camera line of sight | Baseline camera always used a fixed desired eye with no obstruction query. | Segment-vs-AABB obstruction detection, smooth camera shortening and camera-only obstacle fade. | Code audit; real visual runtime still required after CI artifact. | FIXED |
+| BH-007 | MAJOR | GitHub Pages freshness not guaranteed | Baseline had no Pages workflow and no build identity/cache busting. | Main-only validate/build/deploy workflow, commit-SHA query versioning, `build.json`, visible build badge. | Workflow regression + production URL verification after merge required. | FIXED / DEPLOY VERIFICATION PENDING |
+| BH-008 | MAJOR | `/sdk.js` generated noisy/broken GitHub Pages requests | Baseline loaded absolute `/sdk.js` in every environment. | SDK script is loaded dynamically only outside file/local/GitHub Pages preview. | Architecture check. | FIXED |
+| BH-009 | MAJOR | Baseline was only a Physics Lab, not a campaign | No production level set existed. | 15 distinct transport levels plus separate Physics Lab authored. | Level geometry check. | FIXED |
+| BH-010 | MAJOR | Character presentation too prototype-like | Procedural baseline was limited and had no weight-responsive interaction pose. | New multi-part character, face/ears/hair/shoes, procedural locomotion and grip hand targets; strain lean. | Browser screenshot audit required. | PARTIALLY FIXED |
+| BH-011 | MAJOR | True skinned high-poly/PBR pipeline absent | Repository contains no Blender/GLTF production asset pipeline. | Runtime visuals improved procedurally; a true authored skinned mesh/PBR asset pipeline is not fabricated. | NOT VERIFIED IN REAL RUNTIME. | OPEN |
+| BH-012 | MAJOR | Level 14 giant pot spawned intersecting a wall | Hostile level geometry check detected OBB overlap at the initial pot position. | Moved the initial pot spawn clear of the wall while preserving the route. | `scripts/level-check.mjs` now passes all 15 levels. | FIXED |
+| BH-013 | MAJOR | Legacy Pages service worker could theoretically pin a stale build | No worker is required by the overhaul, but a previously deployed registration can survive code removal. | Runtime unregisters only service-worker registrations scoped under `/pronesi-eto-physics-lab/`; no new worker is registered. | Architecture check. | FIXED |
