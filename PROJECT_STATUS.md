@@ -6,56 +6,82 @@ Branch: `massive-rebuild-v2`
 
 Base source of truth at branch creation: `main` commit `6bc7273cc54f7b7be0ea5d11990dd35e018f4b4b`.
 
-The V2 branch replaces the active interaction/art path again rather than cosmetically patching it. The old `04-player-interaction.js`, `05-renderer.js` and `06-input.js` files remain temporarily for comparison but are **not loaded by `index.html`** and are scheduled for deletion after V2 runtime QA is green.
+PR: #8 `massive-rebuild-v2 -> main`.
+
+The active game now uses only the V2 interaction/render/input path. The obsolete `04-player-interaction.js`, `05-renderer.js` and `06-input.js` files were deleted after V2 desktop/mobile browser QA became green.
 
 ## Implemented V2 checkpoint
 
-- exact surface OBB picking and local grip point + local surface normal;
-- visible 3D grip ring attached to the physical surface anchor;
-- pointer movement produces a bounded physical force target rather than setting object position;
-- last ~190 ms of pointer movement become a gesture vector used for physically bounded release impulse;
-- off-center release applies impulse at the grip point and therefore produces torque;
-- LIGHT / MEDIUM / HEAVY / VERY HEAVY strength classes;
-- two-hand grip increases force and torque limits without making very-heavy cargo throwable;
-- anchor damping includes angular point velocity `omega x r` and player velocity;
-- 106 interactive object types/variants with distinct dimensions, masses, materials and model archetypes;
-- physical office/apartment/warehouse/kitchen/store/hotel/museum clutter spawned as ordinary bodies;
-- body-on-body vertical resting/stacking contacts;
-- thresholded fragile destruction with bounded 4–5 fragment replacements;
-- pooled-style short-lived impact effect records for dust/sparks/glass/ceramic/wood/paper feedback;
-- material-aware audio profiles for wood, metal, fabric, rubber, stone, plastic, cardboard, ceramic and glass;
-- rebuilt active `05-renderer-v2.js` with higher-segment base meshes, new hero-cargo construction, expanded environment-object rendering and a rebuilt procedural character presentation;
-- Object Test Gallery developer mode for the full catalog;
-- V2-specific static, mesh, catalog, grab, throw, stacking, destruction and browser QA gates.
+- exact rotated OBB surface picking plus ellipsoid/cylinder picking for curved hero props;
+- local grip point + local surface normal and visible 3D grip ring;
+- pointer movement drives bounded force at the physical anchor; object position is never assigned to cursor position;
+- ~190 ms pointer history -> bounded 3D gesture velocity -> mass/strength-limited throw impulse at the actual grip point;
+- off-center impulse torque, one/two-hand strength differences, slip and heavy-object movement penalties;
+- camera-relative WASD/arrows and the same vector path for joystick;
+- real mobile PointerEvent regression for joystick + physical grip simultaneously and jump;
+- spatial-hash dynamic collision broad phase with sleeping fast path while retaining SAT narrow phase;
+- swept wall CCD/adaptive substeps and hostile 45/180 u/s collision cases;
+- explicit walkable floor classification (`step/platform/ramp`) so low walls never masquerade as floor;
+- vertical body-on-body resting/stacking contacts;
+- thresholded fragile destruction with deferred break queue so collision iteration cannot be invalidated by array mutation;
+- fragile floor impacts enter the same bounded destruction path;
+- bounded 4–5 fragment replacements and short-lived material impact effects;
+- material-aware physics/audio for wood, metal, fabric, rubber, stone/concrete, plastic, cardboard, ceramic and glass;
+- 106 interactive object types/variants across office/home/furniture/dish/paper/warehouse categories;
+- physical themed clutter in office/apartment/warehouse/kitchen/store/hotel/museum;
+- Object Test Gallery developer mode;
+- rebuilt V2 WebGL renderer with audited outward winding, inverse-transpose normals and higher-segment base geometry;
+- V2.1 camera cutaway and character silhouette/detail polish;
+- statics now inherit the current level theme instead of being forced to the old light-gray fallback;
+- 15 campaign delivery levels plus Physics Lab retained.
 
-## Automated verification status
+## Verification already achieved before final cleanup
 
-**PENDING FIRST FULL V2 RUN.**
+One exact V2 head completed:
 
-The previous main overhaul was green before this branch was created. The new V2 modules have not yet earned that status. No V2 feature should be called verified until the branch CI executes:
+- architecture checks: PASS;
+- executable mesh/render audit: PASS;
+- catalog/regression checks: PASS;
+- 15-level geometry check: PASS;
+- walkable-floor regression: PASS;
+- physics fuzz: PASS with 1000 randomized scenarios x 240 steps;
+- spatial broad phase reduced a sparse 106-body gallery to 132 candidates versus 5565 all-pairs candidates in the deterministic check;
+- desktop Chromium behavior QA: 97/97 PASS;
+- mobile Chromium behavior QA: 103/103 PASS, including DOM PointerEvents on joystick while gripping and the jump button;
+- desktop and mobile screenshot artifacts were inspected manually.
 
-1. syntax gate;
-2. architecture V2 gate;
-3. executable mesh/winding audit at V2 segment counts;
-4. V2 catalog/regression gate;
-5. 15-level geometry gate;
-6. V2 physics fuzz including stacking/destruction + 1000 randomized scenarios x 240 steps;
-7. real Chromium browser behavior QA + screenshot artifact.
+A **new final CI run is still required after the legacy-file deletion and themed-static cleanup**. Do not merge until that exact final head is green and its screenshots are inspected.
+
+## Hostile bugs found after the first green V2 browser run
+
+- stale QA fragment counter after destruction;
+- camera blocker rendered as a giant translucent slab;
+- curved objects used box-surface picking for visible grip marker;
+- full dynamic O(n^2) pair candidate pass remained in the core;
+- a syntax mistake in hostile fuzz was not covered by the old syntax gate;
+- destruction could mutate `S.bodies` during collision-pair iteration;
+- fragile objects falling directly on the floor did not enter destruction logic;
+- `lowwall` could be misclassified as floor by the old height heuristic;
+- browser CI previously had no real mobile PointerEvent pass;
+- static geometry always carried `#dbe4ea`, preventing renderer theme-wall fallback and making office partitions look like giant light-gray blocks.
+
+All of these have concrete fixes in the current branch and regression coverage where executable verification is possible.
 
 ## Known limitations / not falsely claimed
 
-- the current character is still procedural articulated geometry, **not** an imported authored skinned mesh with production skeleton/skin weights;
-- there is still no true authored Blender/GLTF high-detail -> retopo -> baked normal/AO -> LOD pipeline in the repository;
-- physics remains primarily yaw/planar rigid-body dynamics plus vertical motion; it is not yet a complete general 6DOF rigid-body engine for arbitrary pitch/roll/canting;
-- effect records are bounded and short-lived, but a reusable GPU particle pool/instancing system is still incomplete;
-- the 106-entry catalog contains real dimensional/material/physics variation, but some entries intentionally share renderer archetypes rather than pretending 106 independently authored production meshes already exist.
+- the current character is improved procedural articulated geometry, **not** an imported authored skinned mesh with production skeleton/skin weights;
+- there is no real Blender/GLTF high-detail -> retopo -> baked normal/AO -> LOD production asset pipeline in this repository yet;
+- physics is still mainly yaw/planar rigid-body dynamics plus vertical motion and interaction torque, not a general arbitrary 6DOF pitch/roll inertia-tensor engine;
+- particles/effects are bounded records/fragments but not a full GPU instanced production particle system;
+- 106 catalog entries have real physical/dimensional variation, but some intentionally share renderer archetypes rather than pretending 106 individually authored production meshes already exist.
+
+These limitations do not block a functional user playtest of the V2 interaction/physics build, but they do block calling the art/physics stack a finished AAA production implementation.
 
 ## Exact next action
 
-1. Append the V2 defects and the requested `BUGS NOT REPORTED BY USER` section to `docs/BUG_HUNT_REPORT.md`.
-2. Create a draft PR `massive-rebuild-v2 -> main`.
-3. Run the full GitHub Actions pipeline on the actual PR head.
-4. For every failure: read the concrete log/artifact, reproduce/root-cause/fix without weakening the assertion, then rerun.
-5. After first green browser QA: download and inspect the screenshot, then perform the eight independent hostile audit passes (models, player, physics, grab/throw, collision, levels/environment, performance, free hostile QA).
-6. Delete the inactive old interaction/renderer/input modules and rerun everything.
-7. Only after accepted diff + final Chromium evidence merge to `main`, deploy Pages and verify public build SHA.
+1. Run full CI on the current cleanup head.
+2. Inspect both final desktop and mobile screenshots.
+3. Review `main...massive-rebuild-v2` diff for unexpected changes.
+4. If all green, mark PR #8 ready and merge it.
+5. Wait for the main Pages validation/deploy workflow.
+6. Verify public `build.json` SHA and the live game URL before telling the user the build is ready to test.
