@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 const read=p=>fs.readFileSync(p,'utf8');
 const html=read('index.html'),all=fs.readdirSync('src/overhaul').filter(f=>f.endsWith('.js')).map(f=>read('src/overhaul/'+f)).join('\n');
-const active=['00-core.js','01-math.js','02-physics.js','02-physics-v2.js','03-levels.js','03-object-catalog-v2.js','03-world-v2.js','04-player-interaction-v2.js','05-mesh-data.js','05-renderer-v2.js','06-input-v2.js','07-platform.js','08-bootstrap.js','09-qa-v2.js'];
+const active=['00-core.js','01-math.js','02-physics.js','02-physics-v2.js','03-levels.js','03-object-catalog-v2.js','03-world-v2.js','04-player-interaction-v2.js','05-mesh-data.js','05-renderer-v2.js','06-input-v2.js','07-platform.js','07-audio-v2.js','08-bootstrap.js','09-qa-v2.js'];
 const checks=[
 ['root index exists',fs.existsSync('index.html')],
 ['every V2 runtime module is loaded',active.every(f=>html.includes(`src/overhaul/${f}`))],
@@ -22,6 +22,7 @@ const checks=[
 ['bounded intact-to-broken destruction exists',/tryBreak/.test(read('src/overhaul/02-physics-v2.js'))&&/fragment=true/.test(read('src/overhaul/02-physics-v2.js'))],
 ['interactive environment spawns real bodies',/spawnCatalogItem/.test(read('src/overhaul/03-world-v2.js'))&&/S\.bodies\.push/.test(read('src/overhaul/03-world-v2.js'))],
 ['object gallery exists',/loadObjectGallery/.test(read('src/overhaul/03-world-v2.js'))],
+['material audio covers fragile and office materials',/ceramic/.test(read('src/overhaul/07-audio-v2.js'))&&/glass/.test(read('src/overhaul/07-audio-v2.js'))&&/cardboard/.test(read('src/overhaul/07-audio-v2.js'))],
 ['campaign has 15 authored delivery levels',(read('src/overhaul/03-levels.js').match(/L\('/g)||[]).length>=16],
 ['Pages build script exists',fs.existsSync('scripts/prepare-site.mjs')],
 ['bug hunt report exists',fs.existsSync('docs/BUG_HUNT_REPORT.md')]
