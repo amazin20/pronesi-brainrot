@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 const read=p=>fs.readFileSync(p,'utf8');
 const html=read('index.html'),all=fs.readdirSync('src/overhaul').filter(f=>f.endsWith('.js')).map(f=>read('src/overhaul/'+f)).join('\n');
-const active=['00-core.js','01-math.js','02-physics.js','02-physics-v2.js','03-levels.js','03-object-catalog-v2.js','03-world-v2.js','04-player-interaction-v2.js','05-mesh-data.js','05-renderer-v2.js','05-polish-v2.js','06-input-v2.js','07-platform.js','07-audio-v2.js','08-bootstrap.js','09-qa-v2.js'];
+const active=['00-core.js','01-math.js','02-physics.js','02-floor-v2.js','02-physics-v2.js','03-levels.js','03-object-catalog-v2.js','03-world-v2.js','04-player-interaction-v2.js','05-mesh-data.js','05-renderer-v2.js','05-polish-v2.js','06-input-v2.js','07-platform.js','07-audio-v2.js','08-bootstrap.js','09-qa-v2.js'];
 const checks=[
 ['root index exists',fs.existsSync('index.html')],
 ['every V2 runtime module is loaded',active.every(f=>html.includes(`src/overhaul/${f}`))],
@@ -23,6 +23,7 @@ const checks=[
 ['spatial broadphase replaces full dynamic O(n^2) candidate pass',/G\.dynamicPairs=/.test(read('src/overhaul/02-physics.js'))&&/const pairs=G\.dynamicPairs/.test(read('src/overhaul/02-physics.js'))],
 ['sleeping bodies use integration fast path',/if\(b\.sleeping\)continue/.test(read('src/overhaul/02-physics.js'))],
 ['physics material table covers cardboard ceramic glass concrete',/cardboard/.test(read('src/overhaul/02-physics.js'))&&/ceramic/.test(read('src/overhaul/02-physics.js'))&&/glass/.test(read('src/overhaul/02-physics.js'))&&/concrete/.test(read('src/overhaul/02-physics.js'))],
+['floor solver only accepts explicit walkable kinds',/WALKABLE/.test(read('src/overhaul/02-floor-v2.js'))&&/step/.test(read('src/overhaul/02-floor-v2.js'))&&/platform/.test(read('src/overhaul/02-floor-v2.js'))&&!/top<=2\.4/.test(read('src/overhaul/02-floor-v2.js'))],
 ['vertical body stacking contacts exist',/yov<c\.depth/.test(read('src/overhaul/02-physics-v2.js'))&&/a\.pos\.y\+=/.test(read('src/overhaul/02-physics-v2.js'))],
 ['bounded deferred intact-to-broken destruction exists',/queueBreak/.test(read('src/overhaul/02-physics-v2.js'))&&/flushBreakQueue/.test(read('src/overhaul/02-physics-v2.js'))&&/fragment=true/.test(read('src/overhaul/02-physics-v2.js'))],
 ['fragile floor impact destruction exists',/b\.grounded&&f\.vy<0/.test(read('src/overhaul/02-physics-v2.js'))&&/impactEvent\(b,null,speed/.test(read('src/overhaul/02-physics-v2.js'))],
