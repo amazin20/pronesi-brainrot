@@ -32,25 +32,27 @@ The active game now uses only the V2 interaction/render/input path. The obsolete
 - Object Test Gallery developer mode;
 - rebuilt V2 WebGL renderer with audited outward winding, inverse-transpose normals and higher-segment base geometry;
 - V2.1 camera cutaway and character silhouette/detail polish;
-- statics now inherit the current level theme instead of being forced to the old light-gray fallback;
+- statics inherit the current level theme instead of being forced to the old light-gray fallback;
 - 15 campaign delivery levels plus Physics Lab retained.
 
-## Verification already achieved before final cleanup
+## Final branch verification
 
-One exact V2 head completed:
+Exact cleanup head `f7c17ae4c77f0a4c26cc5098077560fc2de0106b` completed GitHub Actions run `32545793451` successfully after legacy runtime deletion and themed-static cleanup.
 
-- architecture checks: PASS;
+Verified on that exact head:
+
+- syntax gate: PASS for active runtime, QA and build scripts;
+- architecture gate: PASS, including deletion of obsolete runtime paths;
 - executable mesh/render audit: PASS;
-- catalog/regression checks: PASS;
-- 15-level geometry check: PASS;
-- walkable-floor regression: PASS;
-- physics fuzz: PASS with 1000 randomized scenarios x 240 steps;
-- spatial broad phase reduced a sparse 106-body gallery to 132 candidates versus 5565 all-pairs candidates in the deterministic check;
+- V2 catalog/regression gate: PASS;
+- all 15 campaign level geometry checks: PASS;
+- explicit walkable-floor regression: PASS;
+- deterministic physics fuzz: PASS with 1000 randomized scenarios x 240 steps;
+- broad-phase deterministic gallery check: 132 candidates vs 5565 all-pairs candidates;
 - desktop Chromium behavior QA: 97/97 PASS;
-- mobile Chromium behavior QA: 103/103 PASS, including DOM PointerEvents on joystick while gripping and the jump button;
-- desktop and mobile screenshot artifacts were inspected manually.
-
-A **new final CI run is still required after the legacy-file deletion and themed-static cleanup**. Do not merge until that exact final head is green and its screenshots are inspected.
+- mobile Chromium behavior QA: 103/103 PASS, including real DOM PointerEvents for joystick while physically gripping and the jump button;
+- final desktop/mobile screenshot artifacts manually inspected;
+- final diff against `main` reviewed; branch is ahead only and changes are scoped to V2 gameplay/physics/render/input/QA/docs/workflow cleanup.
 
 ## Hostile bugs found after the first green V2 browser run
 
@@ -63,25 +65,25 @@ A **new final CI run is still required after the legacy-file deletion and themed
 - fragile objects falling directly on the floor did not enter destruction logic;
 - `lowwall` could be misclassified as floor by the old height heuristic;
 - browser CI previously had no real mobile PointerEvent pass;
-- static geometry always carried `#dbe4ea`, preventing renderer theme-wall fallback and making office partitions look like giant light-gray blocks.
+- static geometry always carried `#dbe4ea`, preventing renderer theme-wall fallback.
 
-All of these have concrete fixes in the current branch and regression coverage where executable verification is possible.
+All have concrete fixes in the branch and regression coverage where executable verification is possible.
 
 ## Known limitations / not falsely claimed
 
 - the current character is improved procedural articulated geometry, **not** an imported authored skinned mesh with production skeleton/skin weights;
 - there is no real Blender/GLTF high-detail -> retopo -> baked normal/AO -> LOD production asset pipeline in this repository yet;
 - physics is still mainly yaw/planar rigid-body dynamics plus vertical motion and interaction torque, not a general arbitrary 6DOF pitch/roll inertia-tensor engine;
-- particles/effects are bounded records/fragments but not a full GPU instanced production particle system;
+- particles/effects are bounded records/fragments but not a full GPU-instanced production particle system;
 - 106 catalog entries have real physical/dimensional variation, but some intentionally share renderer archetypes rather than pretending 106 individually authored production meshes already exist.
 
 These limitations do not block a functional user playtest of the V2 interaction/physics build, but they do block calling the art/physics stack a finished AAA production implementation.
 
-## Exact next action
+## Release gate
 
-1. Run full CI on the current cleanup head.
-2. Inspect both final desktop and mobile screenshots.
-3. Review `main...massive-rebuild-v2` diff for unexpected changes.
-4. If all green, mark PR #8 ready and merge it.
-5. Wait for the main Pages validation/deploy workflow.
-6. Verify public `build.json` SHA and the live game URL before telling the user the build is ready to test.
+The branch is ready for PR review/merge from a functional playtest perspective. Remaining release steps are operational:
+
+1. mark PR #8 ready;
+2. merge only this green head into `main`;
+3. wait for the main Pages validation/deploy workflow;
+4. verify public `build.json` SHA and the live site before telling the user to test.
