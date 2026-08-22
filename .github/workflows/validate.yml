@@ -1,4 +1,4 @@
-name: Validate static game
+name: Validate overhaul game
 
 on:
   push:
@@ -12,4 +12,25 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm run check
+      - name: Static, geometry and physics regression
+        run: npm run check
+      - name: Start local game server
+        run: |
+          python3 -m http.server 8080 > /tmp/pronesi-server.log 2>&1 &
+          echo $! > /tmp/pronesi-server.pid
+          sleep 1
+      - name: Browser behavior QA
+        run: |
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME"
+          mkdir -p qa-artifacts
+          "$CHROME" --headless=new --no-sandbox --disable-dev-shm-usage --enable-webgl --ignore-gpu-blocklist --use-angle=swiftshader --virtual-time-budget=12000 --window-size=1440,900 --dump-dom "http://127.0.0.1:8080/?qa=1" > qa-artifacts/qa-dom.html
+          grep -q 'data-qa="pass"' qa-artifacts/qa-dom.html
+          "$CHROME" --headless=new --no-sandbox --disable-dev-shm-usage --enable-webgl --ignore-gpu-blocklist --use-angle=swiftshader --virtual-time-budget=6000 --window-size=1440,900 --screenshot=qa-artifacts/game.png "http://127.0.0.1:8080/?qa=1"
+      - name: Upload browser QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: overhaul-browser-qa
+          path: qa-artifacts/
+          if-no-files-found: warn
