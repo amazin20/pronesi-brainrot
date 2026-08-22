@@ -21,12 +21,12 @@
   <button id="resetBtn" class="iconBtn" aria-label="Перезапуск">↻</button>
   <button id="pauseBtn" class="iconBtn" aria-label="Пауза">Ⅱ</button>
 </header>
-<div id="hint" class="hint">WASD — движение относительно камеры · клик — толкнуть · удержать — схватить</div>
-<div id="interaction" class="interaction hidden"><b id="interactionTitle">ДИВАН</b><span id="interactionText">Удерживай точку хвата</span></div>
+<div id="hint" class="hint">WASD — относительно камеры · клик — толкнуть · удержать поверхность — физический хват · резкий жест + release — бросок</div>
+<div id="interaction" class="interaction hidden"><b id="interactionTitle">ДИВАН</b><span id="interactionText">Курсор задаёт физическое усилие</span></div>
 <div id="gripMeter" class="gripMeter hidden"><span>ХВАТ</span><div><i id="gripFill"></i></div><b id="gripState">СТАБИЛЬНО</b></div>
 <div id="toast" class="toast hidden">БДЫЩ!</div>
 <div id="buildBadge">Build: <span id="buildSha">dev</span></div>
-<section id="menu" class="overlay"><div class="panel hero"><div class="eyebrow">PHYSICS DELIVERY</div><h1>Большая вещь.<br>Маленькая дверь.<br><em>Удачи.</em></h1><p>Тащи, толкай, кантуй и поворачивай неудобные предметы. Задача понятна сразу — физика делает остальное.</p><div class="menuRow"><button id="playBtn" class="primary">ИГРАТЬ</button><button id="labBtn" class="secondary">PHYSICS LAB</button></div><small id="sdkBadge">LOCAL MODE</small></div></section>
+<section id="menu" class="overlay"><div class="panel hero"><div class="eyebrow">PHYSICAL DELIVERY · REBUILD V2</div><h1>Большая вещь.<br>Маленькая дверь.<br><em>Удачи.</em></h1><p>Хватай прямо за поверхность. Тяни курсором силой, а не drag-and-drop. Лёгкое летит, тяжёлое сопротивляется, окружение падает вместе с твоим терпением.</p><div class="menuRow"><button id="playBtn" class="primary">ИГРАТЬ</button><button id="labBtn" class="secondary">PHYSICS LAB</button></div><small id="sdkBadge">LOCAL MODE</small></div></section>
 <section id="pause" class="overlay hidden"><div class="panel small"><div class="eyebrow">ПАУЗА</div><h2>Ничего не падает. Пока.</h2><button id="resumeBtn" class="primary">ПРОДОЛЖИТЬ</button><button id="restartPauseBtn" class="secondary">ЗАНОВО</button></div></section>
 <section id="complete" class="overlay hidden"><div class="panel small"><div class="emoji">📦✨</div><div class="eyebrow">ДОСТАВЛЕНО</div><h2 id="completeTitle">Оно влезло.</h2><p id="completeText">00:42.1</p><button id="nextBtn" class="primary">СЛЕДУЮЩИЙ УРОВЕНЬ</button></div></section>
 <section id="finish" class="overlay hidden"><div class="panel"><div class="emoji">🏆🛋️</div><div class="eyebrow">КАМПАНИЯ ПРОЙДЕНА</div><h2>Теперь ты сертифицированный переносчик странных вещей.</h2><p>Можно пройти уровни ещё раз и улучшить времена.</p><button id="againBtn" class="primary">ЕЩЁ РАЗ</button></div></section>
@@ -39,13 +39,21 @@
 <script src="src/overhaul/00-core.js"></script>
 <script src="src/overhaul/01-math.js"></script>
 <script src="src/overhaul/02-physics.js"></script>
+<script src="src/overhaul/02-static-style-v2.js"></script>
+<script src="src/overhaul/02-floor-v2.js"></script>
+<script src="src/overhaul/02-physics-v2.js"></script>
 <script src="src/overhaul/03-levels.js"></script>
-<script src="src/overhaul/04-player-interaction.js"></script>
+<script src="src/overhaul/03-object-catalog-v2.js"></script>
+<script src="src/overhaul/03-world-v2.js"></script>
+<script src="src/overhaul/04-player-interaction-v2.js"></script>
 <script src="src/overhaul/05-mesh-data.js"></script>
-<script src="src/overhaul/05-renderer.js"></script>
-<script src="src/overhaul/06-input.js"></script>
+<script src="src/overhaul/05-renderer-v2.js"></script>
+<script src="src/overhaul/05-polish-v2.js"></script>
+<script src="src/overhaul/06-input-v2.js"></script>
 <script src="src/overhaul/07-platform.js"></script>
+<script src="src/overhaul/07-audio-v2.js"></script>
 <script src="src/overhaul/08-bootstrap.js"></script>
+<script src="src/overhaul/09-qa-v2.js"></script>
 <script src="qa-runner.js"></script>
 </body>
 </html>
