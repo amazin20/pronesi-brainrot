@@ -1,6 +1,0 @@
-/* ---------------------------- audio / feedback ---------------------------- */
-let audioCtx=null,noiseBuffer=null,screenShake=0;
-function ensureAudio(){try{audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();if(!noiseBuffer){noiseBuffer=audioCtx.createBuffer(1,audioCtx.sampleRate*.12,audioCtx.sampleRate);let d=noiseBuffer.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length)}}catch{}}
-function impactSound(material,force){try{ensureAudio();if(!audioCtx)return;let t=audioCtx.currentTime,o=audioCtx.createOscillator(),g=audioCtx.createGain(),f={wood:180,metal:95,plastic:260,stone:75,rubber:130}[material]||150;o.type=material==='metal'?'square':'sine';o.frequency.setValueAtTime(f+Math.min(220,force*8),t);o.frequency.exponentialRampToValueAtTime(Math.max(45,f*.55),t+.08);g.gain.setValueAtTime(Math.min(.13,.018+force*.006),t);g.gain.exponentialRampToValueAtTime(.0001,t+.10);o.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+.11)}catch{}}
-let toastTimer=0;function boom(text='БДЫЩ!',force=5){UI.toast.textContent=text;UI.toast.classList.remove('hidden');clearTimeout(toastTimer);toastTimer=setTimeout(()=>UI.toast.classList.add('hidden'),360);screenShake=Math.min(.65,screenShake+force*.02);try{if(navigator.vibrate&&force>6)navigator.vibrate(10)}catch{}}
-

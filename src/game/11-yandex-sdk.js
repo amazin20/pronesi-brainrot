@@ -1,5 +1,0 @@
-/* ------------------------------- Yandex SDK ------------------------------- */
-let ysdk=null;function startGameplay(){try{ysdk?.features?.GameplayAPI?.start()}catch{}}function stopGameplay(){try{ysdk?.features?.GameplayAPI?.stop()}catch{}}
-async function initYandex(){if(typeof YaGames==='undefined'){UI.sdk.textContent='LOCAL MODE · открой index.html напрямую';return}try{ysdk=await YaGames.init();UI.sdk.textContent='YANDEX SDK · PHYSICS LAB';ysdk.on?.('game_api_pause',()=>{if(mode==='playing'&&!paused){paused=true;UI.pauseModal.classList.remove('hidden');try{audioCtx?.suspend()}catch{}}});ysdk.on?.('game_api_resume',()=>{if(mode==='playing'&&paused){paused=false;UI.pauseModal.classList.add('hidden');try{audioCtx?.resume()}catch{}}});ysdk.features?.LoadingAPI?.ready()}catch(e){console.warn(e);UI.sdk.textContent='LOCAL MODE'}}
-document.addEventListener('visibilitychange',()=>{if(document.hidden){if(mode==='playing')stopGameplay();try{audioCtx?.suspend()}catch{}}else if(mode==='playing'&&!paused){startGameplay();try{audioCtx?.resume()}catch{}}});addEventListener('blur',()=>{if(mode==='playing')stopGameplay()});
-
