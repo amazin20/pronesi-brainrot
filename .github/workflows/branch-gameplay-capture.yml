@@ -38,9 +38,9 @@ jobs:
           cat /tmp/brainrot-http.log
           exit 1
 
-      - name: Capture real Chromium gameplay and exercise first pit
+      - name: Capture real Chromium gameplay and verify course events
         run: |
-          mkdir -p artifacts/raw-video
+          mkdir -p artifacts/raw-video artifacts/stages
           cat > capture.mjs <<'EOF'
           import { chromium } from 'playwright';
           import fs from 'node:fs';
@@ -53,63 +53,86 @@ jobs:
           const page = await context.newPage();
           const consoleErrors=[];
           const stateSamples=[];
+          const observedStates=[];
           page.on('console',m=>{ if(m.type()==='error') consoleErrors.push(m.text()); });
           page.on('pageerror',e=>consoleErrors.push(String(e)));
           await page.goto('http://127.0.0.1:4173/index.html',{waitUntil:'domcontentloaded',timeout:60000});
           await page.waitForSelector('#load',{state:'detached',timeout:60000});
           await page.waitForTimeout(900);
 
-          const sample = async label => {
-            const state = await page.locator('#state').innerText().catch(()=> 'UNKNOWN');
-            stateSamples.push(`${label}:${state}`);
+          const stateText = async () => page.locator('#state').innerText().catch(()=> 'UNKNOWN');
+          const sample = async label => stateSamples.push(`${label}:${await stateText()}`);
+          const observeFor = async ms => {
+            const end=Date.now()+ms;
+            let last='';
+            while(Date.now()<end){
+              const s=await stateText();
+              if(s!==last){observedStates.push(s);last=s;}
+              await page.waitForTimeout(90);
+            }
           };
+          const hold = async (codes,ms) => {
+            for(const code of codes) await page.keyboard.down(code);
+            await observeFor(ms);
+            for(const code of [...codes].reverse()) await page.keyboard.up(code);
+          };
+
           await sample('ready');
+          await page.screenshot({path:'artifacts/stages/00-ready.png'});
 
-          // Walk to the brainrot and pick it up in the real runtime.
-          await page.keyboard.down('KeyW');
-          await page.waitForTimeout(720);
-          await page.keyboard.up('KeyW');
+          // Walk to the real brainrot model and pick it up.
+          await hold(['KeyW'],720);
           await page.keyboard.press('KeyE');
-          await page.waitForTimeout(900);
+          await observeFor(900);
           await sample('picked');
+          await page.screenshot({path:'artifacts/stages/01-picked.png'});
 
-          // Approach the first real pit. Jump BEFORE the gap so the capture
-          // exercises player/carry motion, pit support and lift collision code.
+          // Real pit approach: run and jump while carrying.
+          await page.keyboard.down('ShiftLeft');
           await page.keyboard.down('KeyW');
-          await page.waitForTimeout(520);
+          await observeFor(640);
           await page.keyboard.press('Space');
-          await page.waitForTimeout(700);
+          await observeFor(900);
           await page.keyboard.up('KeyW');
-          await page.waitForTimeout(350);
+          await page.keyboard.up('ShiftLeft');
+          await observeFor(420);
           await sample('first-pit');
+          await page.screenshot({path:'artifacts/stages/02-first-pit.png'});
 
-          // Strafe and jump again near the lift/ceiling section. This is a
-          // genuine browser input sequence, not an injected physics mock.
+          // Continue with diagonal input and another jump so lift/ceiling and
+          // moving-platform collision code is exercised by genuine controls.
           await page.keyboard.down('KeyD');
           await page.keyboard.down('KeyW');
-          await page.waitForTimeout(420);
+          await observeFor(520);
           await page.keyboard.press('Space');
-          await page.waitForTimeout(620);
+          await observeFor(850);
           await page.keyboard.up('KeyD');
           await page.keyboard.up('KeyW');
-          await page.waitForTimeout(500);
+          await observeFor(500);
           await sample('lift-corner-pass');
+          await page.screenshot({path:'artifacts/stages/03-lift.png'});
 
-          // Continue into the course so the recording contains actual hazards.
+          // Push farther into the obstacle course. The watcher records every
+          // gameplay state transition, including collisions, falls and checkpoint.
+          await page.keyboard.down('ShiftLeft');
           await page.keyboard.down('KeyW');
-          await page.waitForTimeout(1700);
+          await observeFor(5200);
           await page.keyboard.up('KeyW');
-          await page.waitForTimeout(900);
+          await page.keyboard.up('ShiftLeft');
+          await observeFor(900);
           await sample('hazard-run');
 
-          const finalState = await page.locator('#state').innerText().catch(()=> 'UNKNOWN');
+          const finalState = await stateText();
           const loadExists = await page.locator('#load').count();
           const canvas = page.locator('canvas');
           const canvasBox = await canvas.boundingBox();
-          const distinctStates = new Set(stateSamples.map(x=>x.split(':').slice(1).join(':')));
+          const distinctStates = new Set([...stateSamples.map(x=>x.split(':').slice(1).join(':')),...observedStates]);
+          const meaningfulCourseEvents = observedStates.filter(s => !['СВОБОДЕН','НЕСУ','ПОДНИМАЮ','ГОТОВ','ПОЛОЖЕН'].includes(s));
           const report = [
             `state=${finalState}`,
             `samples=${stateSamples.join(' | ')}`,
+            `observedStates=${[...new Set(observedStates)].join(' | ')}`,
+            `courseEvents=${[...new Set(meaningfulCourseEvents)].join(' | ')}`,
             `distinctStates=${distinctStates.size}`,
             `canvas=${canvasBox ? `${Math.round(canvasBox.width)}x${Math.round(canvasBox.height)}` : 'missing'}`,
             `loadOverlay=${loadExists}`,
@@ -121,7 +144,9 @@ jobs:
           if(!canvasBox || canvasBox.width < 1000 || canvasBox.height < 600) throw new Error('WebGL canvas is missing or undersized');
           if(loadExists) throw new Error('Loading overlay never disappeared');
           if(finalState === 'ОШИБКА') throw new Error('Runtime ended in error state');
-          if(distinctStates.size < 2) throw new Error(`Gameplay state did not change enough: ${stateSamples.join(' | ')}`);
+          if(!observedStates.includes('НЕСУ')) throw new Error(`Brainrot was never carried: ${observedStates.join(' | ')}`);
+          if(distinctStates.size < 3) throw new Error(`Gameplay state coverage too small: ${[...distinctStates].join(' | ')}`);
+          if(!meaningfulCourseEvents.length) throw new Error(`No real obstacle-course event observed; capture did not prove pit/lift/hazard interaction: ${observedStates.join(' | ')}`);
           if(consoleErrors.length) throw new Error(consoleErrors.join('\n'));
 
           await context.close();
@@ -146,6 +171,7 @@ jobs:
           path: |
             artifacts/brainrot-real-gameplay.mp4
             artifacts/gameplay-final.png
+            artifacts/stages/*.png
             artifacts/runtime-state.txt
           if-no-files-found: error
           retention-days: 7
