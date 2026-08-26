@@ -19,6 +19,9 @@ jobs:
         with:
           node-version: 22
 
+      - name: Verify carry-safe lift support corridor
+        run: node scripts/lift-route-continuity-check.mjs
+
       - name: Install browser capture tools
         run: |
           npm init -y >/dev/null 2>&1
