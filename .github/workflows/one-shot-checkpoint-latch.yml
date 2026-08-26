@@ -1,0 +1,72 @@
+name: One Shot Checkpoint Latch
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - '.github/workflows/one-shot-checkpoint-latch.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch checkpoint crossing latch
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old="clean build · new GLB only · full 3D lift route v24 · checkpoint landing funnel"
+          new="clean build · new GLB only · full 3D lift route v25 · latched checkpoint gate"
+          assert old in s
+          s=s.replace(old,new,1)
+          old="let yaw=0,vy=0,on=true,carry=false,pick=0,win=false,lock=0,hitLock=0,checkpoint=false,checkpointFlash=0,failTimer=0,failReason='',playerRideVX=0,playerRideVY=0,playerRideVZ=0,brainRideVX=0,brainRideVY=0,brainRideVZ=0,playerMomentumX=0,playerMomentumZ=0,playerWasRiding=false,brainWasRiding=false,playerRidingNow=false,brainRidingNow=false,liftBlocked=false,firstSweeperPhase='idle',firstSweeperTimer=0,firstSweeperCleared=false,secondSweeperCleared=false,secondPitBoarding=false,secondPitBoardingIndex=-1,secondPitCrossing=false;"
+          new="let yaw=0,vy=0,on=true,carry=false,pick=0,win=false,lock=0,hitLock=0,checkpoint=false,checkpointFlash=0,checkpointPlayerLatched=false,checkpointBrainrotLatched=false,failTimer=0,failReason='',playerRideVX=0,playerRideVY=0,playerRideVZ=0,brainRideVX=0,brainRideVY=0,brainRideVZ=0,playerMomentumX=0,playerMomentumZ=0,playerWasRiding=false,brainWasRiding=false,playerRidingNow=false,brainRidingNow=false,liftBlocked=false,firstSweeperPhase='idle',firstSweeperTimer=0,firstSweeperCleared=false,secondSweeperCleared=false,secondPitBoarding=false,secondPitBoardingIndex=-1,secondPitCrossing=false;"
+          assert old in s
+          s=s.replace(old,new,1)
+          old="if(!useCheckpoint){firstSweeperPhase='idle';firstSweeperTimer=0;firstSweeperCleared=false;secondSweeperCleared=false;sweeps[0].rotation.y=0;sweeps[1].rotation.y=0}"
+          new="if(!useCheckpoint){firstSweeperPhase='idle';firstSweeperTimer=0;firstSweeperCleared=false;secondSweeperCleared=false;checkpointPlayerLatched=false;checkpointBrainrotLatched=false;sweeps[0].rotation.y=0;sweeps[1].rotation.y=0}"
+          assert old in s
+          s=s.replace(old,new,1)
+          old="function setLamp(lamp,reached,base){const c=reached?0x49ff79:base;lamp.material.color.setHex(c);lamp.material.emissive.setHex(c);lamp.material.emissiveIntensity=reached?1.65:.55;lamp.scale.y=reached?1.12:1}function updateCheckpoint(t){const playerPassed=p.z>CHECKPOINT_Z&&Math.abs(p.x)<CHECKPOINT_X,brainrotPassed=bp.z>CHECKPOINT_Z&&Math.abs(bp.x)<CHECKPOINT_X;if(!checkpoint&&playerPassed&&brainrotPassed){checkpoint=true;checkpointFlash=1.4;state.textContent='ЧЕКПОИНТ СОХРАНЁН'}checkpointFlash=Math.max(0,checkpointFlash-.016);const active=checkpoint,flash=checkpointFlash>0&&(Math.floor(t*8)%2===0),c=active?0x49ff79:(flash?0xffffff:0x30d9ff);checkpointPad.material.color.setHex(c);checkpointPad.material.emissive.setHex(active?0x19b24e:0x0874a8);checkpointPad.material.emissiveIntensity=active?1.25:.35;checkpointTop.material.color.setHex(c);checkpointTop.material.emissive.setHex(active?0x19b24e:0x0b6f9f);checkpointTop.material.emissiveIntensity=active?1.5:.65;checkpointTop.scale.x=active?1.04+Math.sin(t*6)*.025:1}"
+          new="function setLamp(lamp,reached,base){const c=reached?0x49ff79:base;lamp.material.color.setHex(c);lamp.material.emissive.setHex(c);lamp.material.emissiveIntensity=reached?1.65:.55;lamp.scale.y=reached?1.12:1}function updateCheckpoint(t){const gateMinZ=CHECKPOINT_Z-.38,playerPassed=p.z>gateMinZ&&Math.abs(p.x)<CHECKPOINT_X,brainrotPassed=bp.z>gateMinZ&&Math.abs(bp.x)<CHECKPOINT_X;if(!checkpoint){if(playerPassed)checkpointPlayerLatched=true;if(brainrotPassed)checkpointBrainrotLatched=true;if(checkpointPlayerLatched&&checkpointBrainrotLatched){checkpoint=true;checkpointFlash=1.4;state.textContent='ЧЕКПОИНТ СОХРАНЁН'}else if(checkpointPlayerLatched&&!checkpointBrainrotLatched&&failTimer<=0)state.textContent='ЧЕКПОИНТ · ПРОНЕСИ БРЕЙНРОТ';else if(checkpointBrainrotLatched&&!checkpointPlayerLatched&&failTimer<=0)state.textContent='ЧЕКПОИНТ · ДОЙДИ ИГРОКОМ'}checkpointFlash=Math.max(0,checkpointFlash-.016);const active=checkpoint,flash=checkpointFlash>0&&(Math.floor(t*8)%2===0),c=active?0x49ff79:(flash?0xffffff:0x30d9ff);checkpointPad.material.color.setHex(c);checkpointPad.material.emissive.setHex(active?0x19b24e:0x0874a8);checkpointPad.material.emissiveIntensity=active?1.25:.35;checkpointL.material.color.setHex(active||checkpointPlayerLatched?0x49ff79:0x30d9ff);checkpointL.material.emissive.setHex(active||checkpointPlayerLatched?0x19b24e:0x0b6f9f);checkpointL.material.emissiveIntensity=active||checkpointPlayerLatched?1.4:.65;checkpointR.material.color.setHex(active||checkpointBrainrotLatched?0x49ff79:0x30d9ff);checkpointR.material.emissive.setHex(active||checkpointBrainrotLatched?0x19b24e:0x0b6f9f);checkpointR.material.emissiveIntensity=active||checkpointBrainrotLatched?1.4:.65;checkpointTop.material.color.setHex(c);checkpointTop.material.emissive.setHex(active?0x19b24e:0x0b6f9f);checkpointTop.material.emissiveIntensity=active?1.5:.65;checkpointTop.scale.x=active?1.04+Math.sin(t*6)*.025:1}"
+          assert old in s
+          s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+      - name: Verify runtime syntax and checkpoint invariants
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          a=s.index('<script type="module">')+len('<script type="module">')
+          b=s.index('</script>',a)
+          Path('/tmp/runtime.mjs').write_text(s[a:b])
+          assert 'checkpointPlayerLatched=true' in s
+          assert 'checkpointBrainrotLatched=true' in s
+          assert "ЧЕКПОИНТ · ПРОНЕСИ БРЕЙНРОТ" in s
+          assert "ЧЕКПОИНТ · ДОЙДИ ИГРОКОМ" in s
+          assert 'full 3D lift route v25 · latched checkpoint gate' in s
+          print('checkpoint latch invariants PASS')
+          PY
+          node --check /tmp/runtime.mjs
+      - name: Commit gameplay patch
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Latch checkpoint crossings for player and brainrot'
+          git push origin HEAD:new-player-glb-overhaul
