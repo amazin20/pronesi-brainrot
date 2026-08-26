@@ -1,5 +1,5 @@
-name: One-shot second pit boarding hold gameplay patch
-# trigger-v22-second-pit-boarding
+name: One-shot second pit checkpoint landing funnel
+# trigger-v24-second-pit-checkpoint-funnel
 
 on:
   push:
@@ -20,45 +20,45 @@ jobs:
           ref: new-player-glb-overhaul
           fetch-depth: 0
 
-      - name: Build second pit staging and boarding hold
+      - name: Build second pit checkpoint landing funnel
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p=Path('index.html')
           s=p.read_text()
 
-          old="const SECOND_PIT_Z=(PITS[2][0]+PITS[2][1])*.5,SECOND_PLATFORM_HALF_X=1.05,SECOND_PLATFORM_HALF_Z=.34,SECOND_PLATFORM_BASE_X=1.4,SECOND_PLATFORM_TRAVEL=1.3;const secondPitPlatforms=[[-SECOND_PLATFORM_BASE_X,0xff5fc7],[SECOND_PLATFORM_BASE_X,0x44e7ff]].map(([x,c],i)=>{const mesh=box(x,-.04,SECOND_PIT_Z,SECOND_PLATFORM_HALF_X*2,.24,SECOND_PLATFORM_HALF_Z*2,c);mesh.material.emissive=new THREE.Color(c);mesh.material.emissiveIntensity=.58;const stripe=box(x,.095,SECOND_PIT_Z,1.5,.035,.5,0xffffff);stripe.material.emissive=new THREE.Color(i?0x44e7ff:0xff5fc7);stripe.material.emissiveIntensity=1.15;return{mesh,stripe,side:i?1:-1,lastX:x}});"
-          new="const SECOND_PIT_Z=(PITS[2][0]+PITS[2][1])*.5,SECOND_PLATFORM_HALF_X=1.05,SECOND_PLATFORM_HALF_Z=.34,SECOND_PLATFORM_BASE_X=1.4,SECOND_PLATFORM_TRAVEL=1.3,SECOND_PIT_STAGE_Z=4.55,SECOND_PIT_STAGE_Z_MIN=3.55,SECOND_PIT_STAGE_HALF_X=1.55,SECOND_PIT_BOARD_X=.16,SECOND_PIT_BOARD_SPEED=2.6;const secondPitPlatforms=[[-SECOND_PLATFORM_BASE_X,0xff5fc7],[SECOND_PLATFORM_BASE_X,0x44e7ff]].map(([x,c],i)=>{const mesh=box(x,-.04,SECOND_PIT_Z,SECOND_PLATFORM_HALF_X*2,.24,SECOND_PLATFORM_HALF_Z*2,c);mesh.material.emissive=new THREE.Color(c);mesh.material.emissiveIntensity=.58;const stripe=box(x,.095,SECOND_PIT_Z,1.5,.035,.5,0xffffff);stripe.material.emissive=new THREE.Color(i?0x44e7ff:0xff5fc7);stripe.material.emissiveIntensity=1.15;return{mesh,stripe,side:i?1:-1,lastX:x}});const secondPitStagePad=box(0,.035,SECOND_PIT_STAGE_Z,3.35,.07,.82,0x44e7ff),secondPitStageL=box(-1.62,.58,4.92,.14,1.16,.14,0x44e7ff),secondPitStageR=box(1.62,.58,4.92,.14,1.16,.14,0x44e7ff),secondPitStageTop=box(0,1.11,4.92,3.38,.14,.14,0x44e7ff);const secondPitStageVisuals=[secondPitStagePad,secondPitStageL,secondPitStageR,secondPitStageTop];secondPitStageVisuals.forEach(o=>{o.material.emissive=new THREE.Color(0x087fa8);o.material.emissiveIntensity=.72});"
-          if old not in s: raise SystemExit('second pit declaration anchor missing')
+          old="const secondPitExitPad=box(0,.035,5.98,3.35,.07,.44,0x49ff79);secondPitExitPad.material.emissive=new THREE.Color(0x19b24e);secondPitExitPad.material.emissiveIntensity=.58;const secondPitStageVisuals=[secondPitStagePad,secondPitStageL,secondPitStageR,secondPitStageTop];"
+          new="const secondPitExitPad=box(0,.035,5.98,3.35,.07,.44,0x49ff79);secondPitExitPad.material.emissive=new THREE.Color(0x19b24e);secondPitExitPad.material.emissiveIntensity=.58;const SECOND_PIT_FUNNEL_HALF_X=2.05,SECOND_PIT_FUNNEL_Z_MIN=5.78,SECOND_PIT_FUNNEL_Z_MAX=7.28;const secondPitFunnelL=box(-2.18,.46,6.53,.22,.92,1.5,0x49ff79),secondPitFunnelR=box(2.18,.46,6.53,.22,.92,1.5,0x49ff79),secondPitFunnelStripe=box(0,.018,6.54,3.85,.036,1.44,0x49ff79);[secondPitFunnelL,secondPitFunnelR,secondPitFunnelStripe].forEach(o=>{o.material.emissive=new THREE.Color(0x159b43);o.material.emissiveIntensity=.72});const secondPitStageVisuals=[secondPitStagePad,secondPitStageL,secondPitStageR,secondPitStageTop];"
+          if old not in s: raise SystemExit('second pit exit visual anchor missing')
           s=s.replace(old,new,1)
 
-          old="playerWasRiding=false,brainWasRiding=false,playerRidingNow=false,brainRidingNow=false,liftBlocked=false,firstSweeperPhase='idle',firstSweeperTimer=0,firstSweeperCleared=false,secondSweeperCleared=false;"
-          new="playerWasRiding=false,brainWasRiding=false,playerRidingNow=false,brainRidingNow=false,liftBlocked=false,firstSweeperPhase='idle',firstSweeperTimer=0,firstSweeperCleared=false,secondSweeperCleared=false,secondPitBoarding=false;"
-          if old not in s: raise SystemExit('runtime state anchor missing')
+          old="const FINISH_Z_MIN=8.82,FINISH_X=3.5;function blocked(x,z){if(Math.abs(x)>4.55||z<-23||z>11)return true;if(z>FINISH_Z_MIN&&Math.abs(x)>FINISH_X)return true;"
+          new="const FINISH_Z_MIN=8.82,FINISH_X=3.5;function inSecondPitFunnel(x,z,r=0){return z>SECOND_PIT_FUNNEL_Z_MIN&&z<SECOND_PIT_FUNNEL_Z_MAX&&Math.abs(x)>SECOND_PIT_FUNNEL_HALF_X-r}function blocked(x,z){if(Math.abs(x)>4.55||z<-23||z>11)return true;if(inSecondPitFunnel(x,z,.4))return true;if(z>FINISH_Z_MIN&&Math.abs(x)>FINISH_X)return true;"
+          if old not in s: raise SystemExit('player collision anchor missing')
           s=s.replace(old,new,1)
 
-          old="function moveSecondPitPlatforms(t,dt){const invDt=1/Math.max(dt,.001);secondPitPlatforms.forEach((platform,i)=>{const oldX=platform.mesh.position.x,newX=platform.side*(SECOND_PLATFORM_BASE_X-SECOND_PLATFORM_TRAVEL*Math.sin(t*1.55)),dx=newX-oldX;const carryPlayer=onSecondPitPlatform(platform,p.x,p.y,p.z,false)&&vy<=.25,carryBrain=!carry&&onSecondPitPlatform(platform,bp.x,bp.y,bp.z,true)&&bv.y<=.35;platform.mesh.position.x=newX;platform.stripe.position.x=newX;platform.mesh.material.emissiveIntensity=.52+.35*(.5+.5*Math.sin(t*5.1+i*Math.PI));if(carryPlayer){playerRidingNow=true;playerRideVX=dx*invDt;playerRideVY=0;playerRideVZ=0;if(!blocked(p.x+dx,p.z)&&!playerLiftSideBlocked(p.x+dx,p.z))p.x+=dx}if(carryBrain){brainRidingNow=true;brainRideVX=dx*invDt;brainRideVZ=0;brainRideVY=0;if(!brainrotBlocked(bp.x+dx,bp.z)&&!brainLiftSideBlocked(bp.x+dx,bp.z))bp.x+=dx}platform.lastX=newX})}"
-          new="function moveSecondPitPlatforms(t,dt){const invDt=1/Math.max(dt,.001),stageReady=secondSweeperCleared&&carry&&p.z>SECOND_PIT_STAGE_Z_MIN&&p.z<SECOND_PIT_Z+SECOND_PLATFORM_HALF_Z+.12&&Math.abs(p.x)<SECOND_PIT_STAGE_HALF_X&&p.y<.42;let boardingIndex=-1;if(stageReady)boardingIndex=Math.abs(secondPitPlatforms[0].mesh.position.x)<=Math.abs(secondPitPlatforms[1].mesh.position.x)?0:1;secondPitBoarding=stageReady;secondPitPlatforms.forEach((platform,i)=>{const oldX=platform.mesh.position.x,rawX=platform.side*(SECOND_PLATFORM_BASE_X-SECOND_PLATFORM_TRAVEL*Math.sin(t*1.55));let newX=rawX;if(stageReady&&i===boardingIndex){const dockX=platform.side*SECOND_PIT_BOARD_X,maxStep=SECOND_PIT_BOARD_SPEED*dt;newX=Math.max(oldX-maxStep,Math.min(oldX+maxStep,dockX))}const dx=newX-oldX,carryPlayer=onSecondPitPlatform(platform,p.x,p.y,p.z,false)&&vy<=.25,carryBrain=!carry&&onSecondPitPlatform(platform,bp.x,bp.y,bp.z,true)&&bv.y<=.35,boardingLocked=stageReady&&i===boardingIndex&&Math.abs(newX-platform.side*SECOND_PIT_BOARD_X)<.055;platform.mesh.position.x=newX;platform.stripe.position.x=newX;platform.mesh.material.emissiveIntensity=boardingLocked?1.55:(.52+.35*(.5+.5*Math.sin(t*5.1+i*Math.PI)));platform.stripe.material.emissiveIntensity=boardingLocked?2.05:1.15;if(carryPlayer){playerRidingNow=true;playerRideVX=dx*invDt;playerRideVY=0;playerRideVZ=0;if(!blocked(p.x+dx,p.z)&&!playerLiftSideBlocked(p.x+dx,p.z))p.x+=dx}if(carryBrain){brainRidingNow=true;brainRideVX=dx*invDt;brainRideVZ=0;brainRideVY=0;if(!brainrotBlocked(bp.x+dx,bp.z)&&!brainLiftSideBlocked(bp.x+dx,bp.z))bp.x+=dx}platform.lastX=newX});const pulse=.5+.5*Math.sin(t*8),stageColor=stageReady?0x49ff79:0x44e7ff,stageEmissive=stageReady?0x19b24e:0x087fa8;secondPitStageVisuals.forEach(o=>{o.material.color.setHex(stageColor);o.material.emissive.setHex(stageEmissive);o.material.emissiveIntensity=stageReady?1.25+.45*pulse:.72});if(stageReady&&!win&&failTimer<=0)state.textContent='ПЛАТФОРМА ЖДЁТ · ЗАХОДИ'}"
-          if old not in s: raise SystemExit('second pit movement anchor missing')
+          old="function brainrotBlocked(x,z,r=.38){if(Math.abs(x)>4.55-r||z<-23+r||z>11-r)return true;if(z>FINISH_Z_MIN&&Math.abs(x)>FINISH_X-r)return true;"
+          new="function brainrotBlocked(x,z,r=.38){if(Math.abs(x)>4.55-r||z<-23+r||z>11-r)return true;if(inSecondPitFunnel(x,z,r))return true;if(z>FINISH_Z_MIN&&Math.abs(x)>FINISH_X-r)return true;"
+          if old not in s: raise SystemExit('brainrot collision anchor missing')
           s=s.replace(old,new,1)
 
-          old="state.textContent=failTimer>0?failReason+' · ВОЗВРАТ…':(secondSweeperCleared?'SWEEPER 2 · ПРОЙДЕН':(firstSweeperPhase==='warning'?'SWEEPER · ПРИГОТОВЬСЯ':(firstSweeperPhase==='burst'?'SWEEPER · УДАР':(firstSweeperPhase==='recover'?'SWEEPER · ОКНО ПРОХОДА':(firstSweeperPhase==='cleared'?'SWEEPER · ПРОЙДЕН':'НЕСУ')))))}"
-          new="state.textContent=failTimer>0?failReason+' · ВОЗВРАТ…':(secondPitBoarding?'ПЛАТФОРМА ЖДЁТ · ЗАХОДИ':(secondSweeperCleared?'SWEEPER 2 · ПРОЙДЕН':(firstSweeperPhase==='warning'?'SWEEPER · ПРИГОТОВЬСЯ':(firstSweeperPhase==='burst'?'SWEEPER · УДАР':(firstSweeperPhase==='recover'?'SWEEPER · ОКНО ПРОХОДА':(firstSweeperPhase==='cleared'?'SWEEPER · ПРОЙДЕН':'НЕСУ'))))))}"
-          if old not in s: raise SystemExit('carry HUD anchor missing')
+          old="if(playerRidingNow){playerMomentumX=0;playerMomentumZ=0}if(brainRidingNow&&!carry){bv.x*=Math.exp(-10*dt);bv.z*=Math.exp(-10*dt)}hitLock=Math.max(0,hitLock-dt);"
+          new="if(playerRidingNow){playerMomentumX=0;playerMomentumZ=0}if(brainRidingNow&&!carry){bv.x*=Math.exp(-10*dt);bv.z*=Math.exp(-10*dt)}const playerLandingFunnel=p.z>SECOND_PIT_FUNNEL_Z_MIN&&p.z<SECOND_PIT_FUNNEL_Z_MAX&&p.y<.48,brainLandingFunnel=!carry&&bp.z>SECOND_PIT_FUNNEL_Z_MIN&&bp.z<SECOND_PIT_FUNNEL_Z_MAX&&bp.y<.92;if(playerLandingFunnel){playerMomentumX*=Math.exp(-15*dt);playerMomentumZ*=Math.exp(-11*dt)}if(brainLandingFunnel){bv.x*=Math.exp(-12*dt);bv.z*=Math.exp(-9*dt)}const funnelPulse=.5+.5*Math.sin(t*7.5);[secondPitFunnelL,secondPitFunnelR,secondPitFunnelStripe].forEach(o=>o.material.emissiveIntensity=(playerLandingFunnel||brainLandingFunnel)?1.15+.42*funnelPulse:.72);hitLock=Math.max(0,hitLock-dt);"
+          if old not in s: raise SystemExit('momentum damping anchor missing')
           s=s.replace(old,new,1)
 
-          old='full 3D lift route v21 · persistent second sweeper clear'
-          new='full 3D lift route v22 · second pit boarding hold'
+          old='full 3D lift route v23 · second pit crossing latch'
+          new='full 3D lift route v24 · checkpoint landing funnel'
           if old not in s: raise SystemExit('runtime marker missing')
           s=s.replace(old,new,1)
           p.write_text(s)
 
-          Path('scripts/second-pit-boarding-hold-check.mjs').write_text("""import fs from 'node:fs';\nconst s=fs.readFileSync('index.html','utf8');\nfor(const needle of [\"SECOND_PIT_STAGE_Z=4.55\",\"SECOND_PIT_BOARD_X=.16\",\"SECOND_PIT_BOARD_SPEED=2.6\",\"secondPitStageVisuals\",\"secondPitBoarding=stageReady\",\"boardingIndex=Math.abs\",\"boardingLocked=stageReady\",\"ПЛАТФОРМА ЖДЁТ · ЗАХОДИ\",\"full 3D lift route v22\"]){if(!s.includes(needle))throw new Error('missing '+needle)}\nconst boardX=.16,halfX=1.05,playerRadius=.4,brainRadius=.38;\nif(halfX-playerRadius<.6)throw new Error('player boarding width too narrow');\nif(halfX-brainRadius<.6)throw new Error('brainrot boarding width too narrow');\nif(Math.abs(boardX)>halfX-playerRadius)throw new Error('held platform misses center carry corridor');\nconst pit=[5.05,5.82],halfZ=.34;\nconst uncovered=(pit[1]-pit[0])-2*halfZ;\nif(uncovered>.12)throw new Error('platform leaves excessive Z gap '+uncovered);\nconsole.log('second pit staging/boarding hold: PASS', {centerClearance:halfX-playerRadius, uncovered});\n""")
+          Path('scripts/second-pit-checkpoint-funnel-check.mjs').write_text("""import fs from 'node:fs';\nconst s=fs.readFileSync('index.html','utf8');\nfor(const needle of [\"SECOND_PIT_FUNNEL_HALF_X=2.05\",\"SECOND_PIT_FUNNEL_Z_MIN=5.78\",\"SECOND_PIT_FUNNEL_Z_MAX=7.28\",\"inSecondPitFunnel(x,z\",\"playerLandingFunnel\",\"brainLandingFunnel\",\"Math.exp(-15*dt)\",\"checkpoint landing funnel\"]){if(!s.includes(needle))throw new Error('missing '+needle)}\nconst halfX=2.05,playerR=.4,brainR=.38,zMin=5.78,zMax=7.28,exitRelease=6.02,checkpointZ=6.35;\nif(exitRelease<zMin||exitRelease>zMax)throw new Error('platform release is outside funnel');\nif(checkpointZ<zMin||checkpointZ>zMax)throw new Error('checkpoint is outside funnel');\nif(halfX-playerR<1.55)throw new Error('player carry corridor too narrow');\nif(halfX-brainR<1.6)throw new Error('brainrot corridor too narrow');\nif(zMax-checkpointZ<.75)throw new Error('not enough braking distance after checkpoint');\nconsole.log('second pit checkpoint funnel: PASS',{playerClear:halfX-playerR,brainClear:halfX-brainR,brakingAfterCheckpoint:zMax-checkpointZ});\n""")
           PY
 
-      - name: Verify gameplay syntax and boarding invariants
+      - name: Verify gameplay syntax and landing funnel invariants
         run: |
-          node scripts/second-pit-boarding-hold-check.mjs
+          node scripts/second-pit-checkpoint-funnel-check.mjs
           python3 - <<'PY'
           from pathlib import Path
           s=Path('index.html').read_text()
@@ -66,12 +66,12 @@ jobs:
           Path('/tmp/game-module.mjs').write_text(module)
           PY
           node --check /tmp/game-module.mjs
-          node --check scripts/second-pit-boarding-hold-check.mjs
+          node --check scripts/second-pit-checkpoint-funnel-check.mjs
 
       - name: Commit gameplay change
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add index.html scripts/second-pit-boarding-hold-check.mjs
-          git commit -m 'Add staging hold to second moving-platform pit'
+          git add index.html scripts/second-pit-checkpoint-funnel-check.mjs
+          git commit -m 'Add checkpoint landing funnel after second pit'
           git push origin HEAD:new-player-glb-overhaul
