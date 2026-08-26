@@ -3,7 +3,7 @@ import fs from 'node:fs';
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
 function number(name) {
-  const m = html.match(new RegExp(`\\b${name}=(-?\\d+(?:\\.\\d+)?)`));
+  const m = html.match(new RegExp(`\\b${name}=(-?(?:\\d+(?:\\.\\d+)?|\\.\\d+))`));
   if (!m) throw new Error(`Missing numeric constant ${name}`);
   return Number(m[1]);
 }
@@ -12,7 +12,7 @@ function assert(ok, message) {
   if (!ok) throw new Error(message);
 }
 
-const pitMatch = html.match(/const PITS=\[\[(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)\]/);
+const pitMatch = html.match(/const PITS=\[\[(-?(?:\d+(?:\.\d+)?|\.\d+)),(-?(?:\d+(?:\.\d+)?|\.\d+))\]/);
 assert(pitMatch, 'First pit bounds are missing');
 const pitMin = Number(pitMatch[1]);
 const pitMax = Number(pitMatch[2]);
@@ -45,7 +45,7 @@ assert(html.includes('function onLiftPlatform('), 'Lift platform support functio
 // The central carry corridor around the first pit must remain free from static blockers.
 const blocksMatch = html.match(/const blocks=\[(.*?)\];blocks\.forEach/s);
 assert(blocksMatch, 'Static blocks list is missing');
-const blockPairs = [...blocksMatch[1].matchAll(/\[(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)\]/g)].map(m => [Number(m[1]), Number(m[2])]);
+const blockPairs = [...blocksMatch[1].matchAll(/\[(-?(?:\d+(?:\.\d+)?|\.\d+)),(-?(?:\d+(?:\.\d+)?|\.\d+))\]/g)].map(m => [Number(m[1]), Number(m[2])]);
 for (const [x, z] of blockPairs) {
   const nearLift = Math.abs(z - pitCenter) < 2.0;
   assert(!(nearLift && Math.abs(x) < 1.8), `Static block intrudes into lift carry corridor at x=${x}, z=${z}`);
@@ -53,7 +53,7 @@ for (const [x, z] of blockPairs) {
 
 const cylindersMatch = html.match(/const cylinders=\[(.*?)\];cylinders\.forEach/s);
 assert(cylindersMatch, 'Cylinder list is missing');
-const cylinderPairs = [...cylindersMatch[1].matchAll(/\[(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)\]/g)].map(m => [Number(m[1]), Number(m[2])]);
+const cylinderPairs = [...cylindersMatch[1].matchAll(/\[(-?(?:\d+(?:\.\d+)?|\.\d+)),(-?(?:\d+(?:\.\d+)?|\.\d+))\]/g)].map(m => [Number(m[1]), Number(m[2])]);
 for (const [x, z] of cylinderPairs) {
   const nearLift = Math.abs(z - pitCenter) < 2.0;
   assert(!(nearLift && Math.abs(x) < 1.55), `Cylinder intrudes into lift carry corridor at x=${x}, z=${z}`);
