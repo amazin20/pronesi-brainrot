@@ -41,7 +41,7 @@ jobs:
           cat /tmp/brainrot-http.log
           exit 1
 
-      - name: Capture real Chromium gameplay and verify course events
+      - name: Capture real Chromium gameplay and verify lift to sweeper route
         run: |
           mkdir -p artifacts/raw-video artifacts/stages
           cat > capture.mjs <<'EOF'
@@ -57,6 +57,8 @@ jobs:
           const consoleErrors=[];
           const stateSamples=[];
           const observedStates=[];
+          const timedStates=[];
+          const startedAt=Date.now();
           page.on('console',m=>{ if(m.type()==='error') consoleErrors.push(m.text()); });
           page.on('pageerror',e=>consoleErrors.push(String(e)));
           await page.goto('http://127.0.0.1:4173/index.html',{waitUntil:'domcontentloaded',timeout:60000});
@@ -70,8 +72,12 @@ jobs:
             let last='';
             while(Date.now()<end){
               const s=await stateText();
-              if(s!==last){observedStates.push(s);last=s;}
-              await page.waitForTimeout(90);
+              if(s!==last){
+                observedStates.push(s);
+                timedStates.push(`${Date.now()-startedAt}ms:${s}`);
+                last=s;
+              }
+              await page.waitForTimeout(70);
             }
           };
           const hold = async (codes,ms) => {
@@ -100,9 +106,9 @@ jobs:
           await sample('first-pit');
           await page.screenshot({path:'artifacts/stages/02-first-pit.png'});
 
-          // The first lift is a straight carry route. Do not steer diagonally into
-          // its side rails: approach the lower dock, allow one full bottom window,
-          // then walk across while the runtime boarding-hold keeps the lift docked.
+          // The first lift is a straight carry route. Approach its lower dock,
+          // allow a full bottom window, then cross while runtime boarding-hold
+          // keeps the moving platform from leaving under the carried brainrot.
           await hold(['KeyW'],650);
           await observeFor(1700);
           await page.screenshot({path:'artifacts/stages/03-lift-wait.png'});
@@ -115,14 +121,15 @@ jobs:
           await sample('lift-straight-pass');
           await page.screenshot({path:'artifacts/stages/04-lift-exit.png'});
 
-          // Continue straight into the first sweeper/hazard. This is deliberately
-          // real input rather than teleporting or mutating module state.
+          // Continue with real controls all the way to the first sweeper. A pass
+          // now requires an actual sweeper-contact state, so a lift-only run can
+          // no longer produce a false-positive course success.
           await page.keyboard.down('KeyW');
-          await observeFor(4200);
+          await observeFor(5200);
           await page.keyboard.up('KeyW');
-          await observeFor(650);
-          await sample('hazard-run');
-          await page.screenshot({path:'artifacts/stages/05-hazard.png'});
+          await observeFor(800);
+          await sample('first-sweeper');
+          await page.screenshot({path:'artifacts/stages/05-first-sweeper.png'});
 
           const finalState = await stateText();
           const loadExists = await page.locator('#load').count();
@@ -130,11 +137,14 @@ jobs:
           const canvasBox = await canvas.boundingBox();
           const distinctStates = new Set([...stateSamples.map(x=>x.split(':').slice(1).join(':')),...observedStates]);
           const meaningfulCourseEvents = observedStates.filter(s => !['СВОБОДЕН','НЕСУ','ПОДНИМАЮ','ГОТОВ','ПОЛОЖЕН'].includes(s));
+          const sweeperEvents = observedStates.filter(s => s.includes('SWEEPER') || s.includes('УДАР! БРЕЙНРОТ ВЫБИТ!'));
           const report = [
             `state=${finalState}`,
             `samples=${stateSamples.join(' | ')}`,
             `observedStates=${[...new Set(observedStates)].join(' | ')}`,
+            `timedStates=${timedStates.join(' | ')}`,
             `courseEvents=${[...new Set(meaningfulCourseEvents)].join(' | ')}`,
+            `sweeperEvents=${[...new Set(sweeperEvents)].join(' | ')}`,
             `distinctStates=${distinctStates.size}`,
             `canvas=${canvasBox ? `${Math.round(canvasBox.width)}x${Math.round(canvasBox.height)}` : 'missing'}`,
             `loadOverlay=${loadExists}`,
@@ -148,7 +158,8 @@ jobs:
           if(finalState === 'ОШИБКА') throw new Error('Runtime ended in error state');
           if(!observedStates.includes('НЕСУ')) throw new Error(`Brainrot was never carried: ${observedStates.join(' | ')}`);
           if(distinctStates.size < 3) throw new Error(`Gameplay state coverage too small: ${[...distinctStates].join(' | ')}`);
-          if(!meaningfulCourseEvents.length) throw new Error(`No real obstacle-course event observed; straight lift route did not prove pit/lift/hazard interaction: ${observedStates.join(' | ')}`);
+          if(!meaningfulCourseEvents.length) throw new Error(`No real obstacle-course event observed: ${observedStates.join(' | ')}`);
+          if(!sweeperEvents.length) throw new Error(`Lift route did not reach a real first-sweeper contact: ${timedStates.join(' | ')}`);
           if(consoleErrors.length) throw new Error(consoleErrors.join('\n'));
 
           await context.close();
