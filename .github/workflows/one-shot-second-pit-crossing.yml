@@ -1,0 +1,63 @@
+name: One-shot second pit crossing latch
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/one-shot-second-pit-crossing.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[skip second-pit]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch second pit crossing latch
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          s=s.replace('full 3D lift route v22 · second pit boarding hold','full 3D lift route v23 · second pit crossing latch')
+          s=s.replace('SECOND_PIT_BOARD_X=.16,SECOND_PIT_BOARD_SPEED=2.6;','SECOND_PIT_BOARD_X=.16,SECOND_PIT_BOARD_SPEED=2.6,SECOND_PIT_EXIT_RELEASE_Z=6.02;')
+          old="const secondPitStageVisuals=[secondPitStagePad,secondPitStageL,secondPitStageR,secondPitStageTop];secondPitStageVisuals.forEach(o=>{o.material.emissive=new THREE.Color(0x087fa8);o.material.emissiveIntensity=.72});"
+          new="const secondPitExitPad=box(0,.035,5.98,3.35,.07,.44,0x49ff79);secondPitExitPad.material.emissive=new THREE.Color(0x19b24e);secondPitExitPad.material.emissiveIntensity=.58;const secondPitStageVisuals=[secondPitStagePad,secondPitStageL,secondPitStageR,secondPitStageTop];secondPitStageVisuals.forEach(o=>{o.material.emissive=new THREE.Color(0x087fa8);o.material.emissiveIntensity=.72});"
+          assert old in s
+          s=s.replace(old,new)
+          s=s.replace("secondSweeperCleared=false,secondPitBoarding=false;","secondSweeperCleared=false,secondPitBoarding=false,secondPitBoardingIndex=-1,secondPitCrossing=false;")
+          start=s.index('function moveSecondPitPlatforms(t,dt){')
+          end=s.index('\nfunction liftEase(u)',start)
+          newfn="""function moveSecondPitPlatforms(t,dt){const invDt=1/Math.max(dt,.001),approaching=secondSweeperCleared&&carry&&p.z>SECOND_PIT_STAGE_Z_MIN&&p.z<=SECOND_PIT_Z+SECOND_PLATFORM_HALF_Z+.12&&Math.abs(p.x)<SECOND_PIT_STAGE_HALF_X&&p.y<.42;if((!carry||failTimer>0||win)&&secondPitBoardingIndex>=0)secondPitBoardingIndex=-1;if(secondPitBoardingIndex<0&&approaching)secondPitBoardingIndex=Math.abs(secondPitPlatforms[0].mesh.position.x)<=Math.abs(secondPitPlatforms[1].mesh.position.x)?0:1;const crossing=secondPitBoardingIndex>=0&&carry&&p.z>SECOND_PIT_STAGE_Z_MIN&&p.z<SECOND_PIT_EXIT_RELEASE_Z&&Math.abs(p.x)<SECOND_PIT_STAGE_HALF_X+.55&&p.y<.46;if(secondPitBoardingIndex>=0&&p.z>=SECOND_PIT_EXIT_RELEASE_Z){secondPitBoardingIndex=-1;secondPitCrossing=false}const holdActive=approaching||crossing;secondPitBoarding=approaching;secondPitCrossing=crossing;secondPitPlatforms.forEach((platform,i)=>{const oldX=platform.mesh.position.x,rawX=platform.side*(SECOND_PLATFORM_BASE_X-SECOND_PLATFORM_TRAVEL*Math.sin(t*1.55));let newX=rawX;if(holdActive&&i===secondPitBoardingIndex){const dockX=platform.side*SECOND_PIT_BOARD_X,maxStep=SECOND_PIT_BOARD_SPEED*dt;newX=Math.max(oldX-maxStep,Math.min(oldX+maxStep,dockX))}const dx=newX-oldX,carryPlayer=onSecondPitPlatform(platform,p.x,p.y,p.z,false)&&vy<=.25,carryBrain=!carry&&onSecondPitPlatform(platform,bp.x,bp.y,bp.z,true)&&bv.y<=.35,boardingLocked=holdActive&&i===secondPitBoardingIndex&&Math.abs(newX-platform.side*SECOND_PIT_BOARD_X)<.055;platform.mesh.position.x=newX;platform.stripe.position.x=newX;platform.mesh.material.emissiveIntensity=boardingLocked?1.55:(.52+.35*(.5+.5*Math.sin(t*5.1+i*Math.PI)));platform.stripe.material.emissiveIntensity=boardingLocked?2.05:1.15;if(carryPlayer){playerRidingNow=true;playerRideVX=dx*invDt;playerRideVY=0;playerRideVZ=0;if(!blocked(p.x+dx,p.z)&&!playerLiftSideBlocked(p.x+dx,p.z))p.x+=dx}if(carryBrain){brainRidingNow=true;brainRideVX=dx*invDt;brainRideVZ=0;brainRideVY=0;if(!brainrotBlocked(bp.x+dx,bp.z)&&!brainLiftSideBlocked(bp.x+dx,bp.z))bp.x+=dx}platform.lastX=newX});const pulse=.5+.5*Math.sin(t*8),stageColor=holdActive?0x49ff79:0x44e7ff,stageEmissive=holdActive?0x19b24e:0x087fa8;secondPitStageVisuals.forEach(o=>{o.material.color.setHex(stageColor);o.material.emissive.setHex(stageEmissive);o.material.emissiveIntensity=holdActive?1.25+.45*pulse:.72});secondPitExitPad.material.emissiveIntensity=crossing?1.4+.35*pulse:.58;if(crossing&&!win&&failTimer<=0)state.textContent='ПЛАТФОРМА ДЕРЖИТ ПЕРЕХОД';else if(approaching&&!win&&failTimer<=0)state.textContent='ПЛАТФОРМА ЖДЁТ · ЗАХОДИ'}"""
+          s=s[:start]+newfn+s[end:]
+          s=s.replace("secondPitBoarding?'ПЛАТФОРМА ЖДЁТ · ЗАХОДИ':","secondPitCrossing?'ПЛАТФОРМА ДЕРЖИТ ПЕРЕХОД':(secondPitBoarding?'ПЛАТФОРМА ЖДЁТ · ЗАХОДИ':")
+          s=s.replace("(firstSweeperPhase==='cleared'?'SWEEPER · ПРОЙДЕН':'НЕСУ'))))))}","(firstSweeperPhase==='cleared'?'SWEEPER · ПРОЙДЕН':'НЕСУ')))))))}")
+          p.write_text(s)
+          PY
+      - name: Verify runtime syntax and crossing invariants
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          assert 'second pit crossing latch' in s
+          assert 'SECOND_PIT_EXIT_RELEASE_Z=6.02' in s
+          assert 'secondPitBoardingIndex=-1' in s
+          assert "state.textContent='ПЛАТФОРМА ДЕРЖИТ ПЕРЕХОД'" in s
+          assert 'secondPitExitPad.material.emissiveIntensity=crossing?' in s
+          a=s.index('<script type="module">')+len('<script type="module">')
+          b=s.index('</script>',a)
+          Path('/tmp/runtime.mjs').write_text(s[a:b])
+          PY
+          node --check /tmp/runtime.mjs
+      - name: Commit gameplay patch and remove one-shot workflow
+        run: |
+          rm .github/workflows/one-shot-second-pit-crossing.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html .github/workflows/one-shot-second-pit-crossing.yml
+          git commit -m 'Latch second pit platform through carry crossing [skip second-pit]'
+          git push origin HEAD:new-player-glb-overhaul
