@@ -1,5 +1,5 @@
-name: One-shot second sweeper phased gameplay patch
-# trigger-v20-direct-ref
+name: One-shot second pit boarding hold gameplay patch
+# trigger-v22-second-pit-boarding
 
 on:
   push:
@@ -20,62 +20,45 @@ jobs:
           ref: new-player-glb-overhaul
           fetch-depth: 0
 
-      - name: Build second sweeper phased hazard
+      - name: Build second pit staging and boarding hold
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p=Path('index.html')
           s=p.read_text()
 
-          old="const FIRST_SWEEPER_TRIGGER_Z=-11.05,FIRST_SWEEPER_CLEAR_Z=-7.72,FIRST_SWEEPER_WARN=.72,FIRST_SWEEPER_BURST=1.05,FIRST_SWEEPER_RECOVER=.72,FIRST_SWEEPER_BURST_SPEED=-2.65;"
-          new="const FIRST_SWEEPER_TRIGGER_Z=-11.05,FIRST_SWEEPER_CLEAR_Z=-7.72,FIRST_SWEEPER_WARN=.72,FIRST_SWEEPER_BURST=1.05,FIRST_SWEEPER_RECOVER=.72,FIRST_SWEEPER_BURST_SPEED=-2.65,SECOND_SWEEPER_TRIGGER_Z=-1.72,SECOND_SWEEPER_CLEAR_Z=3.18,SECOND_SWEEPER_WARN=.68,SECOND_SWEEPER_BURST=1.08,SECOND_SWEEPER_RECOVER=.92,SECOND_SWEEPER_SPEED=2.45;"
-          if old not in s: raise SystemExit('sweeper constants anchor missing')
+          old="const SECOND_PIT_Z=(PITS[2][0]+PITS[2][1])*.5,SECOND_PLATFORM_HALF_X=1.05,SECOND_PLATFORM_HALF_Z=.34,SECOND_PLATFORM_BASE_X=1.4,SECOND_PLATFORM_TRAVEL=1.3;const secondPitPlatforms=[[-SECOND_PLATFORM_BASE_X,0xff5fc7],[SECOND_PLATFORM_BASE_X,0x44e7ff]].map(([x,c],i)=>{const mesh=box(x,-.04,SECOND_PIT_Z,SECOND_PLATFORM_HALF_X*2,.24,SECOND_PLATFORM_HALF_Z*2,c);mesh.material.emissive=new THREE.Color(c);mesh.material.emissiveIntensity=.58;const stripe=box(x,.095,SECOND_PIT_Z,1.5,.035,.5,0xffffff);stripe.material.emissive=new THREE.Color(i?0x44e7ff:0xff5fc7);stripe.material.emissiveIntensity=1.15;return{mesh,stripe,side:i?1:-1,lastX:x}});"
+          new="const SECOND_PIT_Z=(PITS[2][0]+PITS[2][1])*.5,SECOND_PLATFORM_HALF_X=1.05,SECOND_PLATFORM_HALF_Z=.34,SECOND_PLATFORM_BASE_X=1.4,SECOND_PLATFORM_TRAVEL=1.3,SECOND_PIT_STAGE_Z=4.55,SECOND_PIT_STAGE_Z_MIN=3.55,SECOND_PIT_STAGE_HALF_X=1.55,SECOND_PIT_BOARD_X=.16,SECOND_PIT_BOARD_SPEED=2.6;const secondPitPlatforms=[[-SECOND_PLATFORM_BASE_X,0xff5fc7],[SECOND_PLATFORM_BASE_X,0x44e7ff]].map(([x,c],i)=>{const mesh=box(x,-.04,SECOND_PIT_Z,SECOND_PLATFORM_HALF_X*2,.24,SECOND_PLATFORM_HALF_Z*2,c);mesh.material.emissive=new THREE.Color(c);mesh.material.emissiveIntensity=.58;const stripe=box(x,.095,SECOND_PIT_Z,1.5,.035,.5,0xffffff);stripe.material.emissive=new THREE.Color(i?0x44e7ff:0xff5fc7);stripe.material.emissiveIntensity=1.15;return{mesh,stripe,side:i?1:-1,lastX:x}});const secondPitStagePad=box(0,.035,SECOND_PIT_STAGE_Z,3.35,.07,.82,0x44e7ff),secondPitStageL=box(-1.62,.58,4.92,.14,1.16,.14,0x44e7ff),secondPitStageR=box(1.62,.58,4.92,.14,1.16,.14,0x44e7ff),secondPitStageTop=box(0,1.11,4.92,3.38,.14,.14,0x44e7ff);const secondPitStageVisuals=[secondPitStagePad,secondPitStageL,secondPitStageR,secondPitStageTop];secondPitStageVisuals.forEach(o=>{o.material.emissive=new THREE.Color(0x087fa8);o.material.emissiveIntensity=.72});"
+          if old not in s: raise SystemExit('second pit declaration anchor missing')
           s=s.replace(old,new,1)
 
-          old="[sweeperEntryL,sweeperEntryR,sweeperEntryTop].forEach(o=>{o.material.emissive=new THREE.Color(0xa95a00);o.material.emissiveIntensity=.75});"
-          new=old+"const secondSweeperPad=box(0,.035,-1.72,3.9,.07,1.28,0x44e7ff),secondSweeperL=box(-1.86,.72,-1.15,.16,1.44,.16,0x44e7ff),secondSweeperR=box(1.86,.72,-1.15,.16,1.44,.16,0x44e7ff),secondSweeperTop=box(0,1.4,-1.15,3.88,.16,.16,0x44e7ff);const secondSweeperVisuals=[secondSweeperPad,secondSweeperL,secondSweeperR,secondSweeperTop];secondSweeperVisuals.forEach(o=>{o.material.emissive=new THREE.Color(0x0b87b8);o.material.emissiveIntensity=.72});"
-          if old not in s: raise SystemExit('sweeper entry visual anchor missing')
+          old="playerWasRiding=false,brainWasRiding=false,playerRidingNow=false,brainRidingNow=false,liftBlocked=false,firstSweeperPhase='idle',firstSweeperTimer=0,firstSweeperCleared=false,secondSweeperCleared=false;"
+          new="playerWasRiding=false,brainWasRiding=false,playerRidingNow=false,brainRidingNow=false,liftBlocked=false,firstSweeperPhase='idle',firstSweeperTimer=0,firstSweeperCleared=false,secondSweeperCleared=false,secondPitBoarding=false;"
+          if old not in s: raise SystemExit('runtime state anchor missing')
           s=s.replace(old,new,1)
 
-          old="liftBlocked=false,firstSweeperPhase='idle',firstSweeperTimer=0,firstSweeperCleared=false;"
-          new="liftBlocked=false,firstSweeperPhase='idle',firstSweeperTimer=0,firstSweeperCleared=false,secondSweeperPhase='idle',secondSweeperTimer=0,secondSweeperCleared=false,secondSweeperDir=1;"
-          if old not in s: raise SystemExit('state anchor missing')
+          old="function moveSecondPitPlatforms(t,dt){const invDt=1/Math.max(dt,.001);secondPitPlatforms.forEach((platform,i)=>{const oldX=platform.mesh.position.x,newX=platform.side*(SECOND_PLATFORM_BASE_X-SECOND_PLATFORM_TRAVEL*Math.sin(t*1.55)),dx=newX-oldX;const carryPlayer=onSecondPitPlatform(platform,p.x,p.y,p.z,false)&&vy<=.25,carryBrain=!carry&&onSecondPitPlatform(platform,bp.x,bp.y,bp.z,true)&&bv.y<=.35;platform.mesh.position.x=newX;platform.stripe.position.x=newX;platform.mesh.material.emissiveIntensity=.52+.35*(.5+.5*Math.sin(t*5.1+i*Math.PI));if(carryPlayer){playerRidingNow=true;playerRideVX=dx*invDt;playerRideVY=0;playerRideVZ=0;if(!blocked(p.x+dx,p.z)&&!playerLiftSideBlocked(p.x+dx,p.z))p.x+=dx}if(carryBrain){brainRidingNow=true;brainRideVX=dx*invDt;brainRideVZ=0;brainRideVY=0;if(!brainrotBlocked(bp.x+dx,bp.z)&&!brainLiftSideBlocked(bp.x+dx,bp.z))bp.x+=dx}platform.lastX=newX})}"
+          new="function moveSecondPitPlatforms(t,dt){const invDt=1/Math.max(dt,.001),stageReady=secondSweeperCleared&&carry&&p.z>SECOND_PIT_STAGE_Z_MIN&&p.z<SECOND_PIT_Z+SECOND_PLATFORM_HALF_Z+.12&&Math.abs(p.x)<SECOND_PIT_STAGE_HALF_X&&p.y<.42;let boardingIndex=-1;if(stageReady)boardingIndex=Math.abs(secondPitPlatforms[0].mesh.position.x)<=Math.abs(secondPitPlatforms[1].mesh.position.x)?0:1;secondPitBoarding=stageReady;secondPitPlatforms.forEach((platform,i)=>{const oldX=platform.mesh.position.x,rawX=platform.side*(SECOND_PLATFORM_BASE_X-SECOND_PLATFORM_TRAVEL*Math.sin(t*1.55));let newX=rawX;if(stageReady&&i===boardingIndex){const dockX=platform.side*SECOND_PIT_BOARD_X,maxStep=SECOND_PIT_BOARD_SPEED*dt;newX=Math.max(oldX-maxStep,Math.min(oldX+maxStep,dockX))}const dx=newX-oldX,carryPlayer=onSecondPitPlatform(platform,p.x,p.y,p.z,false)&&vy<=.25,carryBrain=!carry&&onSecondPitPlatform(platform,bp.x,bp.y,bp.z,true)&&bv.y<=.35,boardingLocked=stageReady&&i===boardingIndex&&Math.abs(newX-platform.side*SECOND_PIT_BOARD_X)<.055;platform.mesh.position.x=newX;platform.stripe.position.x=newX;platform.mesh.material.emissiveIntensity=boardingLocked?1.55:(.52+.35*(.5+.5*Math.sin(t*5.1+i*Math.PI)));platform.stripe.material.emissiveIntensity=boardingLocked?2.05:1.15;if(carryPlayer){playerRidingNow=true;playerRideVX=dx*invDt;playerRideVY=0;playerRideVZ=0;if(!blocked(p.x+dx,p.z)&&!playerLiftSideBlocked(p.x+dx,p.z))p.x+=dx}if(carryBrain){brainRidingNow=true;brainRideVX=dx*invDt;brainRideVZ=0;brainRideVY=0;if(!brainrotBlocked(bp.x+dx,bp.z)&&!brainLiftSideBlocked(bp.x+dx,bp.z))bp.x+=dx}platform.lastX=newX});const pulse=.5+.5*Math.sin(t*8),stageColor=stageReady?0x49ff79:0x44e7ff,stageEmissive=stageReady?0x19b24e:0x087fa8;secondPitStageVisuals.forEach(o=>{o.material.color.setHex(stageColor);o.material.emissive.setHex(stageEmissive);o.material.emissiveIntensity=stageReady?1.25+.45*pulse:.72});if(stageReady&&!win&&failTimer<=0)state.textContent='ПЛАТФОРМА ЖДЁТ · ЗАХОДИ'}"
+          if old not in s: raise SystemExit('second pit movement anchor missing')
           s=s.replace(old,new,1)
 
-          old="if(!useCheckpoint){firstSweeperPhase='idle';firstSweeperTimer=0;firstSweeperCleared=false;sweeps[0].rotation.y=0}"
-          new="if(!useCheckpoint){firstSweeperPhase='idle';firstSweeperTimer=0;firstSweeperCleared=false;secondSweeperPhase='idle';secondSweeperTimer=0;secondSweeperCleared=false;secondSweeperDir=1;sweeps[0].rotation.y=0;sweeps[1].rotation.y=0}"
-          if old not in s: raise SystemExit('reset anchor missing')
-          s=s.replace(old,new,1)
-
-          marker="const SWEEPER_ARC_STEP=.06,SWEEPER_RADIUS=4.15,SWEEPER_HALF_HEIGHT=.14,PLAYER_SWEEPER_HEIGHT=2.0,BRAINROT_SWEEPER_HEIGHT=1.12;"
-          if marker not in s: raise SystemExit('sweeper runtime marker missing')
-          insert="""function updateSecondSweeper(dt,t){if(!secondSweeperCleared&&secondSweeperPhase!=='idle'&&p.z>SECOND_SWEEPER_CLEAR_Z&&bp.z>SECOND_SWEEPER_CLEAR_Z){secondSweeperCleared=true;secondSweeperPhase='cleared';secondSweeperTimer=0;state.textContent='SWEEPER 2 · ПРОЙДЕН'}if(secondSweeperPhase==='idle'&&firstSweeperCleared&&p.z>SECOND_SWEEPER_TRIGGER_Z&&failTimer<=0&&!win){secondSweeperPhase='warning';secondSweeperTimer=SECOND_SWEEPER_WARN;state.textContent='SWEEPER 2 · СМЕНА НАПРАВЛЕНИЯ'}else if(secondSweeperPhase!=='idle'&&secondSweeperPhase!=='cleared'){secondSweeperTimer=Math.max(0,secondSweeperTimer-dt);if(secondSweeperTimer===0){if(secondSweeperPhase==='warning'){secondSweeperPhase='burst';secondSweeperTimer=SECOND_SWEEPER_BURST;secondSweeperDir*=-1;state.textContent='SWEEPER 2 · УДАР'}else if(secondSweeperPhase==='burst'){secondSweeperPhase='recover';secondSweeperTimer=SECOND_SWEEPER_RECOVER;state.textContent='SWEEPER 2 · БЕЗОПАСНОЕ ОКНО'}else{secondSweeperPhase='warning';secondSweeperTimer=SECOND_SWEEPER_WARN;state.textContent='SWEEPER 2 · ГОТОВИТ РАЗВОРОТ'}}}const warning=secondSweeperPhase==='warning',burst=secondSweeperPhase==='burst',recover=secondSweeperPhase==='recover',cleared=secondSweeperPhase==='cleared',pulse=.5+.5*Math.sin(t*(warning?20:6)),c=cleared?0x49ff79:(burst?0xff315d:(warning?(pulse>.5?0xffffff:0xffb12b):(recover?0x49ff79:0x44e7ff))),e=cleared?0x149343:(burst?0xa20d38:(warning?0xff7a00:(recover?0x149343:0x0b87b8)));secondSweeperVisuals.forEach(o=>{o.material.color.setHex(c);o.material.emissive.setHex(e);o.material.emissiveIntensity=cleared?1.15:(burst?1.55:(warning?.7+1.1*pulse:(recover?1.05:.72)))});const arm=sweeps[1].children[0];arm.material.color.setHex(cleared?0x49ff79:(burst?0xff315d:(warning?0xffb12b:(recover?0x49ff79:0xff557c))));arm.material.emissive.setHex(cleared?0x149343:(burst?0xa20d38:(warning?0xff7a00:(recover?0x149343:0x000000))));arm.material.emissiveIntensity=cleared?1.05:(burst?1.45:(warning?.65+1.05*pulse:(recover?.9:0)));return burst?SECOND_SWEEPER_SPEED*secondSweeperDir:0}
-function carryHazardHud(){if(firstSweeperPhase!=='cleared'){if(firstSweeperPhase==='warning')return'SWEEPER · ПРИГОТОВЬСЯ';if(firstSweeperPhase==='burst')return'SWEEPER · УДАР';if(firstSweeperPhase==='recover')return'SWEEPER · ОКНО ПРОХОДА'}if(secondSweeperPhase==='warning')return'SWEEPER 2 · СМЕНА НАПРАВЛЕНИЯ';if(secondSweeperPhase==='burst')return'SWEEPER 2 · УДАР';if(secondSweeperPhase==='recover')return'SWEEPER 2 · БЕЗОПАСНОЕ ОКНО';if(secondSweeperPhase==='cleared')return'SWEEPER 2 · ПРОЙДЕН';return firstSweeperPhase==='cleared'?'SWEEPER · ПРОЙДЕН':'НЕСУ'}
-"""
-          s=s.replace(marker,marker+insert,1)
-
-          old="const firstSweeperActive=updateFirstSweeperEntry(dt,t);sweeps.forEach((s,i)=>{const w=i?1.5:(firstSweeperActive?FIRST_SWEEPER_BURST_SPEED:0),from=s.rotation.y,to=from+w*dt;if(i||firstSweeperActive)sweeperHit(s,w,from,to);s.rotation.y=to});"
-          new="const firstSweeperActive=updateFirstSweeperEntry(dt,t),secondSweeperSpeed=updateSecondSweeper(dt,t);sweeps.forEach((s,i)=>{const w=i?secondSweeperSpeed:(firstSweeperActive?FIRST_SWEEPER_BURST_SPEED:0),from=s.rotation.y,to=from+w*dt;if(Math.abs(w)>.001)sweeperHit(s,w,from,to);s.rotation.y=to});"
-          if old not in s: raise SystemExit('tick sweeper loop anchor missing')
-          s=s.replace(old,new,1)
-
-          old="state.textContent=failTimer>0?failReason+' · ВОЗВРАТ…':(firstSweeperPhase==='warning'?'SWEEPER · ПРИГОТОВЬСЯ':(firstSweeperPhase==='burst'?'SWEEPER · УДАР':(firstSweeperPhase==='recover'?'SWEEPER · ОКНО ПРОХОДА':(firstSweeperPhase==='cleared'?'SWEEPER · ПРОЙДЕН':'НЕСУ'))))"
-          new="state.textContent=failTimer>0?failReason+' · ВОЗВРАТ…':carryHazardHud()"
+          old="state.textContent=failTimer>0?failReason+' · ВОЗВРАТ…':(secondSweeperCleared?'SWEEPER 2 · ПРОЙДЕН':(firstSweeperPhase==='warning'?'SWEEPER · ПРИГОТОВЬСЯ':(firstSweeperPhase==='burst'?'SWEEPER · УДАР':(firstSweeperPhase==='recover'?'SWEEPER · ОКНО ПРОХОДА':(firstSweeperPhase==='cleared'?'SWEEPER · ПРОЙДЕН':'НЕСУ')))))}"
+          new="state.textContent=failTimer>0?failReason+' · ВОЗВРАТ…':(secondPitBoarding?'ПЛАТФОРМА ЖДЁТ · ЗАХОДИ':(secondSweeperCleared?'SWEEPER 2 · ПРОЙДЕН':(firstSweeperPhase==='warning'?'SWEEPER · ПРИГОТОВЬСЯ':(firstSweeperPhase==='burst'?'SWEEPER · УДАР':(firstSweeperPhase==='recover'?'SWEEPER · ОКНО ПРОХОДА':(firstSweeperPhase==='cleared'?'SWEEPER · ПРОЙДЕН':'НЕСУ'))))))}"
           if old not in s: raise SystemExit('carry HUD anchor missing')
           s=s.replace(old,new,1)
 
-          old='full 3D lift route v19 · persistent sweeper clear state'
-          new='full 3D lift route v20 · phased reverse second sweeper'
-          if old not in s: raise SystemExit('runtime marker text missing')
+          old='full 3D lift route v21 · persistent second sweeper clear'
+          new='full 3D lift route v22 · second pit boarding hold'
+          if old not in s: raise SystemExit('runtime marker missing')
           s=s.replace(old,new,1)
           p.write_text(s)
 
-          Path('scripts/second-sweeper-phase-check.mjs').write_text("""import fs from 'node:fs';\nconst s=fs.readFileSync('index.html','utf8');\nfor(const needle of [\"SECOND_SWEEPER_TRIGGER_Z=-1.72\",\"SECOND_SWEEPER_CLEAR_Z=3.18\",\"SECOND_SWEEPER_SPEED=2.45\",\"function updateSecondSweeper(dt,t)\",\"secondSweeperDir*=-1\",\"secondSweeperPhase='cleared'\",\"function carryHazardHud()\",\"secondSweeperVisuals\"]){if(!s.includes(needle))throw new Error('missing '+needle)}\nif(!s.includes(\"secondSweeperCleared=false;secondSweeperDir=1;sweeps[0].rotation.y=0;sweeps[1].rotation.y=0\"))throw new Error('full reset does not re-arm second sweeper');\nif(!s.includes(\"if(Math.abs(w)>.001)sweeperHit(s,w,from,to)\"))throw new Error('second sweeper physics not phase-gated');\nconsole.log('second sweeper phased reverse hazard: PASS');\n""")
+          Path('scripts/second-pit-boarding-hold-check.mjs').write_text("""import fs from 'node:fs';\nconst s=fs.readFileSync('index.html','utf8');\nfor(const needle of [\"SECOND_PIT_STAGE_Z=4.55\",\"SECOND_PIT_BOARD_X=.16\",\"SECOND_PIT_BOARD_SPEED=2.6\",\"secondPitStageVisuals\",\"secondPitBoarding=stageReady\",\"boardingIndex=Math.abs\",\"boardingLocked=stageReady\",\"ПЛАТФОРМА ЖДЁТ · ЗАХОДИ\",\"full 3D lift route v22\"]){if(!s.includes(needle))throw new Error('missing '+needle)}\nconst boardX=.16,halfX=1.05,playerRadius=.4,brainRadius=.38;\nif(halfX-playerRadius<.6)throw new Error('player boarding width too narrow');\nif(halfX-brainRadius<.6)throw new Error('brainrot boarding width too narrow');\nif(Math.abs(boardX)>halfX-playerRadius)throw new Error('held platform misses center carry corridor');\nconst pit=[5.05,5.82],halfZ=.34;\nconst uncovered=(pit[1]-pit[0])-2*halfZ;\nif(uncovered>.12)throw new Error('platform leaves excessive Z gap '+uncovered);\nconsole.log('second pit staging/boarding hold: PASS', {centerClearance:halfX-playerRadius, uncovered});\n""")
           PY
 
-      - name: Verify gameplay syntax and second sweeper invariants
+      - name: Verify gameplay syntax and boarding invariants
         run: |
-          node scripts/second-sweeper-phase-check.mjs
+          node scripts/second-pit-boarding-hold-check.mjs
           python3 - <<'PY'
           from pathlib import Path
           s=Path('index.html').read_text()
@@ -83,12 +66,12 @@ function carryHazardHud(){if(firstSweeperPhase!=='cleared'){if(firstSweeperPhase
           Path('/tmp/game-module.mjs').write_text(module)
           PY
           node --check /tmp/game-module.mjs
-          node --check scripts/second-sweeper-phase-check.mjs
+          node --check scripts/second-pit-boarding-hold-check.mjs
 
       - name: Commit gameplay change
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add index.html scripts/second-sweeper-phase-check.mjs
-          git commit -m 'Add phased reverse gameplay to second sweeper'
+          git add index.html scripts/second-pit-boarding-hold-check.mjs
+          git commit -m 'Add staging hold to second moving-platform pit'
           git push origin HEAD:new-player-glb-overhaul
