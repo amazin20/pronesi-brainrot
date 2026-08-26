@@ -13,12 +13,23 @@ const bottom = number('LIFT_CEILING_BOTTOM');
 const top = number('LIFT_CEILING_TOP');
 const halfX = number('LIFT_CEILING_HALF_X');
 const halfZ = number('LIFT_CEILING_HALF_Z');
+const liftHalfX = number('LIFT_HALF_X');
+const liftHalfZ = number('LIFT_HALF_Z');
 const brainHeight = number('LIFT_BRAIN_BODY_HEIGHT');
 
 assert(top > bottom, 'ceiling top must be above underside');
 assert(top - bottom >= 0.25 && top - bottom <= 0.5, 'ceiling beam thickness drifted outside expected range');
 assert(halfX > 1.5 && halfZ > 0.5, 'ceiling footprint unexpectedly small');
 assert(brainHeight > 1 && brainHeight < 1.3, 'brainrot body-height proxy drifted');
+
+// The first pit/lift is the carrying tutorial gate. Keep a generous boarding deck
+// so the player + carried model can enter from a diagonal browser-control route.
+assert(liftHalfX >= 1.6, 'lift boarding width regressed below carry-safe target');
+assert(liftHalfZ >= 0.6, 'lift boarding depth regressed below carry-safe target');
+assert(source.includes('const liftApproach=box('), '3D lift approach marker missing');
+assert(source.includes('liftExit=box('), '3D lift exit marker missing');
+assert(source.includes('const blocks=[[-3.05,-16],[3.05,-11]'), 'lift approach blocks drifted back into center lane');
+assert(source.includes('const cylinders=[[3.15,-18],[-3.15,-13]'), 'lift approach cylinders drifted back into center lane');
 
 assert(source.includes('function clampPlayerToLiftCeiling(previousY)'), 'player underside collision missing');
 assert(source.includes('function clampBrainrotToLiftCeiling(previousY)'), 'brainrot underside collision missing');
@@ -41,5 +52,5 @@ assert(!overlapsBeamSlab(bottom - 2.13, 2.12), 'player below underside must rema
 assert(overlapsBeamSlab(3.0, brainHeight), 'brainrot should overlap side slab at beam height');
 assert(!overlapsBeamSlab(top + 0.57, brainHeight), 'brainrot resting above top must remain free');
 
-console.log('lift-ceiling geometry QA: PASS');
-console.log({ bottom, top, thickness: +(top - bottom).toFixed(3), halfX, halfZ, brainHeight });
+console.log('lift route + ceiling geometry QA: PASS');
+console.log({ bottom, top, thickness: +(top - bottom).toFixed(3), halfX, halfZ, liftHalfX, liftHalfZ, brainHeight });
