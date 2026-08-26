@@ -1,4 +1,4 @@
-name: One-shot first sweeper clear-state gameplay patch
+name: One-shot second sweeper phased gameplay patch
 
 on:
   push:
@@ -19,57 +19,62 @@ jobs:
           ref: new-player-glb-overhaul
           fetch-depth: 0
 
-      - name: Lock first sweeper safe after player and brainrot clear it
+      - name: Build second sweeper phased hazard
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p=Path('index.html')
           s=p.read_text()
 
-          old="const FIRST_SWEEPER_TRIGGER_Z=-11.05,FIRST_SWEEPER_WARN=.72,FIRST_SWEEPER_BURST=1.05,FIRST_SWEEPER_RECOVER=.72,FIRST_SWEEPER_BURST_SPEED=-2.65;"
-          new="const FIRST_SWEEPER_TRIGGER_Z=-11.05,FIRST_SWEEPER_CLEAR_Z=-7.72,FIRST_SWEEPER_WARN=.72,FIRST_SWEEPER_BURST=1.05,FIRST_SWEEPER_RECOVER=.72,FIRST_SWEEPER_BURST_SPEED=-2.65;"
+          old="const FIRST_SWEEPER_TRIGGER_Z=-11.05,FIRST_SWEEPER_CLEAR_Z=-7.72,FIRST_SWEEPER_WARN=.72,FIRST_SWEEPER_BURST=1.05,FIRST_SWEEPER_RECOVER=.72,FIRST_SWEEPER_BURST_SPEED=-2.65;"
+          new="const FIRST_SWEEPER_TRIGGER_Z=-11.05,FIRST_SWEEPER_CLEAR_Z=-7.72,FIRST_SWEEPER_WARN=.72,FIRST_SWEEPER_BURST=1.05,FIRST_SWEEPER_RECOVER=.72,FIRST_SWEEPER_BURST_SPEED=-2.65,SECOND_SWEEPER_TRIGGER_Z=-1.72,SECOND_SWEEPER_CLEAR_Z=3.18,SECOND_SWEEPER_WARN=.68,SECOND_SWEEPER_BURST=1.08,SECOND_SWEEPER_RECOVER=.92,SECOND_SWEEPER_SPEED=2.45;"
           if old not in s: raise SystemExit('sweeper constants anchor missing')
           s=s.replace(old,new,1)
 
-          old="liftBlocked=false,firstSweeperPhase='idle',firstSweeperTimer=0;"
-          new="liftBlocked=false,firstSweeperPhase='idle',firstSweeperTimer=0,firstSweeperCleared=false;"
-          if old not in s: raise SystemExit('sweeper state anchor missing')
+          old="[sweeperEntryL,sweeperEntryR,sweeperEntryTop].forEach(o=>{o.material.emissive=new THREE.Color(0xa95a00);o.material.emissiveIntensity=.75});"
+          new=old+"const secondSweeperPad=box(0,.035,-1.72,3.9,.07,1.28,0x44e7ff),secondSweeperL=box(-1.86,.72,-1.15,.16,1.44,.16,0x44e7ff),secondSweeperR=box(1.86,.72,-1.15,.16,1.44,.16,0x44e7ff),secondSweeperTop=box(0,1.4,-1.15,3.88,.16,.16,0x44e7ff);const secondSweeperVisuals=[secondSweeperPad,secondSweeperL,secondSweeperR,secondSweeperTop];secondSweeperVisuals.forEach(o=>{o.material.emissive=new THREE.Color(0x0b87b8);o.material.emissiveIntensity=.72});"
+          if old not in s: raise SystemExit('sweeper entry visual anchor missing')
           s=s.replace(old,new,1)
 
-          old="if(!useCheckpoint){firstSweeperPhase='idle';firstSweeperTimer=0;sweeps[0].rotation.y=0}"
-          new="if(!useCheckpoint){firstSweeperPhase='idle';firstSweeperTimer=0;firstSweeperCleared=false;sweeps[0].rotation.y=0}"
+          old="liftBlocked=false,firstSweeperPhase='idle',firstSweeperTimer=0,firstSweeperCleared=false;"
+          new="liftBlocked=false,firstSweeperPhase='idle',firstSweeperTimer=0,firstSweeperCleared=false,secondSweeperPhase='idle',secondSweeperTimer=0,secondSweeperCleared=false,secondSweeperDir=1;"
+          if old not in s: raise SystemExit('state anchor missing')
+          s=s.replace(old,new,1)
+
+          old="if(!useCheckpoint){firstSweeperPhase='idle';firstSweeperTimer=0;firstSweeperCleared=false;sweeps[0].rotation.y=0}"
+          new="if(!useCheckpoint){firstSweeperPhase='idle';firstSweeperTimer=0;firstSweeperCleared=false;secondSweeperPhase='idle';secondSweeperTimer=0;secondSweeperCleared=false;secondSweeperDir=1;sweeps[0].rotation.y=0;sweeps[1].rotation.y=0}"
           if old not in s: raise SystemExit('reset anchor missing')
           s=s.replace(old,new,1)
 
-          old="function updateFirstSweeperEntry(dt,t){if(firstSweeperPhase==='idle'&&p.z>FIRST_SWEEPER_TRIGGER_Z&&failTimer<=0&&!win){"
-          new="function updateFirstSweeperEntry(dt,t){if(!firstSweeperCleared&&firstSweeperPhase!=='idle'&&p.z>FIRST_SWEEPER_CLEAR_Z&&bp.z>FIRST_SWEEPER_CLEAR_Z){firstSweeperCleared=true;firstSweeperPhase='cleared';firstSweeperTimer=0;state.textContent='SWEEPER · ПРОЙДЕН'}if(firstSweeperPhase==='idle'&&p.z>FIRST_SWEEPER_TRIGGER_Z&&failTimer<=0&&!win){"
-          if old not in s: raise SystemExit('updateFirstSweeperEntry anchor missing')
+          marker="const SWEEPER_ARC_STEP=.06,SWEEPER_RADIUS=4.15,SWEEPER_HALF_HEIGHT=.14,PLAYER_SWEEPER_HEIGHT=2.0,BRAINROT_SWEEPER_HEIGHT=1.12;"
+          if marker not in s: raise SystemExit('sweeper runtime marker missing')
+          insert="""function updateSecondSweeper(dt,t){if(!secondSweeperCleared&&secondSweeperPhase!=='idle'&&p.z>SECOND_SWEEPER_CLEAR_Z&&bp.z>SECOND_SWEEPER_CLEAR_Z){secondSweeperCleared=true;secondSweeperPhase='cleared';secondSweeperTimer=0;state.textContent='SWEEPER 2 · ПРОЙДЕН'}if(secondSweeperPhase==='idle'&&firstSweeperCleared&&p.z>SECOND_SWEEPER_TRIGGER_Z&&failTimer<=0&&!win){secondSweeperPhase='warning';secondSweeperTimer=SECOND_SWEEPER_WARN;state.textContent='SWEEPER 2 · СМЕНА НАПРАВЛЕНИЯ'}else if(secondSweeperPhase!=='idle'&&secondSweeperPhase!=='cleared'){secondSweeperTimer=Math.max(0,secondSweeperTimer-dt);if(secondSweeperTimer===0){if(secondSweeperPhase==='warning'){secondSweeperPhase='burst';secondSweeperTimer=SECOND_SWEEPER_BURST;secondSweeperDir*=-1;state.textContent='SWEEPER 2 · УДАР'}else if(secondSweeperPhase==='burst'){secondSweeperPhase='recover';secondSweeperTimer=SECOND_SWEEPER_RECOVER;state.textContent='SWEEPER 2 · БЕЗОПАСНОЕ ОКНО'}else{secondSweeperPhase='warning';secondSweeperTimer=SECOND_SWEEPER_WARN;state.textContent='SWEEPER 2 · ГОТОВИТ РАЗВОРОТ'}}}const warning=secondSweeperPhase==='warning',burst=secondSweeperPhase==='burst',recover=secondSweeperPhase==='recover',cleared=secondSweeperPhase==='cleared',pulse=.5+.5*Math.sin(t*(warning?20:6)),c=cleared?0x49ff79:(burst?0xff315d:(warning?(pulse>.5?0xffffff:0xffb12b):(recover?0x49ff79:0x44e7ff))),e=cleared?0x149343:(burst?0xa20d38:(warning?0xff7a00:(recover?0x149343:0x0b87b8)));secondSweeperVisuals.forEach(o=>{o.material.color.setHex(c);o.material.emissive.setHex(e);o.material.emissiveIntensity=cleared?1.15:(burst?1.55:(warning?.7+1.1*pulse:(recover?1.05:.72)))});const arm=sweeps[1].children[0];arm.material.color.setHex(cleared?0x49ff79:(burst?0xff315d:(warning?0xffb12b:(recover?0x49ff79:0xff557c))));arm.material.emissive.setHex(cleared?0x149343:(burst?0xa20d38:(warning?0xff7a00:(recover?0x149343:0x000000))));arm.material.emissiveIntensity=cleared?1.05:(burst?1.45:(warning?.65+1.05*pulse:(recover?.9:0)));return burst?SECOND_SWEEPER_SPEED*secondSweeperDir:0}
+function carryHazardHud(){if(firstSweeperPhase!=='cleared'){if(firstSweeperPhase==='warning')return'SWEEPER · ПРИГОТОВЬСЯ';if(firstSweeperPhase==='burst')return'SWEEPER · УДАР';if(firstSweeperPhase==='recover')return'SWEEPER · ОКНО ПРОХОДА'}if(secondSweeperPhase==='warning')return'SWEEPER 2 · СМЕНА НАПРАВЛЕНИЯ';if(secondSweeperPhase==='burst')return'SWEEPER 2 · УДАР';if(secondSweeperPhase==='recover')return'SWEEPER 2 · БЕЗОПАСНОЕ ОКНО';if(secondSweeperPhase==='cleared')return'SWEEPER 2 · ПРОЙДЕН';return firstSweeperPhase==='cleared'?'SWEEPER · ПРОЙДЕН':'НЕСУ'}
+"""
+          s=s.replace(marker,marker+insert,1)
+
+          old="const firstSweeperActive=updateFirstSweeperEntry(dt,t);sweeps.forEach((s,i)=>{const w=i?1.5:(firstSweeperActive?FIRST_SWEEPER_BURST_SPEED:0),from=s.rotation.y,to=from+w*dt;if(i||firstSweeperActive)sweeperHit(s,w,from,to);s.rotation.y=to});"
+          new="const firstSweeperActive=updateFirstSweeperEntry(dt,t),secondSweeperSpeed=updateSecondSweeper(dt,t);sweeps.forEach((s,i)=>{const w=i?secondSweeperSpeed:(firstSweeperActive?FIRST_SWEEPER_BURST_SPEED:0),from=s.rotation.y,to=from+w*dt;if(Math.abs(w)>.001)sweeperHit(s,w,from,to);s.rotation.y=to});"
+          if old not in s: raise SystemExit('tick sweeper loop anchor missing')
           s=s.replace(old,new,1)
 
-          old="const warning=firstSweeperPhase==='warning',burst=firstSweeperPhase==='burst',recover=firstSweeperPhase==='recover',pulse=.5+.5*Math.sin(t*(warning?18:7)),c=burst?0xff315d:(warning?(pulse>.5?0xffffff:0xffb12b):(recover?0x49ff79:0xffd84d)),e=burst?0xa20d38:(warning?0xff7a00:(recover?0x149343:0xa95a00));"
-          new="const warning=firstSweeperPhase==='warning',burst=firstSweeperPhase==='burst',recover=firstSweeperPhase==='recover',cleared=firstSweeperPhase==='cleared',pulse=.5+.5*Math.sin(t*(warning?18:7)),c=cleared?0x49ff79:(burst?0xff315d:(warning?(pulse>.5?0xffffff:0xffb12b):(recover?0x49ff79:0xffd84d))),e=cleared?0x149343:(burst?0xa20d38:(warning?0xff7a00:(recover?0x149343:0xa95a00)));"
-          if old not in s: raise SystemExit('phase color anchor missing')
-          s=s.replace(old,new,1)
-
-          old="arm.material.color.setHex(burst?0xff315d:(warning?0xffb12b:(recover?0x49ff79:0xff557c)));arm.material.emissive.setHex(burst?0xa20d38:(warning?0xff7a00:(recover?0x149343:0x000000)));arm.material.emissiveIntensity=burst?1.4:(warning?.65+1.05*pulse:(recover?.85:0));return burst}"
-          new="arm.material.color.setHex(cleared?0x49ff79:(burst?0xff315d:(warning?0xffb12b:(recover?0x49ff79:0xff557c))));arm.material.emissive.setHex(cleared?0x149343:(burst?0xa20d38:(warning?0xff7a00:(recover?0x149343:0x000000))));arm.material.emissiveIntensity=cleared?1.05:(burst?1.4:(warning?.65+1.05*pulse:(recover?.85:0)));return burst}"
-          if old not in s: raise SystemExit('arm visual anchor missing')
-          s=s.replace(old,new,1)
-
-          old="(firstSweeperPhase==='recover'?'SWEEPER · ОКНО ПРОХОДА':'НЕСУ')"
-          new="(firstSweeperPhase==='recover'?'SWEEPER · ОКНО ПРОХОДА':(firstSweeperPhase==='cleared'?'SWEEPER · ПРОЙДЕН':'НЕСУ'))"
+          old="state.textContent=failTimer>0?failReason+' · ВОЗВРАТ…':(firstSweeperPhase==='warning'?'SWEEPER · ПРИГОТОВЬСЯ':(firstSweeperPhase==='burst'?'SWEEPER · УДАР':(firstSweeperPhase==='recover'?'SWEEPER · ОКНО ПРОХОДА':(firstSweeperPhase==='cleared'?'SWEEPER · ПРОЙДЕН':'НЕСУ'))))"
+          new="state.textContent=failTimer>0?failReason+' · ВОЗВРАТ…':carryHazardHud()"
           if old not in s: raise SystemExit('carry HUD anchor missing')
           s=s.replace(old,new,1)
 
-          s=s.replace('full 3D lift route v18 · readable sweeper hazard','full 3D lift route v19 · persistent sweeper clear state',1)
+          old='full 3D lift route v19 · persistent sweeper clear state'
+          new='full 3D lift route v20 · phased reverse second sweeper'
+          if old not in s: raise SystemExit('runtime marker text missing')
+          s=s.replace(old,new,1)
           p.write_text(s)
 
-          Path('scripts/first-sweeper-clear-check.mjs').write_text("""import fs from 'node:fs';\nconst s=fs.readFileSync('index.html','utf8');\nfor(const needle of [\"FIRST_SWEEPER_CLEAR_Z=-7.72\",\"firstSweeperCleared=true\",\"firstSweeperPhase='cleared'\",\"p.z>FIRST_SWEEPER_CLEAR_Z&&bp.z>FIRST_SWEEPER_CLEAR_Z\",\"SWEEPER · ПРОЙДЕН\"]){if(!s.includes(needle))throw new Error('missing '+needle)}\nif(!s.includes(\"firstSweeperCleared=false;sweeps[0].rotation.y=0\"))throw new Error('full reset does not re-arm sweeper');\nconsole.log('first sweeper persistent clear state: PASS');\n""")
+          Path('scripts/second-sweeper-phase-check.mjs').write_text("""import fs from 'node:fs';\nconst s=fs.readFileSync('index.html','utf8');\nfor(const needle of [\"SECOND_SWEEPER_TRIGGER_Z=-1.72\",\"SECOND_SWEEPER_CLEAR_Z=3.18\",\"SECOND_SWEEPER_SPEED=2.45\",\"function updateSecondSweeper(dt,t)\",\"secondSweeperDir*=-1\",\"secondSweeperPhase='cleared'\",\"function carryHazardHud()\",\"secondSweeperVisuals\"]){if(!s.includes(needle))throw new Error('missing '+needle)}\nif(!s.includes(\"secondSweeperCleared=false;secondSweeperDir=1;sweeps[0].rotation.y=0;sweeps[1].rotation.y=0\"))throw new Error('full reset does not re-arm second sweeper');\nif(!s.includes(\"if(Math.abs(w)>.001)sweeperHit(s,w,from,to)\"))throw new Error('second sweeper physics not phase-gated');\nconsole.log('second sweeper phased reverse hazard: PASS');\n""")
           PY
 
-      - name: Verify gameplay syntax and clear-state invariants
+      - name: Verify gameplay syntax and second sweeper invariants
         run: |
-          node scripts/first-sweeper-clear-check.mjs
+          node scripts/second-sweeper-phase-check.mjs
           python3 - <<'PY'
           from pathlib import Path
           s=Path('index.html').read_text()
@@ -77,12 +82,12 @@ jobs:
           Path('/tmp/game-module.mjs').write_text(module)
           PY
           node --check /tmp/game-module.mjs
-          node --check scripts/first-sweeper-clear-check.mjs
+          node --check scripts/second-sweeper-phase-check.mjs
 
       - name: Commit gameplay change
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add index.html scripts/first-sweeper-clear-check.mjs
-          git commit -m 'Persist first sweeper clear state after carry crossing'
+          git add index.html scripts/second-sweeper-phase-check.mjs
+          git commit -m 'Add phased reverse gameplay to second sweeper'
           git push origin HEAD:new-player-glb-overhaul
