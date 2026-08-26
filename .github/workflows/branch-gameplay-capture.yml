@@ -90,40 +90,39 @@ jobs:
           await sample('picked');
           await page.screenshot({path:'artifacts/stages/01-picked.png'});
 
-          // Real pit approach: run and jump while carrying.
-          await page.keyboard.down('ShiftLeft');
+          // Reach the first pit using genuine player controls while carrying.
           await page.keyboard.down('KeyW');
-          await observeFor(640);
+          await observeFor(760);
           await page.keyboard.press('Space');
           await observeFor(900);
           await page.keyboard.up('KeyW');
-          await page.keyboard.up('ShiftLeft');
-          await observeFor(420);
+          await observeFor(320);
           await sample('first-pit');
           await page.screenshot({path:'artifacts/stages/02-first-pit.png'});
 
-          // Continue with diagonal input and another jump so lift/ceiling and
-          // moving-platform collision code is exercised by genuine controls.
-          await page.keyboard.down('KeyD');
+          // The first lift is a straight carry route. Do not steer diagonally into
+          // its side rails: approach the lower dock, allow one full bottom window,
+          // then walk across while the runtime boarding-hold keeps the lift docked.
+          await hold(['KeyW'],650);
+          await observeFor(1700);
+          await page.screenshot({path:'artifacts/stages/03-lift-wait.png'});
           await page.keyboard.down('KeyW');
-          await observeFor(520);
+          await observeFor(2300);
           await page.keyboard.press('Space');
-          await observeFor(850);
-          await page.keyboard.up('KeyD');
+          await observeFor(650);
           await page.keyboard.up('KeyW');
-          await observeFor(500);
-          await sample('lift-corner-pass');
-          await page.screenshot({path:'artifacts/stages/03-lift.png'});
+          await observeFor(350);
+          await sample('lift-straight-pass');
+          await page.screenshot({path:'artifacts/stages/04-lift-exit.png'});
 
-          // Push farther into the obstacle course. The watcher records every
-          // gameplay state transition, including collisions, falls and checkpoint.
-          await page.keyboard.down('ShiftLeft');
+          // Continue straight into the first sweeper/hazard. This is deliberately
+          // real input rather than teleporting or mutating module state.
           await page.keyboard.down('KeyW');
-          await observeFor(5200);
+          await observeFor(4200);
           await page.keyboard.up('KeyW');
-          await page.keyboard.up('ShiftLeft');
-          await observeFor(900);
+          await observeFor(650);
           await sample('hazard-run');
+          await page.screenshot({path:'artifacts/stages/05-hazard.png'});
 
           const finalState = await stateText();
           const loadExists = await page.locator('#load').count();
@@ -149,7 +148,7 @@ jobs:
           if(finalState === 'ОШИБКА') throw new Error('Runtime ended in error state');
           if(!observedStates.includes('НЕСУ')) throw new Error(`Brainrot was never carried: ${observedStates.join(' | ')}`);
           if(distinctStates.size < 3) throw new Error(`Gameplay state coverage too small: ${[...distinctStates].join(' | ')}`);
-          if(!meaningfulCourseEvents.length) throw new Error(`No real obstacle-course event observed; capture did not prove pit/lift/hazard interaction: ${observedStates.join(' | ')}`);
+          if(!meaningfulCourseEvents.length) throw new Error(`No real obstacle-course event observed; straight lift route did not prove pit/lift/hazard interaction: ${observedStates.join(' | ')}`);
           if(consoleErrors.length) throw new Error(consoleErrors.join('\n'));
 
           await context.close();
