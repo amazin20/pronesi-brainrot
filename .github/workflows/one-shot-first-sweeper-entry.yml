@@ -1,4 +1,4 @@
-name: One-shot first sweeper entry gameplay patch
+name: One-shot first sweeper burst gameplay patch
 
 on:
   push:
@@ -19,33 +19,39 @@ jobs:
           ref: new-player-glb-overhaul
           fetch-depth: 0
 
-      - name: Patch real lift to first sweeper transition
+      - name: Convert first sweeper into warning burst recovery hazard
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p=Path('index.html')
           s=p.read_text()
-          old="const sweeps=[-9,1].map((z,i)=>{const g=new THREE.Group();g.position.set(0,.9,z);const b=new THREE.Mesh(new THREE.BoxGeometry(8,.28,.4),mat(0xff557c));g.add(b);scene.add(g);return g});"
-          new="const sweeps=[-9,1].map((z,i)=>{const g=new THREE.Group();g.position.set(0,.9,z);const b=new THREE.Mesh(new THREE.BoxGeometry(8,.28,.4),mat(0xff557c));g.add(b);scene.add(g);return g});const FIRST_SWEEPER_TRIGGER_Z=-11.05,FIRST_SWEEPER_WARN=.72;const sweeperEntryPad=box(0,.035,-11.08,3.7,.07,1.35,0xffd84d);sweeperEntryPad.material.emissive=new THREE.Color(0xa95a00);sweeperEntryPad.material.emissiveIntensity=.7;const sweeperEntryL=box(-1.78,.7,-10.42,.16,1.4,.16,0xffd84d),sweeperEntryR=box(1.78,.7,-10.42,.16,1.4,.16,0xffd84d),sweeperEntryTop=box(0,1.37,-10.42,3.7,.16,.16,0xffd84d);[sweeperEntryL,sweeperEntryR,sweeperEntryTop].forEach(o=>{o.material.emissive=new THREE.Color(0xa95a00);o.material.emissiveIntensity=.75});"
-          if old not in s: raise SystemExit('sweeper geometry anchor missing')
+
+          old="const FIRST_SWEEPER_TRIGGER_Z=-11.05,FIRST_SWEEPER_WARN=.72;"
+          new="const FIRST_SWEEPER_TRIGGER_Z=-11.05,FIRST_SWEEPER_WARN=.72,FIRST_SWEEPER_BURST=1.05,FIRST_SWEEPER_RECOVER=.72,FIRST_SWEEPER_BURST_SPEED=-2.65;"
+          if old not in s: raise SystemExit('sweeper constants anchor missing')
           s=s.replace(old,new,1)
-          old="let yaw=0,vy=0,on=true,carry=false,pick=0,win=false,lock=0,hitLock=0,checkpoint=false,checkpointFlash=0,failTimer=0,failReason='',playerRideVX=0,playerRideVY=0,playerRideVZ=0,brainRideVX=0,brainRideVY=0,brainRideVZ=0,playerMomentumX=0,playerMomentumZ=0,playerWasRiding=false,brainWasRiding=false,playerRidingNow=false,brainRidingNow=false,liftBlocked=false;"
-          new="let yaw=0,vy=0,on=true,carry=false,pick=0,win=false,lock=0,hitLock=0,checkpoint=false,checkpointFlash=0,failTimer=0,failReason='',playerRideVX=0,playerRideVY=0,playerRideVZ=0,brainRideVX=0,brainRideVY=0,brainRideVZ=0,playerMomentumX=0,playerMomentumZ=0,playerWasRiding=false,brainWasRiding=false,playerRidingNow=false,brainRidingNow=false,liftBlocked=false,firstSweeperPhase='idle',firstSweeperWarn=0;"
-          if old not in s: raise SystemExit('state anchor missing')
+
+          old="liftBlocked=false,firstSweeperPhase='idle',firstSweeperWarn=0;"
+          new="liftBlocked=false,firstSweeperPhase='idle',firstSweeperTimer=0;"
+          if old not in s: raise SystemExit('sweeper state anchor missing')
           s=s.replace(old,new,1)
-          old="function reset(forceStart=false){const useCheckpoint=checkpoint&&!forceStart;p.copy(useCheckpoint?CHECKPOINT_PLAYER:START_PLAYER);bp.copy(useCheckpoint?CHECKPOINT_BRAINROT:START_BRAINROT);bv.set(0,0,0);vy=0;on=true;carry=false;pick=0;win=false;hitLock=0;failTimer=0;failReason='';playerRideVX=playerRideVY=playerRideVZ=brainRideVX=brainRideVY=brainRideVZ=playerMomentumX=playerMomentumZ=0;playerWasRiding=brainWasRiding=playerRidingNow=brainRidingNow=false;done.classList.remove('on');act('Idle',.1);state.textContent=useCheckpoint?'ВОЗВРАТ НА ЧЕКПОИНТ':'СВОБОДЕН'}"
-          new="function reset(forceStart=false){const useCheckpoint=checkpoint&&!forceStart;p.copy(useCheckpoint?CHECKPOINT_PLAYER:START_PLAYER);bp.copy(useCheckpoint?CHECKPOINT_BRAINROT:START_BRAINROT);bv.set(0,0,0);vy=0;on=true;carry=false;pick=0;win=false;hitLock=0;failTimer=0;failReason='';playerRideVX=playerRideVY=playerRideVZ=brainRideVX=brainRideVY=brainRideVZ=playerMomentumX=playerMomentumZ=0;playerWasRiding=brainWasRiding=playerRidingNow=brainRidingNow=false;if(!useCheckpoint){firstSweeperPhase='idle';firstSweeperWarn=0;sweeps[0].rotation.y=0}done.classList.remove('on');act('Idle',.1);state.textContent=useCheckpoint?'ВОЗВРАТ НА ЧЕКПОИНТ':'СВОБОДЕН'}"
-          if old not in s: raise SystemExit('reset anchor missing')
+
+          old="if(!useCheckpoint){firstSweeperPhase='idle';firstSweeperWarn=0;sweeps[0].rotation.y=0}"
+          new="if(!useCheckpoint){firstSweeperPhase='idle';firstSweeperTimer=0;sweeps[0].rotation.y=0}"
+          if old not in s: raise SystemExit('sweeper reset anchor missing')
           s=s.replace(old,new,1)
-          old="const SWEEPER_ARC_STEP=.06,SWEEPER_RADIUS=4.15,SWEEPER_HALF_HEIGHT=.14,PLAYER_SWEEPER_HEIGHT=2.0,BRAINROT_SWEEPER_HEIGHT=1.12;function sweeperHit"
-          new="const SWEEPER_ARC_STEP=.06,SWEEPER_RADIUS=4.15,SWEEPER_HALF_HEIGHT=.14,PLAYER_SWEEPER_HEIGHT=2.0,BRAINROT_SWEEPER_HEIGHT=1.12;function updateFirstSweeperEntry(dt,t){if(firstSweeperPhase==='idle'&&p.z>FIRST_SWEEPER_TRIGGER_Z&&failTimer<=0&&!win){firstSweeperPhase='warning';firstSweeperWarn=FIRST_SWEEPER_WARN;state.textContent='SWEEPER ГОТОВИТСЯ · ВНИМАНИЕ'}else if(firstSweeperPhase==='warning'){firstSweeperWarn=Math.max(0,firstSweeperWarn-dt);if(firstSweeperWarn===0){firstSweeperPhase='active';state.textContent='SWEEPER АКТИВЕН'}}const warning=firstSweeperPhase==='warning',active=firstSweeperPhase==='active',pulse=.5+.5*Math.sin(t*18),c=active?0xff557c:(warning?(pulse>.5?0xffffff:0xffb12b):0xffd84d);sweeperEntryPad.material.color.setHex(c);sweeperEntryPad.material.emissive.setHex(warning?0xff7a00:(active?0x7d102e:0xa95a00));sweeperEntryPad.material.emissiveIntensity=warning?1.4+1.2*pulse:(active?1.05:.7);[sweeperEntryL,sweeperEntryR,sweeperEntryTop].forEach(o=>{o.material.color.setHex(c);o.material.emissive.setHex(warning?0xff7a00:(active?0x7d102e:0xa95a00));o.material.emissiveIntensity=warning?1.2+1.1*pulse:(active?1:.75)});return active}function sweeperHit"
-          if old not in s: raise SystemExit('sweeper function anchor missing')
+
+          start=s.index("function updateFirstSweeperEntry(dt,t){")
+          end=s.index("function sweeperHit",start)
+          replacement="""function updateFirstSweeperEntry(dt,t){if(firstSweeperPhase==='idle'&&p.z>FIRST_SWEEPER_TRIGGER_Z&&failTimer<=0&&!win){firstSweeperPhase='warning';firstSweeperTimer=FIRST_SWEEPER_WARN;state.textContent='SWEEPER · ПРИГОТОВЬСЯ'}else if(firstSweeperPhase!=='idle'){firstSweeperTimer=Math.max(0,firstSweeperTimer-dt);if(firstSweeperTimer===0){if(firstSweeperPhase==='warning'){firstSweeperPhase='burst';firstSweeperTimer=FIRST_SWEEPER_BURST;state.textContent='SWEEPER · УДАР'}else if(firstSweeperPhase==='burst'){firstSweeperPhase='recover';firstSweeperTimer=FIRST_SWEEPER_RECOVER;state.textContent='SWEEPER · ОКНО ПРОХОДА'}else{firstSweeperPhase='warning';firstSweeperTimer=FIRST_SWEEPER_WARN;state.textContent='SWEEPER · СНОВА ГОТОВИТСЯ'}}}const warning=firstSweeperPhase==='warning',burst=firstSweeperPhase==='burst',recover=firstSweeperPhase==='recover',pulse=.5+.5*Math.sin(t*(warning?18:7)),c=burst?0xff315d:(warning?(pulse>.5?0xffffff:0xffb12b):(recover?0x49ff79:0xffd84d)),e=burst?0xa20d38:(warning?0xff7a00:(recover?0x149343:0xa95a00));sweeperEntryPad.material.color.setHex(c);sweeperEntryPad.material.emissive.setHex(e);sweeperEntryPad.material.emissiveIntensity=warning?1.5+1.25*pulse:(burst?1.7:(recover?1.25:.7));[sweeperEntryL,sweeperEntryR,sweeperEntryTop].forEach(o=>{o.material.color.setHex(c);o.material.emissive.setHex(e);o.material.emissiveIntensity=warning?1.3+1.05*pulse:(burst?1.55:(recover?1.1:.75))});return burst}function sweeperHit"""
+          s=s[:start]+replacement+s[end+len("function sweeperHit"):]
+
+          old="const firstSweeperActive=updateFirstSweeperEntry(dt,t);sweeps.forEach((s,i)=>{const w=i?1.5:(firstSweeperActive?-1.7:0),from=s.rotation.y,to=from+w*dt;if(i||firstSweeperActive)sweeperHit(s,w,from,to);s.rotation.y=to});"
+          new="const firstSweeperActive=updateFirstSweeperEntry(dt,t);sweeps.forEach((s,i)=>{const w=i?1.5:(firstSweeperActive?FIRST_SWEEPER_BURST_SPEED:0),from=s.rotation.y,to=from+w*dt;if(i||firstSweeperActive)sweeperHit(s,w,from,to);s.rotation.y=to});"
+          if old not in s: raise SystemExit('sweeper tick anchor missing')
           s=s.replace(old,new,1)
-          old="hitLock=Math.max(0,hitLock-dt);if(failTimer>0){failTimer=Math.max(0,failTimer-dt);if(failTimer===0)reset()}sweeps.forEach((s,i)=>{const w=i?1.5:-1.7,from=s.rotation.y,to=from+w*dt;sweeperHit(s,w,from,to);s.rotation.y=to});"
-          new="hitLock=Math.max(0,hitLock-dt);if(failTimer>0){failTimer=Math.max(0,failTimer-dt);if(failTimer===0)reset()}const firstSweeperActive=updateFirstSweeperEntry(dt,t);sweeps.forEach((s,i)=>{const w=i?1.5:(firstSweeperActive?-1.7:0),from=s.rotation.y,to=from+w*dt;if(i||firstSweeperActive)sweeperHit(s,w,from,to);s.rotation.y=to});"
-          if old not in s: raise SystemExit('tick sweeper anchor missing')
-          s=s.replace(old,new,1)
-          s=s.replace('full 3D lift route v15','full 3D lift route v16 · staged sweeper entry',1)
+
+          s=s.replace('full 3D lift route v16 · staged sweeper entry','full 3D lift route v17 · burst sweeper cycle',1)
           p.write_text(s)
           PY
 
@@ -54,11 +60,13 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           s=Path('index.html').read_text()
-          assert "FIRST_SWEEPER_WARN=.72" in s
-          assert "firstSweeperPhase='warning'" in s
-          assert "firstSweeperActive=updateFirstSweeperEntry(dt,t)" in s
-          assert "if(i||firstSweeperActive)sweeperHit" in s
-          assert "sweeperEntryPad" in s
+          assert "FIRST_SWEEPER_BURST=1.05" in s
+          assert "FIRST_SWEEPER_RECOVER=.72" in s
+          assert "FIRST_SWEEPER_BURST_SPEED=-2.65" in s
+          assert "firstSweeperPhase='burst'" in s
+          assert "firstSweeperPhase='recover'" in s
+          assert "SWEEPER · ОКНО ПРОХОДА" in s
+          assert "firstSweeperActive?FIRST_SWEEPER_BURST_SPEED:0" in s
           module=s.split('<script type="module">',1)[1].split('</script>',1)[0]
           Path('/tmp/game-module.mjs').write_text(module)
           PY
@@ -69,5 +77,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
-          git commit -m 'Stage first sweeper entry after lift'
+          git commit -m 'Add burst and recovery cycle to first sweeper'
           git push origin HEAD:new-player-glb-overhaul
