@@ -1,0 +1,85 @@
+name: One-shot First Lift Safety Gate
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/one-shot-first-lift-safety-gate.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Patch real first-lift safety gate
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old="const LIFT_Z=(PITS[0][0]+PITS[0][1])*.5,LIFT_HALF_X=1.65,LIFT_HALF_Z=.62,LIFT_DOCK_DEPTH=.34,LIFT_DOCK_HALF_X=1.78,LIFT_BASE_Y=-.04,LIFT_TRAVEL_Y=1.65,LIFT_CEILING_BOTTOM=3.5"
+          new="const LIFT_Z=(PITS[0][0]+PITS[0][1])*.5,LIFT_HALF_X=1.65,LIFT_HALF_Z=.62,LIFT_DOCK_DEPTH=.34,LIFT_DOCK_HALF_X=1.78,LIFT_GATE_Z=PITS[0][0]-.22,LIFT_GATE_HALF_X=1.9,LIFT_GATE_CLOSED_Y=.72,LIFT_GATE_OPEN_Y=2.72,LIFT_BASE_Y=-.04,LIFT_TRAVEL_Y=1.65,LIFT_CEILING_BOTTOM=3.5"
+          assert old in s
+          s=s.replace(old,new,1)
+          old="const liftApproach=box(0,.035,LIFT_Z-1.18,3.25,.07,.72,0x45f4ff),liftExit=box(0,.035,LIFT_Z+1.18,3.25,.07,.72,0x49ff79);[liftApproach,liftExit].forEach((o,i)=>{o.material.emissive=new THREE.Color(i?0x19b24e:0x0e98bd);o.material.emissiveIntensity=1.05});"
+          new=old+"const liftGatePostL=box(-LIFT_GATE_HALF_X,.92,LIFT_GATE_Z,.16,1.84,.16,0xffb12b),liftGatePostR=box(LIFT_GATE_HALF_X,.92,LIFT_GATE_Z,.16,1.84,.16,0xffb12b),liftSafetyGate=box(0,LIFT_GATE_CLOSED_Y,LIFT_GATE_Z,LIFT_GATE_HALF_X*2,.22,.22,0xff315d),liftGatePad=box(0,.025,LIFT_GATE_Z-.38,LIFT_GATE_HALF_X*2+.2,.05,.62,0xffb12b);[liftGatePostL,liftGatePostR,liftSafetyGate,liftGatePad].forEach(o=>{o.material.emissive=new THREE.Color(o===liftSafetyGate?0xa20d38:0xb86a00);o.material.emissiveIntensity=.82});"
+          assert old in s
+          s=s.replace(old,new,1)
+          old="let yaw=0,vy=0,on=true,carry=false,pick=0,win=false,lock=0,hitLock=0,checkpoint=false"
+          new="let yaw=0,vy=0,on=true,carry=false,pick=0,win=false,lock=0,hitLock=0,liftSafetyOpen=false,checkpoint=false"
+          assert old in s
+          s=s.replace(old,new,1)
+          old="const FINISH_Z_MIN=8.82,FINISH_X=3.5;function inSecondPitFunnel"
+          new="const FINISH_Z_MIN=8.82,FINISH_X=3.5;function liftSafetyGateBlocks(x,z,r=.4){return !liftSafetyOpen&&Math.abs(z-LIFT_GATE_Z)<.19+r*.35&&Math.abs(x)<LIFT_GATE_HALF_X+r}function inSecondPitFunnel"
+          assert old in s
+          s=s.replace(old,new,1)
+          old="function blocked(x,z){if(Math.abs(x)>4.55||z<-23||z>11)return true;"
+          new="function blocked(x,z){if(Math.abs(x)>4.55||z<-23||z>11)return true;if(liftSafetyGateBlocks(x,z,.4))return true;"
+          assert old in s
+          s=s.replace(old,new,1)
+          old="function brainrotBlocked(x,z,r=.38){if(Math.abs(x)>4.55-r||z<-23+r||z>11-r)return true;"
+          new="function brainrotBlocked(x,z,r=.38){if(Math.abs(x)>4.55-r||z<-23+r||z>11-r)return true;if(liftSafetyGateBlocks(x,z,r))return true;"
+          assert old in s
+          s=s.replace(old,new,1)
+          old="const dy=newY-oldY,invDt=1/Math.max(dt,.001);liftPlatform.position.y=newY;"
+          new="const dy=newY-oldY,invDt=1/Math.max(dt,.001);const docked=Math.abs(newY-LIFT_BASE_Y)<.015;liftSafetyOpen=docked||holdForCarry||p.z>LIFT_GATE_Z+.22;const gateTarget=liftSafetyOpen?LIFT_GATE_OPEN_Y:LIFT_GATE_CLOSED_Y,gateStep=4.8*dt;liftSafetyGate.position.y+=Math.max(-gateStep,Math.min(gateStep,gateTarget-liftSafetyGate.position.y));const gatePulse=.5+.5*Math.sin(t*12),gateClosed=!liftSafetyOpen&&liftSafetyGate.position.y<LIFT_GATE_CLOSED_Y+.35;liftSafetyGate.material.color.setHex(liftSafetyOpen?0x49ff79:0xff315d);liftSafetyGate.material.emissive.setHex(liftSafetyOpen?0x149343:0xa20d38);liftSafetyGate.material.emissiveIntensity=liftSafetyOpen?1.15:.9+1.0*gatePulse;liftGatePad.material.color.setHex(liftSafetyOpen?0x49ff79:0xffb12b);liftGatePad.material.emissive.setHex(liftSafetyOpen?0x149343:0xb86a00);liftGatePad.material.emissiveIntensity=liftSafetyOpen?1.1:.72+.65*gatePulse;if(gateClosed&&!win&&failTimer<=0&&Math.abs(p.z-LIFT_GATE_Z)<1.15)state.textContent='ЛИФТ В ПУТИ · ЖДИ ЗЕЛЁНЫЕ ВОРОТА';liftPlatform.position.y=newY;"
+          assert old in s
+          s=s.replace(old,new,1)
+          old="const docked=Math.abs(newY-LIFT_BASE_Y)<.015;liftPlatform.material.emissiveIntensity="
+          new="liftPlatform.material.emissiveIntensity="
+          assert old in s
+          s=s.replace(old,new,1)
+          s=s.replace('full 3D lift route v31 · progressive charged finish','full 3D lift route v32 · guarded lift boarding',1)
+          p.write_text(s)
+          PY
+      - name: Verify runtime syntax and safety-gate invariants
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          checks=[
+            'LIFT_GATE_Z=PITS[0][0]-.22',
+            'function liftSafetyGateBlocks',
+            'if(liftSafetyGateBlocks(x,z,.4))return true',
+            'if(liftSafetyGateBlocks(x,z,r))return true',
+            "liftSafetyOpen=docked||holdForCarry||p.z>LIFT_GATE_Z+.22",
+            "ЛИФТ В ПУТИ · ЖДИ ЗЕЛЁНЫЕ ВОРОТА",
+            'full 3D lift route v32 · guarded lift boarding'
+          ]
+          for c in checks: assert c in s,c
+          a=s.index('<script type="module">')+len('<script type="module">')
+          b=s.index('</script></body>',a)
+          Path('/tmp/runtime.mjs').write_text(s[a:b])
+          print('safety gate invariants: PASS')
+          PY
+          node --check /tmp/runtime.mjs
+      - name: Commit gameplay change and remove one-shot workflow
+        run: |
+          rm .github/workflows/one-shot-first-lift-safety-gate.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html .github/workflows/one-shot-first-lift-safety-gate.yml
+          git commit -m 'Guard first lift pit with synchronized safety gate'
+          git push origin HEAD:new-player-glb-overhaul
