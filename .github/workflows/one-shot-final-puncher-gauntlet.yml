@@ -20,74 +20,45 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Patch final physical puncher gauntlet
-        shell: bash
+      - name: Patch synchronized gate collision and anti-crush
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p=Path('index.html')
           s=p.read_text()
-          old="clean build · new GLB only · full 3D lift route v25 · latched checkpoint gate"
-          new="clean build · new GLB only · full 3D lift route v26 · final puncher gauntlet"
-          assert old in s
+          old="const FINISH_Z_MIN=8.82,FINISH_X=3.5;function liftSafetyGateBlocks(x,z,r=.4){return !liftSafetyOpen&&Math.abs(z-LIFT_GATE_Z)<.19+r*.35&&Math.abs(x)<LIFT_GATE_HALF_X+r}"
+          new="const FINISH_Z_MIN=8.82,FINISH_X=3.5,LIFT_GATE_BAR_HALF_Y=.11,LIFT_GATE_PLAYER_TOP=2.12,LIFT_GATE_BRAIN_TOP=1.68;function liftSafetyGateBlocks(x,z,r=.4,top=LIFT_GATE_PLAYER_TOP){const overlapsXZ=Math.abs(z-LIFT_GATE_Z)<.19+r*.35&&Math.abs(x)<LIFT_GATE_HALF_X+r,barBottom=liftSafetyGate.position.y-LIFT_GATE_BAR_HALF_Y;return overlapsXZ&&barBottom<top}"
+          assert old in s, 'gate collision function not found'
           s=s.replace(old,new,1)
-
-          anchor="const finish=box(0,.1,10,7.35,.2,1.9,0x49ff79);"
-          insert="""const FINAL_GAUNTLET_Z1=7.55,FINAL_GAUNTLET_Z2=8.38,FINAL_GAUNTLET_HOME_X=3.42,FINAL_GAUNTLET_IN_X=.92,FINAL_GAUNTLET_HALF_X=.68,FINAL_GAUNTLET_HALF_Z=.34,FINAL_GAUNTLET_CLEAR_Z=8.92,FINAL_GAUNTLET_SPEED=2.35;const finalGauntletPad1=box(0,.025,FINAL_GAUNTLET_Z1,6.65,.05,.72,0xffb12b),finalGauntletPad2=box(0,.025,FINAL_GAUNTLET_Z2,6.65,.05,.72,0xff557c);[finalGauntletPad1,finalGauntletPad2].forEach(o=>{o.material.emissive=new THREE.Color(o.material.color);o.material.emissiveIntensity=.62});const finalPunchers=[[-1,FINAL_GAUNTLET_Z1,0xffb12b],[1,FINAL_GAUNTLET_Z2,0xff557c]].map(([side,z,c],i)=>{const mesh=box(side*FINAL_GAUNTLET_HOME_X,.62,z,FINAL_GAUNTLET_HALF_X*2,1.08,FINAL_GAUNTLET_HALF_Z*2,c);mesh.material.emissive=new THREE.Color(c);mesh.material.emissiveIntensity=.8;const cap=box(side*(FINAL_GAUNTLET_HOME_X-FINAL_GAUNTLET_HALF_X-.12),.62,z,.18,1.22,.84,0xffffff);cap.material.emissive=new THREE.Color(c);cap.material.emissiveIntensity=1.15;return{mesh,cap,side,z,lastX:mesh.position.x,index:i}});const finalGateL=box(-3.35,1.12,7.96,.18,2.2,1.95,0x2a315f),finalGateR=box(3.35,1.12,7.96,.18,2.2,1.95,0x2a315f);[finalGateL,finalGateR].forEach(o=>{o.material.metalness=.25;o.material.roughness=.32});
-"""+anchor
-          assert anchor in s
-          s=s.replace(anchor,insert,1)
-
-          old="secondPitBoarding=false,secondPitBoardingIndex=-1,secondPitCrossing=false;"
-          new="secondPitBoarding=false,secondPitBoardingIndex=-1,secondPitCrossing=false,finalGauntletCleared=false;"
-          assert old in s
-          s=s.replace(old,new,1)
-
-          old="checkpointPlayerLatched=false;checkpointBrainrotLatched=false;sweeps[0].rotation.y=0;sweeps[1].rotation.y=0}"
-          new="checkpointPlayerLatched=false;checkpointBrainrotLatched=false;finalGauntletCleared=false;sweeps[0].rotation.y=0;sweeps[1].rotation.y=0}"
-          assert old in s
-          s=s.replace(old,new,1)
-
-          anchor="const clock=new THREE.Clock(),cg=new THREE.Vector3(),lg=new THREE.Vector3();"
-          fn="""function updateFinalGauntlet(t,dt){if(!finalGauntletCleared&&checkpoint&&p.z>FINAL_GAUNTLET_CLEAR_Z&&bp.z>FINAL_GAUNTLET_CLEAR_Z){finalGauntletCleared=true;state.textContent='ФИНАЛЬНЫЕ ТОЛКАТЕЛИ · ПРОЙДЕНЫ'}const active=checkpoint&&!finalGauntletCleared&&!win&&failTimer<=0,pulse=.5+.5*Math.sin(t*10);finalPunchers.forEach((h,i)=>{const oldX=h.mesh.position.x,phase=.5+.5*Math.sin(t*FINAL_GAUNTLET_SPEED+i*Math.PI),targetX=active?h.side*(FINAL_GAUNTLET_HOME_X-(FINAL_GAUNTLET_HOME_X-FINAL_GAUNTLET_IN_X)*phase):h.side*FINAL_GAUNTLET_HOME_X,maxStep=5.8*dt,newX=oldX+Math.max(-maxStep,Math.min(maxStep,targetX-oldX)),vx=(newX-oldX)/Math.max(dt,.001);h.lastX=oldX;h.mesh.position.x=newX;h.cap.position.x=newX-h.side*(FINAL_GAUNTLET_HALF_X+.12);const extended=Math.abs(newX)<1.65,c=finalGauntletCleared?0x49ff79:(extended?0xff315d:(i?0xff557c:0xffb12b));h.mesh.material.color.setHex(c);h.mesh.material.emissive.setHex(finalGauntletCleared?0x149343:c);h.mesh.material.emissiveIntensity=finalGauntletCleared?1.0:(extended?1.35+.45*pulse:.72);h.cap.material.emissive.setHex(finalGauntletCleared?0x149343:c);h.cap.material.emissiveIntensity=finalGauntletCleared?1.0:(extended?1.7:1.05);const minX=Math.min(oldX,newX)-FINAL_GAUNTLET_HALF_X,maxX=Math.max(oldX,newX)+FINAL_GAUNTLET_HALF_X,dir=Math.sign(vx||(-h.side))||1;function hitBody(x,z,r,isBrain){if(!active||hitLock>0||Math.abs(z-h.z)>FINAL_GAUNTLET_HALF_Z+r||x<minX-r||x>maxX+r)return false;if(isBrain){bv.x+=dir*5.4;bv.y=Math.max(bv.y,2.7);if(carry){carry=false;state.textContent='ТОЛКАТЕЛЬ ВЫБИЛ БРЕЙНРОТ!'}else state.textContent='БРЕЙНРОТ СБИТ ТОЛКАТЕЛЕМ'}else{movePlayerSlice(dir*.5,0);playerMomentumX+=dir*4.7;vy=Math.max(vy,2.9);on=false;if(carry){carry=false;bv.x=dir*6.0;bv.z=1.0;bv.y=Math.max(bv.y,3.0);state.textContent='ФИНАЛЬНЫЙ УДАР · БРЕЙНРОТ ВЫБИТ!'}else state.textContent='ФИНАЛЬНЫЙ ТОЛКАТЕЛЬ · УДАР'}hitLock=.2;return true}if(p.y<1.25)hitBody(p.x,p.z,.42,false);if(hitLock<=0&&bp.y<1.55)hitBody(bp.x,bp.z,.38,true)});finalGauntletPad1.material.emissiveIntensity=finalGauntletCleared?1.15:(active?.65+.7*pulse:.35);finalGauntletPad2.material.emissiveIntensity=finalGauntletCleared?1.15:(active?.65+.7*(1-pulse):.35)}
-"""+anchor
-          assert anchor in s
-          s=s.replace(anchor,fn,1)
-
-          anchor="moveLiftPlatform(t,dt);const framePlayerStart=p.clone()"
-          repl="moveLiftPlatform(t,dt);updateFinalGauntlet(t,dt);const framePlayerStart=p.clone()"
-          assert anchor in s
-          s=s.replace(anchor,repl,1)
+          old2="const docked=Math.abs(newY-LIFT_BASE_Y)<.015;liftSafetyOpen=docked||holdForCarry||p.z>LIFT_GATE_Z+.22;const gateTarget=liftSafetyOpen?LIFT_GATE_OPEN_Y:LIFT_GATE_CLOSED_Y,gateStep=4.8*dt;"
+          new2="const docked=Math.abs(newY-LIFT_BASE_Y)<.015,playerInGateSensor=Math.abs(p.z-LIFT_GATE_Z)<.56&&Math.abs(p.x)<LIFT_GATE_HALF_X+.45&&p.y<.55,brainInGateSensor=Math.abs(bp.z-LIFT_GATE_Z)<.56&&Math.abs(bp.x)<LIFT_GATE_HALF_X+.45&&bp.y<1.15;liftSafetyOpen=docked||holdForCarry||p.z>LIFT_GATE_Z+.22||playerInGateSensor||brainInGateSensor;const gateTarget=liftSafetyOpen?LIFT_GATE_OPEN_Y:LIFT_GATE_CLOSED_Y,gateStep=4.8*dt;"
+          assert old2 in s, 'gate state line not found'
+          s=s.replace(old2,new2,1)
+          old3="if(gateClosed&&!win&&failTimer<=0&&Math.abs(p.z-LIFT_GATE_Z)<1.15)state.textContent='ЛИФТ В ПУТИ · ЖДИ ЗЕЛЁНЫЕ ВОРОТА';"
+          new3="if((playerInGateSensor||brainInGateSensor)&&!docked&&!win&&failTimer<=0)state.textContent='ВОРОТА · ДАТЧИК БЕЗОПАСНОСТИ';else if(gateClosed&&!win&&failTimer<=0&&Math.abs(p.z-LIFT_GATE_Z)<1.15)state.textContent='ЛИФТ В ПУТИ · ЖДИ ЗЕЛЁНЫЕ ВОРОТА';"
+          assert old3 in s, 'gate status line not found'
+          s=s.replace(old3,new3,1)
+          s=s.replace('full 3D lift route v32 · guarded lift boarding','full 3D lift route v33 · physical safety gate sync',1)
           p.write_text(s)
           PY
-      - name: Verify runtime syntax and final gauntlet invariants
-        shell: bash
+      - name: Verify runtime syntax and gate invariants
         run: |
           python3 - <<'PY'
           from pathlib import Path
           s=Path('index.html').read_text()
+          assert 'barBottom=liftSafetyGate.position.y-LIFT_GATE_BAR_HALF_Y' in s
+          assert 'playerInGateSensor' in s and 'brainInGateSensor' in s
+          assert "ВОРОТА · ДАТЧИК БЕЗОПАСНОСТИ" in s
           a=s.index('<script type="module">')+len('<script type="module">')
           b=s.index('</script>',a)
           Path('/tmp/runtime.mjs').write_text(s[a:b])
-          checks=[
-            'full 3D lift route v26 · final puncher gauntlet',
-            'FINAL_GAUNTLET_Z1=7.55',
-            'FINAL_GAUNTLET_Z2=8.38',
-            'function updateFinalGauntlet(t,dt)',
-            "state.textContent='ФИНАЛЬНЫЙ УДАР · БРЕЙНРОТ ВЫБИТ!'",
-            'updateFinalGauntlet(t,dt)',
-            'finalGauntletCleared=true'
-          ]
-          for x in checks: assert x in s, x
-          assert 6.35 < 7.55 < 8.38 < 8.92 < 9.18
-          print('final puncher gauntlet invariants PASS')
+          print('lift gate physical sync invariants PASS')
           PY
           node --check /tmp/runtime.mjs
       - name: Commit gameplay patch
-        shell: bash
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
-          git commit -m 'Add physical final puncher gauntlet after checkpoint'
+          git commit -m 'Synchronize lift safety gate collision with 3D motion'
           git push origin HEAD:new-player-glb-overhaul
