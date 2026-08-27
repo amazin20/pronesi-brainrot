@@ -1,0 +1,63 @@
+name: One-shot second sweeper recovery
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/one-shot-second-sweeper-recovery.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch second sweeper safe exit and recovery
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html'); s=p.read_text()
+          s=s.replace('full 3D lift route v42 · sweeper 2 timing gate','full 3D lift route v43 · sweeper 2 recovery exit',1)
+          old='SECOND_SWEEPER_GATE_HALF_Y=.11;'
+          new='SECOND_SWEEPER_GATE_HALF_Y=.11,SECOND_SWEEPER_POST_GATE_GRACE=.55,SECOND_SWEEPER_RECOVERY_Z_MIN=3.18,SECOND_SWEEPER_RECOVERY_Z_MAX=3.55,SECOND_SWEEPER_RECOVERY_HALF_X=1.9,SECOND_SWEEPER_RECOVERY_DAMP=11.0;'
+          assert old in s; s=s.replace(old,new,1)
+          anchor='[secondSweeperStagePad,secondSweeperGateL,secondSweeperGateR,secondSweeperGate].forEach(o=>{o.material.emissive=new THREE.Color(o===secondSweeperGate?0xa20d38:0xb86a00);o.material.emissiveIntensity=.82});'
+          insert=anchor+"const secondSweeperRecoveryPad=box(0,.03,(SECOND_SWEEPER_RECOVERY_Z_MIN+SECOND_SWEEPER_RECOVERY_Z_MAX)*.5,SECOND_SWEEPER_RECOVERY_HALF_X*2,.06,SECOND_SWEEPER_RECOVERY_Z_MAX-SECOND_SWEEPER_RECOVERY_Z_MIN,0x49ff79),secondSweeperRecoveryL=box(-SECOND_SWEEPER_RECOVERY_HALF_X-.1,.34,(SECOND_SWEEPER_RECOVERY_Z_MIN+SECOND_SWEEPER_RECOVERY_Z_MAX)*.5,.12,.68,SECOND_SWEEPER_RECOVERY_Z_MAX-SECOND_SWEEPER_RECOVERY_Z_MIN,0x49ff79),secondSweeperRecoveryR=box(SECOND_SWEEPER_RECOVERY_HALF_X+.1,.34,(SECOND_SWEEPER_RECOVERY_Z_MIN+SECOND_SWEEPER_RECOVERY_Z_MAX)*.5,.12,.68,SECOND_SWEEPER_RECOVERY_Z_MAX-SECOND_SWEEPER_RECOVERY_Z_MIN,0x49ff79);[secondSweeperRecoveryPad,secondSweeperRecoveryL,secondSweeperRecoveryR].forEach(o=>{o.material.emissive=new THREE.Color(0x159b43);o.material.emissiveIntensity=.5});"
+          assert anchor in s; s=s.replace(anchor,insert,1)
+          s=s.replace('secondSweeperCleared=false,secondSweeperGateCrossing=false,secondPitBoarding=false','secondSweeperCleared=false,secondSweeperGateCrossing=false,secondSweeperPostGateGrace=0,secondPitBoarding=false',1)
+          s=s.replace('secondSweeperCleared=false;secondSweeperGateCrossing=false;secondSweeperGate.position.y=SECOND_SWEEPER_GATE_CLOSED_Y;','secondSweeperCleared=false;secondSweeperGateCrossing=false;secondSweeperPostGateGrace=0;secondSweeperGate.position.y=SECOND_SWEEPER_GATE_CLOSED_Y;',1)
+          old_release='if(secondSweeperGateCrossing&&p.z>SECOND_SWEEPER_GATE_Z+.74&&bp.z>SECOND_SWEEPER_GATE_Z+.74)secondSweeperGateCrossing=false;'
+          new_release="if(secondSweeperGateCrossing&&p.z>SECOND_SWEEPER_GATE_Z+.74&&bp.z>SECOND_SWEEPER_GATE_Z+.74){secondSweeperGateCrossing=false;secondSweeperPostGateGrace=SECOND_SWEEPER_POST_GATE_GRACE;state.textContent='SWEEPER 2 · БЕЗОПАСНЫЙ ВЫХОД'}"
+          assert old_release in s; s=s.replace(old_release,new_release,1)
+          anchor_tick='firstSweeperPostGateGrace=Math.max(0,firstSweeperPostGateGrace-dt);'
+          add_tick=anchor_tick+"secondSweeperPostGateGrace=Math.max(0,secondSweeperPostGateGrace-dt);const secondSweeperRecoveryActive=secondSweeperCleared&&p.z>SECOND_SWEEPER_RECOVERY_Z_MIN&&p.z<SECOND_SWEEPER_RECOVERY_Z_MAX&&Math.abs(p.x)<SECOND_SWEEPER_RECOVERY_HALF_X+.35&&!win&&failTimer<=0,secondSweeperRecoveryPulse=.5+.5*Math.sin(t*9);[secondSweeperRecoveryPad,secondSweeperRecoveryL,secondSweeperRecoveryR].forEach(o=>o.material.emissiveIntensity=secondSweeperRecoveryActive?1.05+.55*secondSweeperRecoveryPulse:.5);if(secondSweeperRecoveryActive){playerMomentumX*=Math.exp(-SECOND_SWEEPER_RECOVERY_DAMP*dt);playerMomentumZ*=Math.exp(-SECOND_SWEEPER_RECOVERY_DAMP*dt);if(!carry){bv.x*=Math.exp(-SECOND_SWEEPER_RECOVERY_DAMP*.78*dt);bv.z*=Math.exp(-SECOND_SWEEPER_RECOVERY_DAMP*.78*dt)}state.textContent='SWEEPER 2 · ВОССТАНОВЛЕНИЕ'}"
+          assert anchor_tick in s; s=s.replace(anchor_tick,add_tick,1)
+          old_hit="if(Math.abs(w)>.001&&(i!==0||firstSweeperPostGateGrace<=0))sweeperHit(s,w,from,to);"
+          new_hit="if(Math.abs(w)>.001&&(i!==0||firstSweeperPostGateGrace<=0)&&(i!==1||secondSweeperPostGateGrace<=0))sweeperHit(s,w,from,to);"
+          assert old_hit in s; s=s.replace(old_hit,new_hit,1)
+          p.write_text(s)
+          PY
+      - name: Verify runtime syntax and invariants
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          for x in ['full 3D lift route v43 · sweeper 2 recovery exit','SECOND_SWEEPER_POST_GATE_GRACE=.55','secondSweeperPostGateGrace=SECOND_SWEEPER_POST_GATE_GRACE','secondSweeperRecoveryActive=secondSweeperCleared','i!==1||secondSweeperPostGateGrace<=0','secondSweeperRecoveryPad=box(']: assert x in s,x
+          assert 'SECOND_SWEEPER_RECOVERY_Z_MAX=3.55' in s
+          assert 3.55-3.18 >= .35
+          start=s.index('<script type="module">')+len('<script type="module">'); end=s.index('</script>',start)
+          Path('/tmp/game.mjs').write_text(s[start:end])
+          print('second sweeper recovery invariants PASS')
+          PY
+          node --check /tmp/game.mjs
+      - name: Commit gameplay change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Add safe recovery exit after second sweeper'
+          git push origin HEAD:new-player-glb-overhaul
