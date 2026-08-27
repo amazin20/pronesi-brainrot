@@ -1,0 +1,71 @@
+name: One-shot first sweeper carry-safe approach v36
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - '.github/workflows/one-shot-first-sweeper-approach-v36.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-level:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+
+      - name: Build carry-safe first sweeper approach
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+
+          old="const sweeps=[-9,1].map((z,i)=>{const g=new THREE.Group();g.position.set(0,.9,z);const b=new THREE.Mesh(new THREE.BoxGeometry(8,.28,.4),mat(0xff557c));g.add(b);scene.add(g);return g});const FIRST_SWEEPER_TRIGGER_Z=-11.05,FIRST_SWEEPER_CLEAR_Z=-7.72,FIRST_SWEEPER_WARN=.72,FIRST_SWEEPER_BURST=1.05,FIRST_SWEEPER_RECOVER=.72,FIRST_SWEEPER_BURST_SPEED=-2.65,SECOND_SWEEPER_CYCLE=3.0"
+          new="const sweeps=[-9,1].map((z,i)=>{const g=new THREE.Group();g.position.set(0,.9,z);const b=new THREE.Mesh(new THREE.BoxGeometry(8,.28,.4),mat(0xff557c));g.add(b);scene.add(g);return g});const FIRST_SWEEPER_TRIGGER_Z=-12.45,FIRST_SWEEPER_CLEAR_Z=-7.72,FIRST_SWEEPER_WARN=.72,FIRST_SWEEPER_BURST=1.05,FIRST_SWEEPER_RECOVER=.72,FIRST_SWEEPER_BURST_SPEED=-2.65,SECOND_SWEEPER_CYCLE=3.0"
+          if old not in s: raise SystemExit('first sweeper constants anchor missing')
+          s=s.replace(old,new,1)
+
+          old="const sweeperEntryPad=box(0,.035,-11.08,3.7,.07,1.35,0xffd84d);"
+          new="const sweeperEntryPad=box(0,.035,-11.72,3.7,.07,2.62,0xffd84d);"
+          if old not in s: raise SystemExit('sweeper entry pad anchor missing')
+          s=s.replace(old,new,1)
+
+          old="const LIFT_ASSIST_Z_MIN=PITS[0][0]-.7,LIFT_ASSIST_Z_MAX=FIRST_SWEEPER_TRIGGER_Z-.38,LIFT_ASSIST_HALF_X=1.35,LIFT_ASSIST_SPEED=1.15;"
+          new="const LIFT_ASSIST_Z_MIN=PITS[0][0]-.7,LIFT_ASSIST_Z_MAX=FIRST_SWEEPER_TRIGGER_Z+.30,LIFT_ASSIST_HALF_X=1.55,LIFT_ASSIST_SPEED=1.35;"
+          if old not in s: raise SystemExit('lift assist constants anchor missing')
+          s=s.replace(old,new,1)
+
+          old='full 3D lift route v35 · carry-safe exit travelator'
+          new='full 3D lift route v36 · carry-safe sweeper approach'
+          if old not in s: raise SystemExit('runtime marker missing')
+          s=s.replace(old,new,1)
+          p.write_text(s)
+
+          Path('scripts/first-sweeper-approach-check.mjs').write_text("""import fs from 'node:fs';\nconst s=fs.readFileSync('index.html','utf8');\nfor(const needle of [\"FIRST_SWEEPER_TRIGGER_Z=-12.45\",\"LIFT_ASSIST_Z_MAX=FIRST_SWEEPER_TRIGGER_Z+.30\",\"LIFT_ASSIST_HALF_X=1.55\",\"LIFT_ASSIST_SPEED=1.35\",\"box(0,.035,-11.72,3.7,.07,2.62\",\"carry-safe sweeper approach\"]){if(!s.includes(needle))throw new Error('missing '+needle)}\nconst trigger=-12.45,sweeper=-9,warning=.72,carrySpeed=3.05,assist=1.35,assistEnd=trigger+.30;\nconst warningDistance=sweeper-trigger;\nconst warningTravel=(carrySpeed+assist)*warning;\nif(assistEnd<=trigger)throw new Error('assist does not carry player through trigger');\nif(warningDistance-warningTravel<.2)throw new Error('warning runway is too short at carry speed');\nif(warningDistance>4.2)throw new Error('warning begins too far from visible hazard');\nconsole.log('first sweeper carry-safe approach: PASS',{warningDistance,warningTravel,safetyMargin:warningDistance-warningTravel,assistEnd});\n""")
+          PY
+
+      - name: Verify gameplay syntax and approach timing
+        run: |
+          node scripts/first-sweeper-approach-check.mjs
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          module=s.split('<script type="module">',1)[1].split('</script>',1)[0]
+          Path('/tmp/game-module.mjs').write_text(module)
+          PY
+          node --check /tmp/game-module.mjs
+          node --check scripts/first-sweeper-approach-check.mjs
+
+      - name: Commit gameplay change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html scripts/first-sweeper-approach-check.mjs
+          git commit -m 'Make first sweeper approach carry-safe'
+          git push origin HEAD:new-player-glb-overhaul
