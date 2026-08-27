@@ -1,4 +1,5 @@
 name: One-shot lift carry deck clearance
+# retry corrected carry-deck patch after legacy dock QA caught a bad geometry change
 on:
   push:
     branches: [new-player-glb-overhaul]
