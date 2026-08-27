@@ -1,0 +1,16 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const s=fs.readFileSync('index.html','utf8');
+assert.match(s,/FINAL_FINISH_CHARGE=\.55,FINAL_FINISH_HOLD_Z=10\.12,FINAL_FINISH_HOLD_STRENGTH=5\.8/);
+assert.match(s,/if\(bothInFinish&&!win\)\{const holdAlpha=1-Math\.exp\(-FINAL_FINISH_HOLD_STRENGTH\*dt\)/);
+assert.match(s,/playerMomentumX\*=Math\.exp\(-14\*dt\);playerMomentumZ\*=Math\.exp\(-14\*dt\)/);
+assert.match(s,/p\.x\+=\(0-p\.x\)\*holdAlpha\*\.55;p\.z\+=\(FINAL_FINISH_HOLD_Z-p\.z\)\*holdAlpha\*\.42/);
+assert.match(s,/if\(!carry\)\{bv\.x\+=\(-bp\.x\)\*FINAL_FINISH_HOLD_STRENGTH\*dt;bv\.z\+=\(FINAL_FINISH_HOLD_Z\+\.12-bp\.z\)\*FINAL_FINISH_HOLD_STRENGTH\*dt/);
+assert.match(s,/if\(!win&&finishProgress>=1\)\{win=true/);
+const dt=1/60,k=5.8,alpha=1-Math.exp(-k*dt);
+const x0=2.7,z0=9.67;
+const x1=x0+(0-x0)*alpha*.55,z1=z0+(10.12-z0)*alpha*.42;
+assert.ok(Math.abs(x1)<Math.abs(x0),'player should move gently toward center');
+assert.ok(z1>z0&&z1<10.12,'player should move gently toward hold Z without teleport');
+assert.ok(alpha<0.12,'per-frame hold must remain soft');
+console.log('finish soft-hold regression: PASS', {alpha,x1,z1});
