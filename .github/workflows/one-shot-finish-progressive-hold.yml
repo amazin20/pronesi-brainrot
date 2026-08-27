@@ -1,0 +1,66 @@
+name: One-shot progressive finish hold
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: [.github/workflows/one-shot-finish-progressive-hold.yml]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch progressive finish capture
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old="const FINAL_FINISH_CHARGE=.55,FINAL_FINISH_HOLD_Z=10.12,FINAL_FINISH_HOLD_STRENGTH=5.8;"
+          new="const FINAL_FINISH_CHARGE=.55,FINAL_FINISH_HOLD_Z=10.12,FINAL_FINISH_HOLD_STRENGTH=5.8,FINAL_FINISH_HOLD_MIN=.34,FINAL_FINISH_PLAYER_MAX_PULL=1.35,FINAL_FINISH_BRAIN_MAX_ACCEL=11.5;"
+          assert old in s
+          s=s.replace(old,new,1)
+          old2="if(bothInFinish&&!win){const holdAlpha=1-Math.exp(-FINAL_FINISH_HOLD_STRENGTH*dt);playerMomentumX*=Math.exp(-14*dt);playerMomentumZ*=Math.exp(-14*dt);p.x+=(0-p.x)*holdAlpha*.55;p.z+=(FINAL_FINISH_HOLD_Z-p.z)*holdAlpha*.42;if(!carry){bv.x+=(-bp.x)*FINAL_FINISH_HOLD_STRENGTH*dt;bv.z+=(FINAL_FINISH_HOLD_Z+.12-bp.z)*FINAL_FINISH_HOLD_STRENGTH*dt;bv.x*=Math.exp(-7*dt);bv.z*=Math.exp(-7*dt)}}finishCharge=bothInFinish?Math.min(FINAL_FINISH_CHARGE,finishCharge+dt):Math.max(0,finishCharge-dt*2.4);"
+          new2="if(bothInFinish&&!win){const preProgress=finishCharge/FINAL_FINISH_CHARGE,holdStrength=FINAL_FINISH_HOLD_STRENGTH*(FINAL_FINISH_HOLD_MIN+(1-FINAL_FINISH_HOLD_MIN)*preProgress),holdAlpha=1-Math.exp(-holdStrength*dt),maxPlayerPull=FINAL_FINISH_PLAYER_MAX_PULL*dt;playerMomentumX*=Math.exp(-(8+6*preProgress)*dt);playerMomentumZ*=Math.exp(-(8+6*preProgress)*dt);const pullX=Math.max(-maxPlayerPull,Math.min(maxPlayerPull,(0-p.x)*holdAlpha*.55)),pullZ=Math.max(-maxPlayerPull,Math.min(maxPlayerPull,(FINAL_FINISH_HOLD_Z-p.z)*holdAlpha*.42));p.x+=pullX;p.z+=pullZ;if(!carry){const ax=Math.max(-FINAL_FINISH_BRAIN_MAX_ACCEL,Math.min(FINAL_FINISH_BRAIN_MAX_ACCEL,(-bp.x)*holdStrength)),az=Math.max(-FINAL_FINISH_BRAIN_MAX_ACCEL,Math.min(FINAL_FINISH_BRAIN_MAX_ACCEL,(FINAL_FINISH_HOLD_Z+.12-bp.z)*holdStrength));bv.x+=ax*dt;bv.z+=az*dt;bv.x*=Math.exp(-(4.5+2.5*preProgress)*dt);bv.z*=Math.exp(-(4.5+2.5*preProgress)*dt)}}finishCharge=bothInFinish?Math.min(FINAL_FINISH_CHARGE,finishCharge+dt):Math.max(0,finishCharge-dt*2.4);"
+          assert old2 in s
+          s=s.replace(old2,new2,1)
+          s=s.replace('full 3D lift route v30 · soft-hold charged finish','full 3D lift route v31 · progressive charged finish',1)
+          p.write_text(s)
+          PY
+      - name: Verify runtime syntax and invariants
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          assert 'FINAL_FINISH_HOLD_MIN=.34' in s
+          assert 'FINAL_FINISH_PLAYER_MAX_PULL=1.35' in s
+          assert 'FINAL_FINISH_BRAIN_MAX_ACCEL=11.5' in s
+          assert 'holdStrength=FINAL_FINISH_HOLD_STRENGTH*(FINAL_FINISH_HOLD_MIN+(1-FINAL_FINISH_HOLD_MIN)*preProgress)' in s
+          assert 'full 3D lift route v31 · progressive charged finish' in s
+          a=s.index('<script type="module">')+len('<script type="module">')
+          b=s.index('</script>',a)
+          Path('/tmp/runtime.mjs').write_text(s[a:b])
+          PY
+          node --check /tmp/runtime.mjs
+          node - <<'NODE'
+          const base=5.8,min=.34,maxPull=1.35,dt=1/60;
+          const early=base*(min+(1-min)*0);
+          const late=base*(min+(1-min)*1);
+          if(!(early>1.9&&early<2.1)) throw Error('early hold strength');
+          if(Math.abs(late-base)>1e-9) throw Error('late hold strength');
+          if(maxPull*dt>.023) throw Error('player pull cap too high');
+          console.log('progressive finish hold PASS',{early,late,maxPullPerFrame:maxPull*dt});
+          NODE
+      - name: Commit gameplay patch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Make charged finish hold progressive'
+          git push origin HEAD:new-player-glb-overhaul
