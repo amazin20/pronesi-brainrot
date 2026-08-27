@@ -1,0 +1,81 @@
+name: One Shot First Lift Route Lock
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/one-shot-first-lift-route-lock.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+
+      - name: Patch first lift route lock
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          s=s.replace('full 3D lift route v36 · carry-safe sweeper approach','full 3D lift route v37 · latched carry crossing')
+          old="liftBlocked=false,firstSweeperPhase='idle'"
+          new="liftBlocked=false,liftRouteUnlocked=false,firstSweeperPhase='idle'"
+          assert old in s
+          s=s.replace(old,new,1)
+          old="const boarding=carry&&!carryPlayer&&Math.abs(oldY-LIFT_BASE_Y)<.12&&p.y<.38&&Math.abs(p.x-liftPlatform.position.x)<=LIFT_HALF_X+LIFT_BOARD_MARGIN&&Math.abs(p.z-LIFT_Z)<=LIFT_HALF_Z+LIFT_BOARD_MARGIN;const crossingCarry=carry&&Math.abs(oldY-LIFT_BASE_Y)<.12&&p.y<.42&&Math.abs(p.x-liftPlatform.position.x)<=LIFT_HALF_X+.22&&p.z>=LIFT_Z-LIFT_HALF_Z-LIFT_BOARD_MARGIN&&p.z<=LIFT_Z+LIFT_HALF_Z+LIFT_EXIT_RELEASE,holdForCarry=boarding||crossingCarry;let newY=requestedY;"
+          new="const boarding=carry&&!carryPlayer&&Math.abs(oldY-LIFT_BASE_Y)<.12&&p.y<.38&&Math.abs(p.x-liftPlatform.position.x)<=LIFT_HALF_X+LIFT_BOARD_MARGIN&&Math.abs(p.z-LIFT_Z)<=LIFT_HALF_Z+LIFT_BOARD_MARGIN;const crossingCarry=carry&&Math.abs(oldY-LIFT_BASE_Y)<.12&&p.y<.42&&Math.abs(p.x-liftPlatform.position.x)<=LIFT_HALF_X+.22&&p.z>=LIFT_Z-LIFT_HALF_Z-LIFT_BOARD_MARGIN&&p.z<=LIFT_Z+LIFT_HALF_Z+LIFT_EXIT_RELEASE;if(!liftRouteUnlocked&&carry&&Math.abs(oldY-LIFT_BASE_Y)<.12&&(boarding||crossingCarry||p.z>LIFT_GATE_Z-.5))liftRouteUnlocked=true;if(liftRouteUnlocked&&(!carry||p.z>LIFT_Z+LIFT_HALF_Z+LIFT_EXIT_RELEASE))liftRouteUnlocked=false;const routeLock=liftRouteUnlocked&&carry,holdForCarry=boarding||crossingCarry||routeLock;let newY=requestedY;"
+          assert old in s
+          s=s.replace(old,new,1)
+          old="if(boarding&&!win&&failTimer<=0)state.textContent='ЛИФТ ЖДЁТ ПОСАДКУ';else if(crossingCarry&&!win&&failTimer<=0)state.textContent='ЛИФТ ДЕРЖИТ ПЕРЕХОД';"
+          new="if(routeLock&&!win&&failTimer<=0)state.textContent='ЛИФТ ЗАФИКСИРОВАН · ПРОНЕСИ БРЕЙНРОТ';else if(boarding&&!win&&failTimer<=0)state.textContent='ЛИФТ ЖДЁТ ПОСАДКУ';else if(crossingCarry&&!win&&failTimer<=0)state.textContent='ЛИФТ ДЕРЖИТ ПЕРЕХОД';"
+          assert old in s
+          s=s.replace(old,new,1)
+          old="if(!useCheckpoint){firstSweeperPhase='idle';"
+          new="if(!useCheckpoint){liftRouteUnlocked=false;firstSweeperPhase='idle';"
+          assert old in s
+          s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+
+      - name: Add route-lock regression check
+        run: |
+          cat > scripts/first-lift-route-lock-check.mjs <<'EOF'
+          import fs from 'node:fs';
+          const s=fs.readFileSync('index.html','utf8');
+          const must=[
+            "liftRouteUnlocked=false",
+            "const routeLock=liftRouteUnlocked&&carry",
+            "holdForCarry=boarding||crossingCarry||routeLock",
+            "p.z>LIFT_Z+LIFT_HALF_Z+LIFT_EXIT_RELEASE",
+            "ЛИФТ ЗАФИКСИРОВАН · ПРОНЕСИ БРЕЙНРОТ",
+            "full 3D lift route v37 · latched carry crossing"
+          ];
+          for(const x of must) if(!s.includes(x)) throw new Error('missing '+x);
+          const gate=s.indexOf('liftSafetyOpen=docked||holdForCarry');
+          const lock=s.indexOf('const routeLock=liftRouteUnlocked&&carry');
+          if(lock<0||gate<lock) throw new Error('route lock must feed safety gate state');
+          console.log('first lift route lock invariants: PASS');
+          EOF
+          node --check scripts/first-lift-route-lock-check.mjs
+          node scripts/first-lift-route-lock-check.mjs
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          body=s.split('<script type="module">',1)[1].rsplit('</script>',1)[0]
+          Path('/tmp/runtime.mjs').write_text(body)
+          PY
+          node --check /tmp/runtime.mjs
+
+      - name: Commit gameplay change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html scripts/first-lift-route-lock-check.mjs
+          git commit -m 'Latch first lift during carry crossing'
+          git push origin HEAD:new-player-glb-overhaul
