@@ -1,0 +1,62 @@
+name: One Shot First Sweeper Recovery
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/one-shot-first-sweeper-recovery.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Patch real first sweeper recovery lane
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          s=s.replace('full 3D lift route v40 · post-gate sweeper grace','full 3D lift route v41 · sweeper recovery lane')
+          old='FIRST_SWEEPER_BURST_SPEED=-2.65,SECOND_SWEEPER_CYCLE=3.0'
+          new='FIRST_SWEEPER_BURST_SPEED=-2.65,FIRST_SWEEPER_RECOVERY_Z_MIN=-7.72,FIRST_SWEEPER_RECOVERY_Z_MAX=-6.92,FIRST_SWEEPER_RECOVERY_HALF_X=2.05,FIRST_SWEEPER_RECOVERY_DAMP=11.5,SECOND_SWEEPER_CYCLE=3.0'
+          assert old in s
+          s=s.replace(old,new,1)
+          anchor='[firstSweeperGateL,firstSweeperGateR,firstSweeperGate].forEach(o=>{o.material.emissive=new THREE.Color(o===firstSweeperGate?0xa20d38:0xb86a00);o.material.emissiveIntensity=.9});'
+          insert=anchor+'const firstSweeperRecoveryPad=box(0,.03,(FIRST_SWEEPER_RECOVERY_Z_MIN+FIRST_SWEEPER_RECOVERY_Z_MAX)*.5,FIRST_SWEEPER_RECOVERY_HALF_X*2,.06,FIRST_SWEEPER_RECOVERY_Z_MAX-FIRST_SWEEPER_RECOVERY_Z_MIN,0x49ff79),firstSweeperRecoveryL=box(-FIRST_SWEEPER_RECOVERY_HALF_X-.1,.34,(FIRST_SWEEPER_RECOVERY_Z_MIN+FIRST_SWEEPER_RECOVERY_Z_MAX)*.5,.12,.68,FIRST_SWEEPER_RECOVERY_Z_MAX-FIRST_SWEEPER_RECOVERY_Z_MIN,0x49ff79),firstSweeperRecoveryR=box(FIRST_SWEEPER_RECOVERY_HALF_X+.1,.34,(FIRST_SWEEPER_RECOVERY_Z_MIN+FIRST_SWEEPER_RECOVERY_Z_MAX)*.5,.12,.68,FIRST_SWEEPER_RECOVERY_Z_MAX-FIRST_SWEEPER_RECOVERY_Z_MIN,0x49ff79);[firstSweeperRecoveryPad,firstSweeperRecoveryL,firstSweeperRecoveryR].forEach(o=>{o.material.emissive=new THREE.Color(0x159b43);o.material.emissiveIntensity=.5});'
+          assert anchor in s
+          s=s.replace(anchor,insert,1)
+          tick_anchor="firstSweeperPostGateGrace=Math.max(0,firstSweeperPostGateGrace-dt);if(firstSweeperPostGateGrace>0&&!win&&failTimer<=0){sweeperEntryPad.material.emissive.setHex(0x149343);sweeperEntryPad.material.emissiveIntensity=1.65;state.textContent='SWEEPER · БЕЗОПАСНЫЙ ВЫХОД'}"
+          tick_insert=tick_anchor+"const firstSweeperRecoveryActive=firstSweeperCleared&&p.z>FIRST_SWEEPER_RECOVERY_Z_MIN&&p.z<FIRST_SWEEPER_RECOVERY_Z_MAX&&Math.abs(p.x)<FIRST_SWEEPER_RECOVERY_HALF_X+.35&&!win&&failTimer<=0,firstSweeperRecoveryPulse=.5+.5*Math.sin(t*9);[firstSweeperRecoveryPad,firstSweeperRecoveryL,firstSweeperRecoveryR].forEach(o=>o.material.emissiveIntensity=firstSweeperRecoveryActive?1.05+.55*firstSweeperRecoveryPulse:.5);if(firstSweeperRecoveryActive){playerMomentumX*=Math.exp(-FIRST_SWEEPER_RECOVERY_DAMP*dt);playerMomentumZ*=Math.exp(-FIRST_SWEEPER_RECOVERY_DAMP*dt);if(!carry){bv.x*=Math.exp(-FIRST_SWEEPER_RECOVERY_DAMP*.78*dt);bv.z*=Math.exp(-FIRST_SWEEPER_RECOVERY_DAMP*.78*dt)}state.textContent='SWEEPER · ВОССТАНОВЛЕНИЕ'}"
+          assert tick_anchor in s
+          s=s.replace(tick_anchor,tick_insert,1)
+          p.write_text(s)
+          PY
+      - name: Verify gameplay syntax and invariants
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          assert 'full 3D lift route v41 · sweeper recovery lane' in s
+          assert 'FIRST_SWEEPER_RECOVERY_Z_MIN=-7.72' in s
+          assert 'FIRST_SWEEPER_RECOVERY_Z_MAX=-6.92' in s
+          assert "state.textContent='SWEEPER · ВОССТАНОВЛЕНИЕ'" in s
+          m=re.search(r'<script type="module">(.*)</script>',s,re.S)
+          assert m
+          Path('/tmp/runtime.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/runtime.mjs
+      - name: Commit gameplay patch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          rm .github/workflows/one-shot-first-sweeper-recovery.yml
+          git add index.html .github/workflows/one-shot-first-sweeper-recovery.yml
+          git commit -m 'Add recovery lane after first sweeper'
+          git push origin HEAD:new-player-glb-overhaul
