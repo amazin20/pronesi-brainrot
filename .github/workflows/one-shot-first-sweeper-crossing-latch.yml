@@ -1,0 +1,99 @@
+name: One Shot First Sweeper Gate Crossing Latch
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/one-shot-first-sweeper-crossing-latch.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+
+      - name: Patch carry-safe crossing latch into first sweeper timing gate
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          s=s.replace('full 3D lift route v38 · physical sweeper timing gate','full 3D lift route v39 · latched sweeper safe crossing',1)
+
+          old="firstSweeperPhase='idle',firstSweeperTimer=0,firstSweeperCleared=false,secondSweeperCleared=false"
+          new="firstSweeperPhase='idle',firstSweeperTimer=0,firstSweeperCleared=false,firstSweeperGateCrossing=false,secondSweeperCleared=false"
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="if(!useCheckpoint){liftRouteUnlocked=false;firstSweeperPhase='idle';firstSweeperTimer=0;firstSweeperCleared=false;secondSweeperCleared=false;"
+          new="if(!useCheckpoint){liftRouteUnlocked=false;firstSweeperPhase='idle';firstSweeperTimer=0;firstSweeperCleared=false;firstSweeperGateCrossing=false;secondSweeperCleared=false;"
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="gateSensor=(Math.abs(p.z-FIRST_SWEEPER_GATE_Z)<.5&&Math.abs(p.x)<FIRST_SWEEPER_GATE_HALF_X+.42)||(Math.abs(bp.z-FIRST_SWEEPER_GATE_Z)<.5&&Math.abs(bp.x)<FIRST_SWEEPER_GATE_HALF_X+.42),gateOpen=recover||cleared||gateSensor,gateTarget="
+          new="gateSensor=(Math.abs(p.z-FIRST_SWEEPER_GATE_Z)<.5&&Math.abs(p.x)<FIRST_SWEEPER_GATE_HALF_X+.42)||(Math.abs(bp.z-FIRST_SWEEPER_GATE_Z)<.5&&Math.abs(bp.x)<FIRST_SWEEPER_GATE_HALF_X+.42);if(!firstSweeperGateCrossing&&(recover||cleared)&&gateSensor)firstSweeperGateCrossing=true;if(firstSweeperGateCrossing&&p.z>FIRST_SWEEPER_GATE_Z+.72&&bp.z>FIRST_SWEEPER_GATE_Z+.72)firstSweeperGateCrossing=false;const gateOpen=recover||cleared||gateSensor||firstSweeperGateCrossing,gateTarget="
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="if(!gateOpen&&!win&&failTimer<=0&&Math.abs(p.z-FIRST_SWEEPER_GATE_Z)<1.0)state.textContent=burst?'ВОРОТА ЗАКРЫТЫ · ДОЖДИСЬ ОКНА':'SWEEPER · ЖДИ ЗЕЛЁНЫЕ ВОРОТА';"
+          new="if(firstSweeperGateCrossing&&!win&&failTimer<=0)state.textContent='ВОРОТА ДЕРЖАТ ПРОХОД · ПРОНЕСИ БРЕЙНРОТ';else if(!gateOpen&&!win&&failTimer<=0&&Math.abs(p.z-FIRST_SWEEPER_GATE_Z)<1.0)state.textContent=burst?'ВОРОТА ЗАКРЫТЫ · ДОЖДИСЬ ОКНА':'SWEEPER · ЖДИ ЗЕЛЁНЫЕ ВОРОТА';"
+          assert old in s
+          s=s.replace(old,new,1)
+
+          p.write_text(s)
+          PY
+
+      - name: Add regression check for latched safe crossing
+        run: |
+          cat > scripts/first-sweeper-gate-crossing-latch-check.mjs <<'EOF'
+          import fs from 'node:fs';
+          const s=fs.readFileSync('index.html','utf8');
+          const must=[
+            "full 3D lift route v39 · latched sweeper safe crossing",
+            "firstSweeperGateCrossing=false",
+            "if(!firstSweeperGateCrossing&&(recover||cleared)&&gateSensor)firstSweeperGateCrossing=true",
+            "if(firstSweeperGateCrossing&&p.z>FIRST_SWEEPER_GATE_Z+.72&&bp.z>FIRST_SWEEPER_GATE_Z+.72)firstSweeperGateCrossing=false",
+            "gateOpen=recover||cleared||gateSensor||firstSweeperGateCrossing",
+            "ВОРОТА ДЕРЖАТ ПРОХОД · ПРОНЕСИ БРЕЙНРОТ"
+          ];
+          for(const x of must) if(!s.includes(x)) throw new Error('missing '+x);
+          const gateZ=-10.62, release=gateZ+.72;
+          function simulate({phase='warning',playerZ=gateZ,brainZ=gateZ,latch=false,sensor=true}){
+            const recover=phase==='recover', cleared=phase==='cleared';
+            if(!latch&&(recover||cleared)&&sensor) latch=true;
+            if(latch&&playerZ>release&&brainZ>release) latch=false;
+            return {latch,open:recover||cleared||sensor||latch};
+          }
+          let q=simulate({phase:'recover',sensor:true});
+          if(!q.latch||!q.open) throw new Error('safe-window entry must latch gate open');
+          q=simulate({phase:'warning',playerZ:gateZ+.56,brainZ:gateZ+.28,latch:q.latch,sensor:false});
+          if(!q.latch||!q.open) throw new Error('gate must stay open mid-crossing after phase changes');
+          q=simulate({phase:'burst',playerZ:release+.05,brainZ:release-.04,latch:q.latch,sensor:false});
+          if(!q.latch||!q.open) throw new Error('gate must wait for both bodies');
+          q=simulate({phase:'burst',playerZ:release+.05,brainZ:release+.05,latch:q.latch,sensor:false});
+          if(q.latch||q.open) throw new Error('gate may relock only after both bodies clear release plane');
+          console.log('first sweeper gate crossing latch: PASS');
+          EOF
+          node --check scripts/first-sweeper-gate-crossing-latch-check.mjs
+          node scripts/first-sweeper-gate-crossing-latch-check.mjs
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          body=s.split('<script type="module">',1)[1].rsplit('</script>',1)[0]
+          Path('/tmp/runtime.mjs').write_text(body)
+          PY
+          node --check /tmp/runtime.mjs
+
+      - name: Commit gameplay change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html scripts/first-sweeper-gate-crossing-latch-check.mjs
+          git rm .github/workflows/one-shot-first-sweeper-crossing-latch.yml
+          git commit -m 'Latch first sweeper gate during safe crossing'
+          git push origin HEAD:new-player-glb-overhaul
