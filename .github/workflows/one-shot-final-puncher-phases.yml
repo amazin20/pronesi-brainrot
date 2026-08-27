@@ -1,0 +1,55 @@
+name: Final Puncher Phases
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/one-shot-final-puncher-phases.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch phased final gauntlet gameplay
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('index.html')
+          s=p.read_text()
+          assert 'full 3D lift route v26 · final puncher gauntlet' in s
+          s=s.replace('full 3D lift route v26 · final puncher gauntlet','full 3D lift route v27 · phased final puncher gauntlet',1)
+          pattern=r"function updateFinalGauntlet\(t,dt\)\{.*?\}\nconst clock="
+          new=r'''function updateFinalGauntlet(t,dt){if(!finalGauntletCleared&&checkpoint&&p.z>FINAL_GAUNTLET_CLEAR_Z&&bp.z>FINAL_GAUNTLET_CLEAR_Z){finalGauntletCleared=true;state.textContent='ФИНАЛЬНЫЕ ТОЛКАТЕЛИ · ПРОЙДЕНЫ'}const active=checkpoint&&!finalGauntletCleared&&!win&&failTimer<=0,cycle=4.4,q=((t%cycle)+cycle)%cycle,warnA=q<.55,punchA=q>=.55&&q<1.27,safeA=q>=1.27&&q<1.67,warnB=q>=1.67&&q<2.22,punchB=q>=2.22&&q<2.94,safeB=q>=2.94,pulse=.5+.5*Math.sin(t*18),phaseName=finalGauntletCleared?'cleared':(!active?'idle':(warnA?'warn-left':(punchA?'punch-left':(safeA?'safe-mid':(warnB?'warn-right':(punchB?'punch-right':'safe-exit'))))));finalPunchers.forEach((h,i)=>{const oldX=h.mesh.position.x,attacking=active&&(i===0?punchA:punchB),warning=active&&(i===0?warnA:warnB),stageStart=i===0?.55:2.22,stageU=attacking?Math.max(0,Math.min(1,(q-stageStart)/.72)):0,stroke=attacking?Math.sin(Math.PI*stageU):0,targetX=h.side*(FINAL_GAUNTLET_HOME_X-(FINAL_GAUNTLET_HOME_X-FINAL_GAUNTLET_IN_X)*stroke),maxStep=8.2*dt,newX=oldX+Math.max(-maxStep,Math.min(maxStep,targetX-oldX)),vx=(newX-oldX)/Math.max(dt,.001);h.lastX=oldX;h.mesh.position.x=newX;h.cap.position.x=newX-h.side*(FINAL_GAUNTLET_HALF_X+.12);const c=finalGauntletCleared?0x49ff79:(attacking?0xff315d:(warning?(pulse>.5?0xffffff:0xffb12b):(active?0x49ff79:(i?0xff557c:0xffb12b))));h.mesh.material.color.setHex(c);h.mesh.material.emissive.setHex(finalGauntletCleared?0x149343:(warning?0xff7a00:c));h.mesh.material.emissiveIntensity=finalGauntletCleared?1.0:(attacking?1.65:(warning?1.0+1.1*pulse:(active?.95:.55)));h.cap.material.emissive.setHex(finalGauntletCleared?0x149343:(warning?0xff7a00:c));h.cap.material.emissiveIntensity=finalGauntletCleared?1.0:(attacking?2.0:(warning?1.25+1.2*pulse:(active?1.2:.8)));const minX=Math.min(oldX,newX)-FINAL_GAUNTLET_HALF_X,maxX=Math.max(oldX,newX)+FINAL_GAUNTLET_HALF_X,dir=Math.sign(vx||(-h.side))||1;function hitBody(x,z,r,isBrain){if(!attacking||Math.abs(vx)<.35||hitLock>0||Math.abs(z-h.z)>FINAL_GAUNTLET_HALF_Z+r||x<minX-r||x>maxX+r)return false;if(isBrain){bv.x+=dir*5.4;bv.y=Math.max(bv.y,2.7);if(carry){carry=false;state.textContent='ТОЛКАТЕЛЬ ВЫБИЛ БРЕЙНРОТ!'}else state.textContent='БРЕЙНРОТ СБИТ ТОЛКАТЕЛЕМ'}else{movePlayerSlice(dir*.5,0);playerMomentumX+=dir*4.7;vy=Math.max(vy,2.9);on=false;if(carry){carry=false;bv.x=dir*6.0;bv.z=1.0;bv.y=Math.max(bv.y,3.0);state.textContent='ФИНАЛЬНЫЙ УДАР · БРЕЙНРОТ ВЫБИТ!'}else state.textContent='ФИНАЛЬНЫЙ ТОЛКАТЕЛЬ · УДАР'}hitLock=.2;return true}if(p.y<1.25)hitBody(p.x,p.z,.42,false);if(hitLock<=0&&bp.y<1.55)hitBody(bp.x,bp.z,.38,true)});const leftWarn=warnA,leftHit=punchA,rightWarn=warnB,rightHit=punchB,safe=active&&(safeA||safeB);finalGauntletPad1.material.color.setHex(finalGauntletCleared?0x49ff79:(leftHit?0xff315d:(leftWarn?(pulse>.5?0xffffff:0xffb12b):(safe?0x49ff79:0xffb12b))));finalGauntletPad2.material.color.setHex(finalGauntletCleared?0x49ff79:(rightHit?0xff315d:(rightWarn?(pulse>.5?0xffffff:0xff557c):(safe?0x49ff79:0xff557c))));finalGauntletPad1.material.emissive.setHex(finalGauntletCleared||safe?0x149343:(leftWarn?0xff7a00:finalGauntletPad1.material.color.getHex()));finalGauntletPad2.material.emissive.setHex(finalGauntletCleared||safe?0x149343:(rightWarn?0xff7a00:finalGauntletPad2.material.color.getHex()));finalGauntletPad1.material.emissiveIntensity=finalGauntletCleared?1.15:(leftHit?1.7:(leftWarn?1.0+1.25*pulse:(safe?1.05:.45)));finalGauntletPad2.material.emissiveIntensity=finalGauntletCleared?1.15:(rightHit?1.7:(rightWarn?1.0+1.25*pulse:(safe?1.05:.45)));if(active&&!carry&&failTimer<=0){if(phaseName==='warn-left')state.textContent='ФИНАЛ · ЛЕВЫЙ ТОЛКАТЕЛЬ ГОТОВИТСЯ';else if(phaseName==='punch-left')state.textContent='ФИНАЛ · ЛЕВЫЙ УДАР';else if(phaseName==='warn-right')state.textContent='ФИНАЛ · ПРАВЫЙ ТОЛКАТЕЛЬ ГОТОВИТСЯ';else if(phaseName==='punch-right')state.textContent='ФИНАЛ · ПРАВЫЙ УДАР';else state.textContent='ФИНАЛ · БЕЗОПАСНОЕ ОКНО'}}
+const clock='''
+          ns,n=re.subn(pattern,new,s,count=1,flags=re.S)
+          assert n==1, n
+          p.write_text(ns)
+          PY
+      - name: Verify phased gauntlet runtime
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          assert 'full 3D lift route v27 · phased final puncher gauntlet' in s
+          for token in ["warn-left","punch-left","warn-right","punch-right","safe-exit","Math.sin(Math.PI*stageU)","if(!attacking||Math.abs(vx)<.35"]:
+              assert token in s, token
+          m=re.search(r'<script type="module">(.*)</script>',s,re.S)
+          assert m
+          Path('/tmp/runtime.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/runtime.mjs
+      - name: Commit gameplay change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Phase final puncher gauntlet attacks'
+          git push origin HEAD:new-player-glb-overhaul
