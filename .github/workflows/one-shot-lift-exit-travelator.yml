@@ -1,0 +1,77 @@
+name: One-shot lift exit travelator
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Patch physical lift exit travelator
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old1="const sweeperEntryPad=box(0,.035,-11.08,3.7,.07,1.35,0xffd84d);sweeperEntryPad.material.emissive=new THREE.Color(0xa95a00);sweeperEntryPad.material.emissiveIntensity=.7;const sweeperEntryL=box(-1.78,.7,-10.42,.16,1.4,.16,0xffd84d),sweeperEntryR=box(1.78,.7,-10.42,.16,1.4,.16,0xffd84d),sweeperEntryTop=box(0,1.37,-10.42,3.7,.16,.16,0xffd84d);[sweeperEntryL,sweeperEntryR,sweeperEntryTop].forEach(o=>{o.material.emissive=new THREE.Color(0xa95a00);o.material.emissiveIntensity=.75});\nconst CHECKPOINT_Z="
+          new1="const sweeperEntryPad=box(0,.035,-11.08,3.7,.07,1.35,0xffd84d);sweeperEntryPad.material.emissive=new THREE.Color(0xa95a00);sweeperEntryPad.material.emissiveIntensity=.7;const sweeperEntryL=box(-1.78,.7,-10.42,.16,1.4,.16,0xffd84d),sweeperEntryR=box(1.78,.7,-10.42,.16,1.4,.16,0xffd84d),sweeperEntryTop=box(0,1.37,-10.42,3.7,.16,.16,0xffd84d);[sweeperEntryL,sweeperEntryR,sweeperEntryTop].forEach(o=>{o.material.emissive=new THREE.Color(0xa95a00);o.material.emissiveIntensity=.75});\nconst LIFT_ASSIST_Z_MIN=PITS[0][0]-.7,LIFT_ASSIST_Z_MAX=FIRST_SWEEPER_TRIGGER_Z-.38,LIFT_ASSIST_HALF_X=1.35,LIFT_ASSIST_SPEED=1.15;const liftAssistPad=box(0,.024,(LIFT_ASSIST_Z_MIN+LIFT_ASSIST_Z_MAX)*.5,LIFT_ASSIST_HALF_X*2,.048,LIFT_ASSIST_Z_MAX-LIFT_ASSIST_Z_MIN,0x6cf7ff);liftAssistPad.material.emissive=new THREE.Color(0x0c8fb4);liftAssistPad.material.emissiveIntensity=.65;\nconst CHECKPOINT_Z="
+          assert old1 in s, 'sweeper entry anchor missing'
+          s=s.replace(old1,new1,1)
+          old2="if(mv&&!win&&failTimer<=0){let l=Math.hypot(dx,dz);dx/=l;dz/=l;let target=Math.atan2(dx,dz),d=((target-yaw+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;yaw+=d*Math.min(1,dt*11);movePlayer(dx,dz,sp*dt)}const prevPlayerY=p.y;"
+          new2="if(mv&&!win&&failTimer<=0){let l=Math.hypot(dx,dz);dx/=l;dz/=l;let target=Math.atan2(dx,dz),d=((target-yaw+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;yaw+=d*Math.min(1,dt*11);movePlayer(dx,dz,sp*dt)}const liftAssistActive=carry&&keys.has('KeyW')&&!keys.has('KeyS')&&!win&&failTimer<=0&&p.z>LIFT_ASSIST_Z_MIN&&p.z<LIFT_ASSIST_Z_MAX&&Math.abs(p.x)<LIFT_ASSIST_HALF_X;if(liftAssistActive)movePlayer(0,1,LIFT_ASSIST_SPEED*dt);liftAssistPad.material.emissiveIntensity=liftAssistActive?1.2+.55*(.5+.5*Math.sin(t*12)):.65;const prevPlayerY=p.y;"
+          assert old2 in s, 'movement anchor missing'
+          s=s.replace(old2,new2,1)
+          old_title="full 3D lift route v34 · carry-safe full-span lift deck"
+          assert old_title in s, 'runtime marker missing'
+          s=s.replace(old_title,"full 3D lift route v35 · carry-safe exit travelator",1)
+          p.write_text(s)
+          PY
+
+      - name: Verify travelator runtime and geometry
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          for token in ['LIFT_ASSIST_Z_MIN','LIFT_ASSIST_Z_MAX','LIFT_ASSIST_SPEED=1.15','liftAssistActive','carry-safe exit travelator']:
+              assert token in s, token
+          pit0=-15.2
+          gate=-15.42
+          trigger=-11.05
+          zmin=pit0-.7
+          zmax=trigger-.38
+          assert zmin < gate
+          assert zmax < trigger
+          assert zmax > -13.55
+          assert 2*1.35 >= 2.7
+          module=s.split('<script type="module">',1)[1].split('</script>',1)[0]
+          Path('/tmp/runtime.mjs').write_text(module)
+          print({'assistZ':[zmin,zmax],'width':2.7,'speed':1.15})
+          PY
+          node --check /tmp/runtime.mjs
+
+      - name: Commit gameplay patch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then
+            echo 'No gameplay changes to commit'
+            exit 0
+          fi
+          git commit -m 'Add carry-safe lift exit travelator'
+          git push origin HEAD:new-player-glb-overhaul
