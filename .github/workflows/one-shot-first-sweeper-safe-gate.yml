@@ -1,0 +1,67 @@
+name: One-shot first sweeper safe timing gate
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - '.github/workflows/one-shot-first-sweeper-safe-gate.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Patch first sweeper timing gate gameplay
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old='const gateOpen=recover||cleared||gateSensor||firstSweeperGateCrossing'
+          new='const gateOpen=recover||cleared||firstSweeperGateCrossing'
+          if old not in s:
+              raise SystemExit('expected unsafe gate expression not found')
+          s=s.replace(old,new,1)
+          s=s.replace('full 3D lift route v44 · second pit safe approach','full 3D lift route v45 · first sweeper safe gate',1)
+          p.write_text(s)
+          PY
+      - name: Verify safe-phase gate invariants and runtime syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          assert 'const gateOpen=recover||cleared||firstSweeperGateCrossing' in s
+          assert 'recover||cleared||gateSensor||firstSweeperGateCrossing' not in s
+          # Safe phase may open; warning/burst may not open merely because the sensor is occupied.
+          def gate_open(phase,crossing=False):
+              recover=phase=='recover'; cleared=phase=='cleared'
+              return recover or cleared or crossing
+          assert not gate_open('warning')
+          assert not gate_open('burst')
+          assert gate_open('recover')
+          assert gate_open('cleared')
+          assert gate_open('burst',True)  # crossing latch keeps an already-started passage safe
+          m=re.search(r'<script type="module">(.*)</script>',s,re.S)
+          assert m
+          Path('/tmp/runtime.mjs').write_text(m.group(1))
+          print('first-sweeper-safe-gate invariants: PASS')
+          PY
+          node --check /tmp/runtime.mjs
+      - name: Commit gameplay fix
+        run: |
+          git config user.name "amazin20"
+          git config user.email "138931938+amazin20@users.noreply.github.com"
+          git add index.html
+          git diff --cached --check
+          git commit -m "Keep first sweeper gate closed during active burst"
+          git push origin HEAD:new-player-glb-overhaul
