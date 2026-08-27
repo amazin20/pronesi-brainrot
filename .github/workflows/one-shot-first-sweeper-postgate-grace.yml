@@ -1,0 +1,100 @@
+name: One Shot First Sweeper Post-Gate Grace
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/one-shot-first-sweeper-postgate-grace.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Add post-gate hazard grace to first sweeper
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          s=s.replace('full 3D lift route v39 · latched sweeper safe crossing','full 3D lift route v40 · post-gate sweeper grace',1)
+
+          old="firstSweeperPhase='idle',firstSweeperTimer=0,firstSweeperCleared=false,firstSweeperGateCrossing=false,secondSweeperCleared=false"
+          new="firstSweeperPhase='idle',firstSweeperTimer=0,firstSweeperCleared=false,firstSweeperGateCrossing=false,firstSweeperPostGateGrace=0,secondSweeperCleared=false"
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="if(!useCheckpoint){liftRouteUnlocked=false;firstSweeperPhase='idle';firstSweeperTimer=0;firstSweeperCleared=false;firstSweeperGateCrossing=false;secondSweeperCleared=false;"
+          new="if(!useCheckpoint){liftRouteUnlocked=false;firstSweeperPhase='idle';firstSweeperTimer=0;firstSweeperCleared=false;firstSweeperGateCrossing=false;firstSweeperPostGateGrace=0;secondSweeperCleared=false;"
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="if(firstSweeperGateCrossing&&p.z>FIRST_SWEEPER_GATE_Z+.72&&bp.z>FIRST_SWEEPER_GATE_Z+.72)firstSweeperGateCrossing=false;const gateOpen="
+          new="if(firstSweeperGateCrossing&&p.z>FIRST_SWEEPER_GATE_Z+.72&&bp.z>FIRST_SWEEPER_GATE_Z+.72){firstSweeperGateCrossing=false;firstSweeperPostGateGrace=.55;state.textContent='SWEEPER · БЕЗОПАСНЫЙ ВЫХОД'}const gateOpen="
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="hitLock=Math.max(0,hitLock-dt);if(failTimer>0)"
+          new="hitLock=Math.max(0,hitLock-dt);firstSweeperPostGateGrace=Math.max(0,firstSweeperPostGateGrace-dt);if(firstSweeperPostGateGrace>0&&!win&&failTimer<=0){sweeperEntryPad.material.emissive.setHex(0x149343);sweeperEntryPad.material.emissiveIntensity=1.65;state.textContent='SWEEPER · БЕЗОПАСНЫЙ ВЫХОД'}if(failTimer>0)"
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="if(Math.abs(w)>.001)sweeperHit(s,w,from,to);s.rotation.y=to"
+          new="if(Math.abs(w)>.001&&(i!==0||firstSweeperPostGateGrace<=0))sweeperHit(s,w,from,to);s.rotation.y=to"
+          assert old in s
+          s=s.replace(old,new,1)
+
+          p.write_text(s)
+          PY
+
+      - name: Add regression check for post-gate grace
+        run: |
+          cat > scripts/first-sweeper-postgate-grace-check.mjs <<'EOF'
+          import fs from 'node:fs';
+          const s=fs.readFileSync('index.html','utf8');
+          const must=[
+            "full 3D lift route v40 · post-gate sweeper grace",
+            "firstSweeperPostGateGrace=0",
+            "firstSweeperPostGateGrace=.55",
+            "firstSweeperPostGateGrace=Math.max(0,firstSweeperPostGateGrace-dt)",
+            "i!==0||firstSweeperPostGateGrace<=0",
+            "SWEEPER · БЕЗОПАСНЫЙ ВЫХОД"
+          ];
+          for(const x of must) if(!s.includes(x)) throw new Error('missing '+x);
+          let grace=.55, dt=.035, frames=0;
+          while(grace>0&&frames<100){grace=Math.max(0,grace-dt);frames++}
+          const seconds=frames*dt;
+          if(seconds<.52||seconds>.60) throw new Error('grace duration drift '+seconds);
+          const firstHitAllowed=(i,grace)=>i!==0||grace<=0;
+          if(firstHitAllowed(0,.3)) throw new Error('first sweeper must not hit during post-gate grace');
+          if(!firstHitAllowed(1,.3)) throw new Error('second sweeper must stay active');
+          if(!firstHitAllowed(0,0)) throw new Error('first sweeper must reactivate after grace');
+          console.log('first sweeper post-gate grace: PASS',seconds.toFixed(3)+'s');
+          EOF
+          node --check scripts/first-sweeper-postgate-grace-check.mjs
+          node scripts/first-sweeper-postgate-grace-check.mjs
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          body=s.split('<script type="module">',1)[1].rsplit('</script>',1)[0]
+          Path('/tmp/runtime.mjs').write_text(body)
+          PY
+          node --check /tmp/runtime.mjs
+
+      - name: Commit gameplay change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html scripts/first-sweeper-postgate-grace-check.mjs
+          git rm .github/workflows/one-shot-first-sweeper-postgate-grace.yml
+          git commit -m 'Add post-gate grace to first sweeper crossing'
+          git push origin HEAD:new-player-glb-overhaul
