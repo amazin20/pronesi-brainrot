@@ -76,3 +76,5 @@ jobs:
           git add index.html scripts/final-finish-soft-hold-check.mjs
           git commit -m "Add soft hold inside charged finish pocket"
           git push origin HEAD:new-player-glb-overhaul
+
+# trigger: v2
