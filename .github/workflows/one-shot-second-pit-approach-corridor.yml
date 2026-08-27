@@ -1,0 +1,98 @@
+name: One-shot second pit approach corridor
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: [.github/workflows/one-shot-second-pit-approach-corridor.yml]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Patch physical approach corridor
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old='clean build · new GLB only · full 3D lift route v43 · sweeper 2 recovery exit'
+          new='clean build · new GLB only · full 3D lift route v44 · second pit safe approach'
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="SECOND_SWEEPER_RECOVERY_Z_MIN=3.18,SECOND_SWEEPER_RECOVERY_Z_MAX=3.55,SECOND_SWEEPER_RECOVERY_HALF_X=1.9,SECOND_SWEEPER_RECOVERY_DAMP=11.0;"
+          new="SECOND_SWEEPER_RECOVERY_Z_MIN=3.18,SECOND_SWEEPER_RECOVERY_Z_MAX=3.55,SECOND_SWEEPER_RECOVERY_HALF_X=1.9,SECOND_SWEEPER_RECOVERY_DAMP=11.0,SECOND_PIT_APPROACH_Z_MIN=3.48,SECOND_PIT_APPROACH_Z_MAX=5.04,SECOND_PIT_APPROACH_HALF_X=1.55;"
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="[secondSweeperRecoveryPad,secondSweeperRecoveryL,secondSweeperRecoveryR].forEach(o=>{o.material.emissive=new THREE.Color(0x159b43);o.material.emissiveIntensity=.5});"
+          new=old+"const secondPitApproachPad=box(0,.026,(SECOND_PIT_APPROACH_Z_MIN+SECOND_PIT_APPROACH_Z_MAX)*.5,SECOND_PIT_APPROACH_HALF_X*2,.052,SECOND_PIT_APPROACH_Z_MAX-SECOND_PIT_APPROACH_Z_MIN,0x49ff79),secondPitApproachL=box(-SECOND_PIT_APPROACH_HALF_X-.11,.38,(SECOND_PIT_APPROACH_Z_MIN+SECOND_PIT_APPROACH_Z_MAX)*.5,.18,.76,SECOND_PIT_APPROACH_Z_MAX-SECOND_PIT_APPROACH_Z_MIN,0x49ff79),secondPitApproachR=box(SECOND_PIT_APPROACH_HALF_X+.11,.38,(SECOND_PIT_APPROACH_Z_MIN+SECOND_PIT_APPROACH_Z_MAX)*.5,.18,.76,SECOND_PIT_APPROACH_Z_MAX-SECOND_PIT_APPROACH_Z_MIN,0x49ff79);[secondPitApproachPad,secondPitApproachL,secondPitApproachR].forEach(o=>{o.material.emissive=new THREE.Color(0x159b43);o.material.emissiveIntensity=.58});"
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="function inSecondPitFunnel(x,z,r=0){return z>SECOND_PIT_FUNNEL_Z_MIN&&z<SECOND_PIT_FUNNEL_Z_MAX&&Math.abs(x)>SECOND_PIT_FUNNEL_HALF_X-r}"
+          new=old+"function inSecondPitApproachRail(x,z,r=0){return z>SECOND_PIT_APPROACH_Z_MIN&&z<SECOND_PIT_APPROACH_Z_MAX&&Math.abs(x)>SECOND_PIT_APPROACH_HALF_X-r}"
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="if(inSecondPitFunnel(x,z,.4))return true;if(z>FINISH_Z_MIN"
+          new="if(inSecondPitFunnel(x,z,.4))return true;if(inSecondPitApproachRail(x,z,.4))return true;if(z>FINISH_Z_MIN"
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="if(inSecondPitFunnel(x,z,r))return true;if(z>FINISH_Z_MIN"
+          new="if(inSecondPitFunnel(x,z,r))return true;if(inSecondPitApproachRail(x,z,r))return true;if(z>FINISH_Z_MIN"
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="const secondSweeperRecoveryActive=secondSweeperCleared&&p.z>SECOND_SWEEPER_RECOVERY_Z_MIN&&p.z<SECOND_SWEEPER_RECOVERY_Z_MAX&&Math.abs(p.x)<SECOND_SWEEPER_RECOVERY_HALF_X+.35&&!win&&failTimer<=0,secondSweeperRecoveryPulse=.5+.5*Math.sin(t*9);"
+          new=old+"const secondPitApproachActive=secondSweeperCleared&&carry&&p.z>SECOND_PIT_APPROACH_Z_MIN&&p.z<SECOND_PIT_APPROACH_Z_MAX&&!win&&failTimer<=0,secondPitApproachPulse=.5+.5*Math.sin(t*8);[secondPitApproachPad,secondPitApproachL,secondPitApproachR].forEach(o=>o.material.emissiveIntensity=secondPitApproachActive?1.05+.45*secondPitApproachPulse:.58);if(secondPitApproachActive){playerMomentumX*=Math.exp(-14*dt);playerMomentumZ*=Math.exp(-8*dt);if(!win&&failTimer<=0)state.textContent='КОРИДОР К ПЛАТФОРМЕ · ДЕРЖИ ЦЕНТР'}"
+          assert old in s
+          s=s.replace(old,new,1)
+          p.write_text(s)
+      - name: Add regression QA
+        run: |
+          cat > scripts/second-pit-approach-corridor-check.mjs <<'EOF'
+          import fs from 'node:fs';
+          const s=fs.readFileSync('index.html','utf8');
+          const need=[
+            'SECOND_PIT_APPROACH_Z_MIN=3.48',
+            'SECOND_PIT_APPROACH_Z_MAX=5.04',
+            'SECOND_PIT_APPROACH_HALF_X=1.55',
+            'function inSecondPitApproachRail',
+            'if(inSecondPitApproachRail(x,z,.4))return true',
+            'if(inSecondPitApproachRail(x,z,r))return true',
+            "state.textContent='КОРИДОР К ПЛАТФОРМЕ · ДЕРЖИ ЦЕНТР'"
+          ];
+          for(const token of need) if(!s.includes(token)) throw new Error('missing '+token);
+          const recoveryMax=3.55, stageMin=3.55, corridorMin=3.48, corridorMax=5.04, pitEdge=5.05, halfX=1.55, playerR=.4, brainR=.38;
+          if(corridorMin>recoveryMax) throw new Error('gap after sweeper recovery');
+          if(corridorMin>stageMin) throw new Error('gap before boarding stage');
+          if(corridorMax<pitEdge-.02) throw new Error('corridor does not reach pit boarding edge');
+          if(2*(halfX-playerR)<2.2) throw new Error('player carry corridor too narrow');
+          if(2*(halfX-brainR)<2.2) throw new Error('brainrot corridor too narrow');
+          console.log('second-pit approach corridor PASS', {corridorMin,corridorMax,usablePlayerWidth:2*(halfX-playerR),usableBrainWidth:2*(halfX-brainR)});
+          EOF
+          node --check scripts/second-pit-approach-corridor-check.mjs
+          node scripts/second-pit-approach-corridor-check.mjs
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          mod=s.split('<script type="module">',1)[1].split('</script>',1)[0]
+          Path('/tmp/runtime.mjs').write_text(mod)
+          PY
+          node --check /tmp/runtime.mjs
+      - name: Commit gameplay change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html scripts/second-pit-approach-corridor-check.mjs
+          git commit -m 'Add safe corridor into second moving-platform pit'
+          git push origin HEAD:new-player-glb-overhaul
