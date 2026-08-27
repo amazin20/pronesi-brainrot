@@ -1,0 +1,88 @@
+name: One-shot final recovery runway
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/one-shot-final-recovery-runway.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch final recovery runway gameplay
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          s=s.replace('full 3D lift route v27 · phased final puncher gauntlet','full 3D lift route v28 · final recovery runway')
+          old="const FINAL_GAUNTLET_Z1=7.55,FINAL_GAUNTLET_Z2=8.38,FINAL_GAUNTLET_HOME_X=3.42,FINAL_GAUNTLET_IN_X=.92,FINAL_GAUNTLET_HALF_X=.68,FINAL_GAUNTLET_HALF_Z=.34,FINAL_GAUNTLET_CLEAR_Z=8.92,FINAL_GAUNTLET_SPEED=2.35;"
+          new=old+"const FINAL_RECOVERY_Z_MIN=8.92,FINAL_RECOVERY_Z_MAX=9.62,FINAL_RECOVERY_GRACE=.72;"
+          assert old in s
+          s=s.replace(old,new,1)
+          anchor="const finish=box(0,.1,10,7.35,.2,1.9,0x49ff79);"
+          insert="const finalRecoveryPad=box(0,.035,(FINAL_RECOVERY_Z_MIN+FINAL_RECOVERY_Z_MAX)*.5,5.8,.07,FINAL_RECOVERY_Z_MAX-FINAL_RECOVERY_Z_MIN,0x49ff79),finalRecoveryL=box(-2.72,.42,(FINAL_RECOVERY_Z_MIN+FINAL_RECOVERY_Z_MAX)*.5,.12,.84,FINAL_RECOVERY_Z_MAX-FINAL_RECOVERY_Z_MIN,0x49ff79),finalRecoveryR=box(2.72,.42,(FINAL_RECOVERY_Z_MIN+FINAL_RECOVERY_Z_MAX)*.5,.12,.84,FINAL_RECOVERY_Z_MAX-FINAL_RECOVERY_Z_MIN,0x49ff79);[finalRecoveryPad,finalRecoveryL,finalRecoveryR].forEach(o=>{o.material.emissive=new THREE.Color(0x159b43);o.material.emissiveIntensity=.72});"+anchor
+          assert anchor in s
+          s=s.replace(anchor,insert,1)
+          old_reset="checkpointBrainrotLatched=false;finalGauntletCleared=false;"
+          new_reset="checkpointBrainrotLatched=false;finalGauntletCleared=false;finalRecoveryTimer=0;"
+          assert old_reset in s
+          s=s.replace(old_reset,new_reset,1)
+          marker="let checkpoint=false,checkpointFlash=0,checkpointPlayerLatched=false,checkpointBrainrotLatched=false,finalGauntletCleared=false"
+          if marker in s:
+            s=s.replace(marker,marker+",finalRecoveryTimer=0",1)
+          else:
+            # Insert the timer next to the gauntlet state declaration, whatever the surrounding declaration list is.
+            needle="finalGauntletCleared=false;"
+            assert needle in s
+            s=s.replace(needle,"finalGauntletCleared=false,finalRecoveryTimer=0;",1)
+          old_clear="finalGauntletCleared=true;state.textContent='ФИНАЛЬНЫЕ ТОЛКАТЕЛИ · ПРОЙДЕНЫ'"
+          new_clear="finalGauntletCleared=true;finalRecoveryTimer=FINAL_RECOVERY_GRACE;state.textContent='ФИНАЛЬНЫЕ ТОЛКАТЕЛИ · ПРОЙДЕНЫ · БЕЗОПАСНОЕ ОКНО'"
+          assert old_clear in s
+          s=s.replace(old_clear,new_clear,1)
+          tick_anchor="updateFinalGauntlet(t,dt);const framePlayerStart=p.clone()"
+          tick_new="updateFinalGauntlet(t,dt);finalRecoveryTimer=Math.max(0,finalRecoveryTimer-dt);const recoveryActive=finalGauntletCleared&&p.z>=FINAL_RECOVERY_Z_MIN&&p.z<FINAL_RECOVERY_Z_MAX&&!win,recoveryPulse=.5+.5*Math.sin(t*9);[finalRecoveryPad,finalRecoveryL,finalRecoveryR].forEach(o=>{o.material.emissiveIntensity=recoveryActive?1.0+.55*recoveryPulse:.72});if(recoveryActive&&finalRecoveryTimer>0){playerMomentumX*=Math.exp(-12*dt);playerMomentumZ*=Math.exp(-12*dt);if(!carry){bv.x*=Math.exp(-9*dt);bv.z*=Math.exp(-9*dt)}if(failTimer<=0)state.textContent='ФИНАЛ · БЕЗОПАСНОЕ ОКНО'}const framePlayerStart=p.clone()"
+          assert tick_anchor in s
+          s=s.replace(tick_anchor,tick_new,1)
+          old_finish="const playerInFinish=p.z>9.18&&Math.abs(p.x)<FINISH_X,brainrotInFinish=bp.z>9.18&&Math.abs(bp.x)<FINISH_X-.1;"
+          new_finish="const playerInFinish=p.z>FINAL_RECOVERY_Z_MAX&&Math.abs(p.x)<FINISH_X,brainrotInFinish=bp.z>FINAL_RECOVERY_Z_MAX&&Math.abs(bp.x)<FINISH_X-.1;"
+          assert old_finish in s
+          s=s.replace(old_finish,new_finish,1)
+          p.write_text(s)
+          PY
+      - name: Verify runtime syntax and recovery invariants
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          checks=[
+            'full 3D lift route v28 · final recovery runway',
+            'FINAL_RECOVERY_Z_MIN=8.92',
+            'FINAL_RECOVERY_Z_MAX=9.62',
+            'FINAL_RECOVERY_GRACE=.72',
+            'finalRecoveryTimer=FINAL_RECOVERY_GRACE',
+            "state.textContent='ФИНАЛ · БЕЗОПАСНОЕ ОКНО'",
+            'p.z>FINAL_RECOVERY_Z_MAX',
+            'bp.z>FINAL_RECOVERY_Z_MAX'
+          ]
+          for x in checks: assert x in s, x
+          start=s.index('<script type="module">')+len('<script type="module">')
+          end=s.index('</script>',start)
+          Path('/tmp/game.mjs').write_text(s[start:end])
+          print('recovery runway invariants PASS')
+          PY
+          node --check /tmp/game.mjs
+      - name: Commit gameplay change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Add safe recovery runway before finish'
+          git push origin HEAD:new-player-glb-overhaul
