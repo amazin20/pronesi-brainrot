@@ -41,7 +41,7 @@ jobs:
           cat /tmp/brainrot-http.log
           exit 1
 
-      - name: Capture real Chromium gameplay and verify lift to sweeper route
+      - name: Capture real Chromium gameplay through second moving-platform pit
         run: |
           mkdir -p artifacts/raw-video artifacts/stages
           cat > capture.mjs <<'EOF'
@@ -85,18 +85,19 @@ jobs:
             await observeFor(ms);
             for(const code of [...codes].reverse()) await page.keyboard.up(code);
           };
+          const screenshot = async name => page.screenshot({path:`artifacts/stages/${name}.png`});
 
           await sample('ready');
-          await page.screenshot({path:'artifacts/stages/00-ready.png'});
+          await screenshot('00-ready');
 
-          // Walk to the real brainrot model and pick it up.
+          // Pick up the real brainrot model.
           await hold(['KeyW'],720);
           await page.keyboard.press('KeyE');
           await observeFor(900);
           await sample('picked');
-          await page.screenshot({path:'artifacts/stages/01-picked.png'});
+          await screenshot('01-picked');
 
-          // Reach the first pit using genuine player controls while carrying.
+          // Reach and cross the first lift pit using the actual runtime route.
           await page.keyboard.down('KeyW');
           await observeFor(760);
           await page.keyboard.press('Space');
@@ -104,14 +105,11 @@ jobs:
           await page.keyboard.up('KeyW');
           await observeFor(320);
           await sample('first-pit');
-          await page.screenshot({path:'artifacts/stages/02-first-pit.png'});
+          await screenshot('02-first-pit');
 
-          // The first lift is a straight carry route. Approach its lower dock,
-          // allow a full bottom window, then cross while runtime boarding-hold
-          // keeps the moving platform from leaving under the carried brainrot.
           await hold(['KeyW'],650);
           await observeFor(1700);
-          await page.screenshot({path:'artifacts/stages/03-lift-wait.png'});
+          await screenshot('03-lift-wait');
           await page.keyboard.down('KeyW');
           await observeFor(2300);
           await page.keyboard.press('Space');
@@ -119,17 +117,44 @@ jobs:
           await page.keyboard.up('KeyW');
           await observeFor(350);
           await sample('lift-straight-pass');
-          await page.screenshot({path:'artifacts/stages/04-lift-exit.png'});
+          await screenshot('04-lift-exit');
 
-          // Continue with real controls all the way to the first sweeper. A pass
-          // now requires an actual sweeper-contact state, so a lift-only run can
-          // no longer produce a false-positive course success.
+          // Continue to and through the first sweeper timing gate.
           await page.keyboard.down('KeyW');
           await observeFor(5200);
           await page.keyboard.up('KeyW');
           await observeFor(800);
           await sample('first-sweeper');
-          await page.screenshot({path:'artifacts/stages/05-first-sweeper.png'});
+          await screenshot('05-first-sweeper');
+
+          // Keep carrying through the first recovery lane and second sweeper.
+          // The second timing gate opens only during its safe phase, so holding W
+          // exercises the real gate latch instead of teleporting the actor.
+          await page.keyboard.down('KeyW');
+          await observeFor(6200);
+          await page.keyboard.up('KeyW');
+          await observeFor(650);
+          await sample('second-sweeper');
+          await screenshot('06-second-sweeper');
+
+          // Enter the new carry-safe corridor. The chosen second-pit platform
+          // should board near the center, latch for the crossing, and release
+          // only after the far edge. Keep using genuine player input.
+          await page.keyboard.down('KeyW');
+          await observeFor(4300);
+          await page.keyboard.up('KeyW');
+          await observeFor(500);
+          await sample('second-pit-crossing');
+          await screenshot('07-second-pit-crossing');
+
+          // Continue through the landing funnel toward the checkpoint so the
+          // capture proves the platform release did not strand the brainrot.
+          await page.keyboard.down('KeyW');
+          await observeFor(2600);
+          await page.keyboard.up('KeyW');
+          await observeFor(500);
+          await sample('second-pit-exit');
+          await screenshot('08-second-pit-exit');
 
           const finalState = await stateText();
           const loadExists = await page.locator('#load').count();
@@ -137,14 +162,20 @@ jobs:
           const canvasBox = await canvas.boundingBox();
           const distinctStates = new Set([...stateSamples.map(x=>x.split(':').slice(1).join(':')),...observedStates]);
           const meaningfulCourseEvents = observedStates.filter(s => !['СВОБОДЕН','НЕСУ','ПОДНИМАЮ','ГОТОВ','ПОЛОЖЕН'].includes(s));
-          const sweeperEvents = observedStates.filter(s => s.includes('SWEEPER') || s.includes('УДАР! БРЕЙНРОТ ВЫБИТ!'));
+          const firstSweeperEvents = observedStates.filter(s => s.includes('SWEEPER') || s.includes('УДАР! БРЕЙНРОТ ВЫБИТ!'));
+          const secondSweeperEvents = observedStates.filter(s => s.includes('SWEEPER 2'));
+          const secondPitEvents = observedStates.filter(s => s.includes('ПЛАТФОРМА') || s.includes('КОРИДОР К ПЛАТФОРМЕ') || s.includes('ЧЕКПОИНТ'));
+          const checkpointEvents = observedStates.filter(s => s.includes('ЧЕКПОИНТ'));
           const report = [
             `state=${finalState}`,
             `samples=${stateSamples.join(' | ')}`,
             `observedStates=${[...new Set(observedStates)].join(' | ')}`,
             `timedStates=${timedStates.join(' | ')}`,
             `courseEvents=${[...new Set(meaningfulCourseEvents)].join(' | ')}`,
-            `sweeperEvents=${[...new Set(sweeperEvents)].join(' | ')}`,
+            `firstSweeperEvents=${[...new Set(firstSweeperEvents)].join(' | ')}`,
+            `secondSweeperEvents=${[...new Set(secondSweeperEvents)].join(' | ')}`,
+            `secondPitEvents=${[...new Set(secondPitEvents)].join(' | ')}`,
+            `checkpointEvents=${[...new Set(checkpointEvents)].join(' | ')}`,
             `distinctStates=${distinctStates.size}`,
             `canvas=${canvasBox ? `${Math.round(canvasBox.width)}x${Math.round(canvasBox.height)}` : 'missing'}`,
             `loadOverlay=${loadExists}`,
@@ -157,9 +188,11 @@ jobs:
           if(loadExists) throw new Error('Loading overlay never disappeared');
           if(finalState === 'ОШИБКА') throw new Error('Runtime ended in error state');
           if(!observedStates.includes('НЕСУ')) throw new Error(`Brainrot was never carried: ${observedStates.join(' | ')}`);
-          if(distinctStates.size < 3) throw new Error(`Gameplay state coverage too small: ${[...distinctStates].join(' | ')}`);
+          if(distinctStates.size < 4) throw new Error(`Gameplay state coverage too small: ${[...distinctStates].join(' | ')}`);
           if(!meaningfulCourseEvents.length) throw new Error(`No real obstacle-course event observed: ${observedStates.join(' | ')}`);
-          if(!sweeperEvents.length) throw new Error(`Lift route did not reach a real first-sweeper contact: ${timedStates.join(' | ')}`);
+          if(!firstSweeperEvents.length) throw new Error(`Lift route did not reach the first sweeper: ${timedStates.join(' | ')}`);
+          if(!secondSweeperEvents.length) throw new Error(`Route did not reach the second sweeper: ${timedStates.join(' | ')}`);
+          if(!secondPitEvents.length) throw new Error(`Route did not reach the real second-pit boarding/crossing section: ${timedStates.join(' | ')}`);
           if(consoleErrors.length) throw new Error(consoleErrors.join('\n'));
 
           await context.close();
