@@ -20,10 +20,8 @@ jobs:
           p=Path('index.html')
           s=p.read_text()
           assert 'LIFT_HALF_Z=.62' in s, 'current lift half-Z constant not found'
-          assert 'LIFT_DOCK_DEPTH=.34' in s, 'current lift dock depth not found'
           assert 'LIFT_GATE_OPEN_Y=2.72' in s, 'current gate open height not found'
           s=s.replace('LIFT_HALF_Z=.62','LIFT_HALF_Z=.94',1)
-          s=s.replace('LIFT_DOCK_DEPTH=.34','LIFT_DOCK_DEPTH=.46',1)
           s=s.replace('LIFT_GATE_OPEN_Y=2.72','LIFT_GATE_OPEN_Y=3.46',1)
           s=s.replace('full 3D lift route v33 · physical safety gate sync','full 3D lift route v34 · carry-safe full-span lift deck',1)
           p.write_text(s)
@@ -41,13 +39,11 @@ jobs:
           pit_a,pit_b=-15.2,-13.55
           lift_z=(pit_a+pit_b)*.5
           half_z=num('LIFT_HALF_Z')
-          dock_depth=num('LIFT_DOCK_DEPTH')
           gate_open=num('LIFT_GATE_OPEN_Y')
           bar_half=num('LIFT_GATE_BAR_HALF_Y')
           carry_top=num('LIFT_CARRY_CLEARANCE')
           assert lift_z-half_z <= pit_a-.05, (lift_z-half_z,pit_a)
           assert lift_z+half_z >= pit_b+.05, (lift_z+half_z,pit_b)
-          assert dock_depth >= .44
           assert gate_open-bar_half > carry_top+.6, (gate_open-bar_half,carry_top)
           assert 'full 3D lift route v34 · carry-safe full-span lift deck' in s
           m=re.search(r'<script type="module">(.*?)</script>',s,re.S)
