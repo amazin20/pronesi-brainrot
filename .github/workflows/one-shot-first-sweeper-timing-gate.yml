@@ -1,0 +1,93 @@
+name: One Shot First Sweeper Timing Gate
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/one-shot-first-sweeper-timing-gate.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+
+      - name: Patch physical timing gate before first sweeper
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          s=s.replace('full 3D lift route v37 · latched carry crossing','full 3D lift route v38 · physical sweeper timing gate',1)
+
+          old="[sweeperEntryL,sweeperEntryR,sweeperEntryTop].forEach(o=>{o.material.emissive=new THREE.Color(0xa95a00);o.material.emissiveIntensity=.75});"
+          new=old+"const FIRST_SWEEPER_GATE_Z=-10.62,FIRST_SWEEPER_GATE_HALF_X=1.74,FIRST_SWEEPER_GATE_CLOSED_Y=.62,FIRST_SWEEPER_GATE_OPEN_Y=2.82,FIRST_SWEEPER_GATE_HALF_Y=.11;const firstSweeperGateL=box(-1.88,.88,FIRST_SWEEPER_GATE_Z,.16,1.76,.16,0xffb12b),firstSweeperGateR=box(1.88,.88,FIRST_SWEEPER_GATE_Z,.16,1.76,.16,0xffb12b),firstSweeperGate=box(0,FIRST_SWEEPER_GATE_CLOSED_Y,FIRST_SWEEPER_GATE_Z,FIRST_SWEEPER_GATE_HALF_X*2,.22,.22,0xff315d);[firstSweeperGateL,firstSweeperGateR,firstSweeperGate].forEach(o=>{o.material.emissive=new THREE.Color(o===firstSweeperGate?0xa20d38:0xb86a00);o.material.emissiveIntensity=.9});"
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="const FINISH_Z_MIN=8.82,FINISH_X=3.5,LIFT_GATE_BAR_HALF_Y=.11,LIFT_GATE_PLAYER_TOP=2.12,LIFT_GATE_BRAIN_TOP=1.68;function liftSafetyGateBlocks"
+          new="const FINISH_Z_MIN=8.82,FINISH_X=3.5,LIFT_GATE_BAR_HALF_Y=.11,LIFT_GATE_PLAYER_TOP=2.12,LIFT_GATE_BRAIN_TOP=1.68;function firstSweeperTimingGateBlocks(x,z,r=.4,top=LIFT_GATE_PLAYER_TOP){const overlaps=Math.abs(z-FIRST_SWEEPER_GATE_Z)<.18+r*.35&&Math.abs(x)<FIRST_SWEEPER_GATE_HALF_X+r,barBottom=firstSweeperGate.position.y-FIRST_SWEEPER_GATE_HALF_Y;return overlaps&&barBottom<top}function liftSafetyGateBlocks"
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="function blocked(x,z){if(Math.abs(x)>4.55||z<-23||z>11)return true;if(liftSafetyGateBlocks(x,z,.4))return true;"
+          new="function blocked(x,z){if(Math.abs(x)>4.55||z<-23||z>11)return true;if(firstSweeperTimingGateBlocks(x,z,.4))return true;if(liftSafetyGateBlocks(x,z,.4))return true;"
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="function brainrotBlocked(x,z,r=.38){if(Math.abs(x)>4.55-r||z<-23+r||z>11-r)return true;if(liftSafetyGateBlocks(x,z,r))return true;"
+          new="function brainrotBlocked(x,z,r=.38){if(Math.abs(x)>4.55-r||z<-23+r||z>11-r)return true;if(firstSweeperTimingGateBlocks(x,z,r,LIFT_GATE_BRAIN_TOP))return true;if(liftSafetyGateBlocks(x,z,r))return true;"
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="const warning=firstSweeperPhase==='warning',burst=firstSweeperPhase==='burst',recover=firstSweeperPhase==='recover',cleared=firstSweeperPhase==='cleared',pulse=.5+.5*Math.sin(t*(warning?18:7)),c="
+          new="const warning=firstSweeperPhase==='warning',burst=firstSweeperPhase==='burst',recover=firstSweeperPhase==='recover',cleared=firstSweeperPhase==='cleared',gateSensor=(Math.abs(p.z-FIRST_SWEEPER_GATE_Z)<.5&&Math.abs(p.x)<FIRST_SWEEPER_GATE_HALF_X+.42)||(Math.abs(bp.z-FIRST_SWEEPER_GATE_Z)<.5&&Math.abs(bp.x)<FIRST_SWEEPER_GATE_HALF_X+.42),gateOpen=recover||cleared||gateSensor,gateTarget=gateOpen?FIRST_SWEEPER_GATE_OPEN_Y:FIRST_SWEEPER_GATE_CLOSED_Y,gateStep=5.4*dt;firstSweeperGate.position.y+=Math.max(-gateStep,Math.min(gateStep,gateTarget-firstSweeperGate.position.y));const gatePulse=.5+.5*Math.sin(t*13),gateColor=gateOpen?0x49ff79:(burst?0xff315d:0xffb12b);firstSweeperGate.material.color.setHex(gateColor);firstSweeperGate.material.emissive.setHex(gateOpen?0x149343:(burst?0xa20d38:0xb86a00));firstSweeperGate.material.emissiveIntensity=gateOpen?1.3:(.9+.8*gatePulse);[firstSweeperGateL,firstSweeperGateR].forEach(o=>{o.material.color.setHex(gateColor);o.material.emissive.setHex(gateOpen?0x149343:0xb86a00);o.material.emissiveIntensity=gateOpen?1.05:.72+.55*gatePulse});if(!gateOpen&&!win&&failTimer<=0&&Math.abs(p.z-FIRST_SWEEPER_GATE_Z)<1.0)state.textContent=burst?'ВОРОТА ЗАКРЫТЫ · ДОЖДИСЬ ОКНА':'SWEEPER · ЖДИ ЗЕЛЁНЫЕ ВОРОТА';const pulse=.5+.5*Math.sin(t*(warning?18:7)),c="
+          assert old in s
+          s=s.replace(old,new,1)
+
+          p.write_text(s)
+          PY
+
+      - name: Add gameplay regression check
+        run: |
+          cat > scripts/first-sweeper-timing-gate-check.mjs <<'EOF'
+          import fs from 'node:fs';
+          const s=fs.readFileSync('index.html','utf8');
+          const must=[
+            "full 3D lift route v38 · physical sweeper timing gate",
+            "FIRST_SWEEPER_GATE_Z=-10.62",
+            "function firstSweeperTimingGateBlocks",
+            "if(firstSweeperTimingGateBlocks(x,z,.4))return true",
+            "if(firstSweeperTimingGateBlocks(x,z,r,LIFT_GATE_BRAIN_TOP))return true",
+            "gateOpen=recover||cleared||gateSensor",
+            "ВОРОТА ЗАКРЫТЫ · ДОЖДИСЬ ОКНА"
+          ];
+          for(const x of must) if(!s.includes(x)) throw new Error('missing '+x);
+          if(!(s.indexOf('firstSweeperTimingGateBlocks')<s.indexOf('function blocked'))) throw new Error('gate collision must exist before movement blockers');
+          const closed=.62-.11, open=2.82-.11, playerTop=2.12, brainTop=1.68;
+          if(!(closed<brainTop&&closed<playerTop)) throw new Error('closed gate must block both bodies');
+          if(!(open>playerTop&&open>brainTop)) throw new Error('open gate must clear both bodies');
+          console.log('first sweeper physical timing gate: PASS');
+          EOF
+          node --check scripts/first-sweeper-timing-gate-check.mjs
+          node scripts/first-sweeper-timing-gate-check.mjs
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          body=s.split('<script type="module">',1)[1].rsplit('</script>',1)[0]
+          Path('/tmp/runtime.mjs').write_text(body)
+          PY
+          node --check /tmp/runtime.mjs
+
+      - name: Commit gameplay change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html scripts/first-sweeper-timing-gate-check.mjs
+          git commit -m 'Add physical timing gate before first sweeper'
+          git push origin HEAD:new-player-glb-overhaul
