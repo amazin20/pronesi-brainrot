@@ -1,0 +1,63 @@
+name: One-shot static obstacle model v62
+# trigger-v62-static-obstacle-model
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - '.github/workflows/one-shot-static-obstacle-model-v62.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-level:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+
+      - name: Replace temporary static primitives with modeled hazards
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+
+          old="const blocks=[[-3.05,-16],[3.05,-11],[-2.1,-6],[2.1,-1],[-2.1,4]];blocks.forEach((p,i)=>box(p[0],.3,p[1],3,.58,2.2,[0xffd24b,0x38d8ff,0xff719d,0x51e7a1,0xffd24b][i]));const cylinders=[[3.15,-18],[-3.15,-13],[2,-8],[-2,-3],[2,2]];cylinders.forEach(p=>cyl(p[0],.8,p[1],.65,1.6,0x55efa8));const sweeps=[-9,1].map((z,i)=>{"
+          new="const blocks=[[-3.05,-16],[3.05,-11],[-2.1,-6],[2.1,-1],[-2.1,4]];function makeCrashBarrier(x,z,c){const g=new THREE.Group();g.position.set(x,0,z);const body=new THREE.Mesh(new THREE.CapsuleGeometry(.46,1.95,5,10),mat(c));body.rotation.z=Math.PI/2;body.position.y=.46;body.scale.z=1.25;body.castShadow=body.receiveShadow=true;g.add(body);[-1.08,1.08].forEach(s=>{const foot=new THREE.Mesh(new THREE.CylinderGeometry(.34,.44,.22,12),mat(0x292f52));foot.position.set(s,.1,0);foot.castShadow=foot.receiveShadow=true;g.add(foot);const lamp=new THREE.Mesh(new THREE.SphereGeometry(.15,10,7),mat(0xffffff));lamp.position.set(s,.78,0);lamp.material.emissive=new THREE.Color(c);lamp.material.emissiveIntensity=1.25;g.add(lamp)});const stripe=new THREE.Mesh(new THREE.BoxGeometry(1.5,.12,.96),mat(0xffffff));stripe.position.y=.47;stripe.castShadow=true;g.add(stripe);scene.add(g);return g}const crashBarriers=blocks.map((p,i)=>makeCrashBarrier(p[0],p[1],[0xffd24b,0x38d8ff,0xff719d,0x51e7a1,0xffd24b][i]));const cylinders=[[3.15,-18],[-3.15,-13],[2,-8],[-2,-3],[2,2]];function makeBumperPillar(x,z){const g=new THREE.Group();g.position.set(x,0,z);const base=new THREE.Mesh(new THREE.CylinderGeometry(.78,.9,.26,14),mat(0x292f52));base.position.y=.13;base.castShadow=base.receiveShadow=true;g.add(base);const core=new THREE.Mesh(new THREE.CylinderGeometry(.5,.58,1.28,14),mat(0x55efa8));core.position.y=.82;core.castShadow=core.receiveShadow=true;g.add(core);const ring=new THREE.Mesh(new THREE.TorusGeometry(.61,.13,8,18),mat(0xffffff));ring.position.y=.82;ring.rotation.x=Math.PI/2;ring.castShadow=true;g.add(ring);const cap=new THREE.Mesh(new THREE.SphereGeometry(.54,14,9,0,Math.PI*2,0,Math.PI/2),mat(0x38d8ff));cap.position.y=1.46;cap.castShadow=true;g.add(cap);const beacon=new THREE.Mesh(new THREE.OctahedronGeometry(.18,0),mat(0xffd24b));beacon.position.y=1.78;beacon.material.emissive=new THREE.Color(0xff8a00);beacon.material.emissiveIntensity=1.25;g.add(beacon);scene.add(g);return g}const bumperPillars=cylinders.map(p=>makeBumperPillar(p[0],p[1]));const sweeps=[-9,1].map((z,i)=>{"
+          if old not in s: raise SystemExit('static obstacle visual anchor missing')
+          s=s.replace(old,new,1)
+
+          old='full 3D lift route v61 · padded sweeper arms'
+          new='full 3D lift route v62 · modeled static hazards'
+          if old not in s: raise SystemExit('runtime marker missing')
+          s=s.replace(old,new,1)
+          p.write_text(s)
+
+          Path('scripts/static-obstacle-model-v62-check.mjs').write_text("""import fs from 'node:fs';\nconst s=fs.readFileSync('index.html','utf8');\nfor(const needle of ['makeCrashBarrier(x,z,c)','const crashBarriers=blocks.map','new THREE.CapsuleGeometry(.46,1.95,5,10)','makeBumperPillar(x,z)','const bumperPillars=cylinders.map','new THREE.TorusGeometry(.61,.13,8,18)','new THREE.OctahedronGeometry(.18,0)','modeled static hazards']){if(!s.includes(needle))throw new Error('missing '+needle)}\nfor(const removed of ['blocks.forEach((p,i)=>box(p[0],.3,p[1],3,.58,2.2','cylinders.forEach(p=>cyl(p[0],.8,p[1],.65,1.6']){if(s.includes(removed))throw new Error('legacy primitive remains '+removed)}\nconst blockCount=(s.match(/\[-3\.05,-16\]|\[3\.05,-11\]|\[-2\.1,-6\]|\[2\.1,-1\]|\[-2\.1,4\]/g)||[]).length;\nconst pillarCount=(s.match(/\[3\.15,-18\]|\[-3\.15,-13\]|\[2,-8\]|\[-2,-3\]|\[2,2\]/g)||[]).length;\nif(blockCount!==5)throw new Error('expected five barrier anchors, got '+blockCount);\nif(pillarCount!==5)throw new Error('expected five pillar anchors, got '+pillarCount);\nconsole.log('static obstacle model v62: PASS',{barriers:blockCount,pillars:pillarCount});\n""")
+          PY
+
+      - name: Verify runtime syntax and modeled obstacle invariants
+        run: |
+          node scripts/static-obstacle-model-v62-check.mjs
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          module=s.split('<script type="module">',1)[1].split('</script>',1)[0]
+          Path('/tmp/game-module.mjs').write_text(module)
+          PY
+          node --check /tmp/game-module.mjs
+          node --check scripts/static-obstacle-model-v62-check.mjs
+          git diff --check
+
+      - name: Commit gameplay change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html scripts/static-obstacle-model-v62-check.mjs
+          git commit -m 'Replace static primitives with modeled hazards'
+          git push origin HEAD:new-player-glb-overhaul
