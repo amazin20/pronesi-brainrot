@@ -42,21 +42,29 @@ assert((html.match(/onLiftDock\(p\.x,p\.y,p\.z,false\)/g) || []).length >= 1, 'P
 assert((html.match(/onLiftDock\(bp\.x,bp\.y,bp\.z,true\)/g) || []).length >= 1, 'Brainrot support does not include lift docks');
 assert(html.includes('function onLiftPlatform('), 'Lift platform support function is missing');
 
-// The central carry corridor around the first pit must remain free from static blockers.
-const blocksMatch = html.match(/const blocks=\[(.*?)\];blocks\.forEach/s);
-assert(blocksMatch, 'Static blocks list is missing');
+// v62+ renders these anchors as modeled crash barriers / bumper pillars rather than
+// primitive blocks. Keep checking the source anchor arrays because they are still
+// the authoritative collision positions for the static hazards.
+const blocksMatch = html.match(/const blocks=\[(.*?)\];/s);
+assert(blocksMatch, 'Crash-barrier anchor list is missing');
+assert(html.includes('function makeCrashBarrier('), 'Modeled crash-barrier builder is missing');
+assert(html.includes('crashBarriers=blocks.map('), 'Crash-barrier anchors are not bound to modeled hazards');
 const blockPairs = [...blocksMatch[1].matchAll(/\[(-?(?:\d+(?:\.\d+)?|\.\d+)),(-?(?:\d+(?:\.\d+)?|\.\d+))\]/g)].map(m => [Number(m[1]), Number(m[2])]);
+assert(blockPairs.length >= 5, `Expected modeled crash-barrier anchors, got ${blockPairs.length}`);
 for (const [x, z] of blockPairs) {
   const nearLift = Math.abs(z - pitCenter) < 2.0;
-  assert(!(nearLift && Math.abs(x) < 1.8), `Static block intrudes into lift carry corridor at x=${x}, z=${z}`);
+  assert(!(nearLift && Math.abs(x) < 1.8), `Crash barrier intrudes into lift carry corridor at x=${x}, z=${z}`);
 }
 
-const cylindersMatch = html.match(/const cylinders=\[(.*?)\];cylinders\.forEach/s);
-assert(cylindersMatch, 'Cylinder list is missing');
+const cylindersMatch = html.match(/const cylinders=\[(.*?)\];/s);
+assert(cylindersMatch, 'Bumper-pillar anchor list is missing');
+assert(html.includes('function makeBumperPillar('), 'Modeled bumper-pillar builder is missing');
+assert(html.includes('cylinders.map('), 'Bumper-pillar anchors are not bound to modeled hazards');
 const cylinderPairs = [...cylindersMatch[1].matchAll(/\[(-?(?:\d+(?:\.\d+)?|\.\d+)),(-?(?:\d+(?:\.\d+)?|\.\d+))\]/g)].map(m => [Number(m[1]), Number(m[2])]);
+assert(cylinderPairs.length >= 5, `Expected modeled bumper-pillar anchors, got ${cylinderPairs.length}`);
 for (const [x, z] of cylinderPairs) {
   const nearLift = Math.abs(z - pitCenter) < 2.0;
-  assert(!(nearLift && Math.abs(x) < 1.55), `Cylinder intrudes into lift carry corridor at x=${x}, z=${z}`);
+  assert(!(nearLift && Math.abs(x) < 1.55), `Bumper pillar intrudes into lift carry corridor at x=${x}, z=${z}`);
 }
 
 console.log('lift-route-continuity-check: PASS');
@@ -65,5 +73,7 @@ console.log(JSON.stringify({
   entryOverlap:+(entryDockMax-platformMin).toFixed(3),
   exitOverlap:+(platformMax-exitDockMin).toFixed(3),
   dockHalfX,
-  platformHalfX
+  platformHalfX,
+  modeledCrashBarriers:blockPairs.length,
+  modeledBumperPillars:cylinderPairs.length
 }, null, 2));
