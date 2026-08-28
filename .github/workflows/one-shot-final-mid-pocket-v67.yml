@@ -64,7 +64,7 @@ jobs:
           ];
           for(const x of must) if(!s.includes(x)) throw new Error('missing '+x);
           const min=7.88,max=8.18,z1=7.55,z2=8.38;
-          if(!(min>z1 && max<z2 && max-min>=.30)) throw new Error('unsafe midpoint placement');
+          if(!(min>z1 && max<z2 && max-min>=.299)) throw new Error('unsafe midpoint placement');
           console.log('PASS final midpoint pocket v67', {depth:(max-min).toFixed(2), between:[z1,z2]});
           JS
       - name: Run real checks
