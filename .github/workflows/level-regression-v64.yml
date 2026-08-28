@@ -1,0 +1,62 @@
+name: Level Regression v64
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  level-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify current v64 modeled level contract
+        run: |
+          set -euo pipefail
+          grep -q "full 3D lift route v64 · shielded sweeper staging" index.html
+          grep -q "new THREE.CapsuleGeometry(.34,.72,4,8)" index.html
+          grep -q "const crashBarriers=blocks.map" index.html
+          grep -q "const bumperPillars=cylinders.map" index.html
+          if grep -q "new THREE.BoxGeometry(8,.28,.4)" index.html; then
+            echo "Legacy sweeper box visual returned"
+            exit 1
+          fi
+
+      - name: Verify lift carry route
+        run: node scripts/lift-route-continuity-check.mjs
+
+      - name: Verify first sweeper approach
+        run: node scripts/first-sweeper-approach-check.mjs
+
+      - name: Verify first sweeper cycle
+        run: node scripts/first-sweeper-cycle-check.mjs
+
+      - name: Verify first sweeper timing gate
+        run: node scripts/first-sweeper-timing-gate-check.mjs
+
+      - name: Verify first sweeper crossing latch
+        run: node scripts/first-sweeper-gate-crossing-latch-check.mjs
+
+      - name: Verify first sweeper post-gate grace
+        run: node scripts/first-sweeper-postgate-grace-check.mjs
+
+      - name: Verify first sweeper staging shield
+        run: node scripts/first-sweeper-staging-shield-check.mjs
+
+      - name: Verify final finish charge
+        run: node scripts/final-finish-charge-check.mjs
+
+      - name: Verify final residual momentum damping
+        run: node scripts/final-finish-residual-momentum-check.mjs
+
+      - name: Verify final soft hold
+        run: node scripts/final-finish-soft-hold-check.mjs
