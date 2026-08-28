@@ -1,0 +1,75 @@
+name: Final gauntlet approach v53
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.event.head_commit.message == 'Add one-shot final gauntlet approach patch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch real 3D checkpoint to puncher approach
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old='clean build · new GLB only · full 3D lift route v52 · second pit checkpoint capture lane'
+          new='clean build · new GLB only · full 3D lift route v53 · final gauntlet carry approach'
+          assert old in s
+          s=s.replace(old,new,1)
+          anchor='const FINAL_GAUNTLET_Z1=7.55,FINAL_GAUNTLET_Z2=8.38'
+          assert anchor in s
+          insert="const FINAL_GAUNTLET_APPROACH_Z_MIN=6.72,FINAL_GAUNTLET_APPROACH_Z_MAX=7.34,FINAL_GAUNTLET_APPROACH_HALF_X=1.55;const finalGauntletApproachPad=box(0,.03,(FINAL_GAUNTLET_APPROACH_Z_MIN+FINAL_GAUNTLET_APPROACH_Z_MAX)*.5,FINAL_GAUNTLET_APPROACH_HALF_X*2,.06,FINAL_GAUNTLET_APPROACH_Z_MAX-FINAL_GAUNTLET_APPROACH_Z_MIN,0xffd84d),finalGauntletApproachL=box(-FINAL_GAUNTLET_APPROACH_HALF_X-.11,.46,(FINAL_GAUNTLET_APPROACH_Z_MIN+FINAL_GAUNTLET_APPROACH_Z_MAX)*.5,.18,.92,FINAL_GAUNTLET_APPROACH_Z_MAX-FINAL_GAUNTLET_APPROACH_Z_MIN,0xffd84d),finalGauntletApproachR=box(FINAL_GAUNTLET_APPROACH_HALF_X+.11,.46,(FINAL_GAUNTLET_APPROACH_Z_MIN+FINAL_GAUNTLET_APPROACH_Z_MAX)*.5,.18,.92,FINAL_GAUNTLET_APPROACH_Z_MAX-FINAL_GAUNTLET_APPROACH_Z_MIN,0xffd84d);[finalGauntletApproachPad,finalGauntletApproachL,finalGauntletApproachR].forEach(o=>{o.material.emissive=new THREE.Color(0xa95a00);o.material.emissiveIntensity=.78});\n"
+          s=s.replace(anchor,insert+anchor,1)
+          helper='function inSecondPitCheckpointCaptureRail(x,z,r=0){return z>SECOND_PIT_CHECKPOINT_CAPTURE_Z_MIN&&z<SECOND_PIT_CHECKPOINT_CAPTURE_Z_MAX&&Math.abs(x)>SECOND_PIT_CHECKPOINT_CAPTURE_HALF_X-r}'
+          assert helper in s
+          s=s.replace(helper,helper+'function inFinalGauntletApproachRail(x,z,r=0){return z>FINAL_GAUNTLET_APPROACH_Z_MIN&&z<FINAL_GAUNTLET_APPROACH_Z_MAX&&Math.abs(x)>FINAL_GAUNTLET_APPROACH_HALF_X-r}',1)
+          oldp='if(inSecondPitCheckpointCaptureRail(x,z,.4))return true;if(z>FINISH_Z_MIN'
+          newp='if(inSecondPitCheckpointCaptureRail(x,z,.4))return true;if(inFinalGauntletApproachRail(x,z,.4))return true;if(z>FINISH_Z_MIN'
+          assert oldp in s
+          s=s.replace(oldp,newp,1)
+          oldb='if(inSecondPitCheckpointCaptureRail(x,z,r))return true;if(z>FINISH_Z_MIN'
+          newb='if(inSecondPitCheckpointCaptureRail(x,z,r))return true;if(inFinalGauntletApproachRail(x,z,r))return true;if(z>FINISH_Z_MIN'
+          assert oldb in s
+          s=s.replace(oldb,newb,1)
+          p.write_text(s)
+          PY
+      - name: Verify gameplay invariants and syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=[
+            'full 3D lift route v53 · final gauntlet carry approach',
+            'FINAL_GAUNTLET_APPROACH_Z_MIN=6.72',
+            'FINAL_GAUNTLET_APPROACH_Z_MAX=7.34',
+            'FINAL_GAUNTLET_APPROACH_HALF_X=1.55',
+            'finalGauntletApproachPad=box(',
+            'function inFinalGauntletApproachRail',
+            'if(inFinalGauntletApproachRail(x,z,.4))return true',
+            'if(inFinalGauntletApproachRail(x,z,r))return true'
+          ]
+          for x in required: assert x in s, x
+          assert 6.72 < 6.82 < 7.34 < 7.55
+          a=s.index('<script type="module">')+len('<script type="module">')
+          b=s.index('</script>',a)
+          Path('/tmp/runtime.mjs').write_text(s[a:b])
+          print('final gauntlet approach invariants PASS')
+          PY
+          node --check /tmp/runtime.mjs
+      - name: Commit gameplay change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Add carry-safe approach to final puncher gauntlet'
+          git push origin HEAD:new-player-glb-overhaul
