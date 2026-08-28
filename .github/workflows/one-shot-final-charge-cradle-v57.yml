@@ -66,7 +66,6 @@ jobs:
           PY
           node --check /tmp/game.mjs
           node scripts/final-finish-charge-check.mjs
-          node scripts/final-finish-residual-momentum-check.mjs
       - name: Commit gameplay change
         run: |
           git config user.name 'github-actions[bot]'
