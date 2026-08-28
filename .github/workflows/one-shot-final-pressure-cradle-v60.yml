@@ -1,0 +1,96 @@
+name: One-shot final pressure cradle v60
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - '.github/workflows/one-shot-final-pressure-cradle-v60.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+
+      - name: Guard exact parent and patch runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          git pull --ff-only origin new-player-glb-overhaul
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          reps=[]
+          reps.append((
+            'full 3D lift route v59 · carry-aware finish docking',
+            'full 3D lift route v60 · grounded pressure cradle'
+          ))
+          reps.append((
+            "const FINAL_GAUNTLET_Z1=7.55,FINAL_GAUNTLET_Z2=8.38,FINAL_GAUNTLET_HOME_X=3.42,FINAL_GAUNTLET_IN_X=.92,FINAL_GAUNTLET_HALF_X=.68,FINAL_GAUNTLET_HALF_Z=.34,FINAL_GAUNTLET_CLEAR_Z=8.92,FINAL_GAUNTLET_SPEED=2.35;const FINAL_RECOVERY_Z_MIN=8.92,FINAL_RECOVERY_Z_MAX=9.62,FINAL_RECOVERY_HALF_X=2.58,FINAL_RECOVERY_GRACE=.72;const FINAL_FINISH_FUNNEL_Z_MIN=9.54,FINAL_FINISH_FUNNEL_Z_MAX=10.58,FINAL_FINISH_FUNNEL_HALF_X=2.42,FINAL_FINISH_FUNNEL_DAMP=10.5,FINAL_FINISH_FUNNEL_PULL=1.75;const FINAL_CHARGE_CRADLE_Z_MIN=10.30,FINAL_CHARGE_CRADLE_Z_MAX=11.06,FINAL_CHARGE_CRADLE_HALF_X=1.72,FINAL_CHARGE_CRADLE_DAMP=15.5,FINAL_CHARGE_CRADLE_PULL=2.65,FINAL_CHARGE_CARRY_OFFSET=.32,FINAL_CHARGE_GATE_Z=10.88,FINAL_CHARGE_GATE_HALF_X=1.72,FINAL_CHARGE_GATE_CLOSED_Y=.62,FINAL_CHARGE_GATE_OPEN_Y=2.55;",
+            "const FINAL_GAUNTLET_Z1=7.55,FINAL_GAUNTLET_Z2=8.38,FINAL_GAUNTLET_HOME_X=3.42,FINAL_GAUNTLET_IN_X=.92,FINAL_GAUNTLET_HALF_X=.68,FINAL_GAUNTLET_HALF_Z=.34,FINAL_GAUNTLET_CLEAR_Z=8.92,FINAL_GAUNTLET_SPEED=2.35;const FINAL_RECOVERY_Z_MIN=8.92,FINAL_RECOVERY_Z_MAX=9.62,FINAL_RECOVERY_HALF_X=2.58,FINAL_RECOVERY_GRACE=.72;const FINAL_FINISH_FUNNEL_Z_MIN=9.54,FINAL_FINISH_FUNNEL_Z_MAX=10.58,FINAL_FINISH_FUNNEL_HALF_X=2.42,FINAL_FINISH_FUNNEL_DAMP=10.5,FINAL_FINISH_FUNNEL_PULL=1.75;const FINAL_CHARGE_CRADLE_Z_MIN=10.30,FINAL_CHARGE_CRADLE_Z_MAX=11.06,FINAL_CHARGE_CRADLE_HALF_X=1.72,FINAL_CHARGE_CRADLE_DAMP=15.5,FINAL_CHARGE_CRADLE_PULL=2.65,FINAL_CHARGE_CARRY_OFFSET=.32,FINAL_CHARGE_PLAYER_GROUND_Y=.16,FINAL_CHARGE_BRAIN_GROUND_Y=.80,FINAL_CHARGE_MAX_PLAYER_VY=.55,FINAL_CHARGE_MAX_BRAIN_VY=.7,FINAL_CHARGE_GATE_Z=10.88,FINAL_CHARGE_GATE_HALF_X=1.72,FINAL_CHARGE_GATE_CLOSED_Y=.62,FINAL_CHARGE_GATE_OPEN_Y=2.55;"
+          ))
+          reps.append((
+            "const finalChargeCradlePad=box(0,.045,(FINAL_CHARGE_CRADLE_Z_MIN+FINAL_CHARGE_CRADLE_Z_MAX)*.5,FINAL_CHARGE_CRADLE_HALF_X*2,.09,FINAL_CHARGE_CRADLE_Z_MAX-FINAL_CHARGE_CRADLE_Z_MIN,0xffef6a),finalChargeCradleL=box(-FINAL_CHARGE_CRADLE_HALF_X-.10,.48,(FINAL_CHARGE_CRADLE_Z_MIN+FINAL_CHARGE_CRADLE_Z_MAX)*.5,.18,.96,FINAL_CHARGE_CRADLE_Z_MAX-FINAL_CHARGE_CRADLE_Z_MIN,0xffef6a),finalChargeCradleR=box(FINAL_CHARGE_CRADLE_HALF_X+.10,.48,(FINAL_CHARGE_CRADLE_Z_MIN+FINAL_CHARGE_CRADLE_Z_MAX)*.5,.18,.96,FINAL_CHARGE_CRADLE_Z_MAX-FINAL_CHARGE_CRADLE_Z_MIN,0xffef6a);[finalChargeCradlePad,finalChargeCradleL,finalChargeCradleR].forEach(o=>{o.material.emissive=new THREE.Color(0xc99700);o.material.emissiveIntensity=.82});",
+            "const finalChargeCradlePad=box(0,.045,(FINAL_CHARGE_CRADLE_Z_MIN+FINAL_CHARGE_CRADLE_Z_MAX)*.5,FINAL_CHARGE_CRADLE_HALF_X*2,.09,FINAL_CHARGE_CRADLE_Z_MAX-FINAL_CHARGE_CRADLE_Z_MIN,0xffef6a),finalChargeCradleL=box(-FINAL_CHARGE_CRADLE_HALF_X-.10,.48,(FINAL_CHARGE_CRADLE_Z_MIN+FINAL_CHARGE_CRADLE_Z_MAX)*.5,.18,.96,FINAL_CHARGE_CRADLE_Z_MAX-FINAL_CHARGE_CRADLE_Z_MIN,0xffef6a),finalChargeCradleR=box(FINAL_CHARGE_CRADLE_HALF_X+.10,.48,(FINAL_CHARGE_CRADLE_Z_MIN+FINAL_CHARGE_CRADLE_Z_MAX)*.5,.18,.96,FINAL_CHARGE_CRADLE_Z_MAX-FINAL_CHARGE_CRADLE_Z_MIN,0xffef6a);[finalChargeCradlePad,finalChargeCradleL,finalChargeCradleR].forEach(o=>{o.material.emissive=new THREE.Color(0xc99700);o.material.emissiveIntensity=.82});const finalPlayerPressurePad=box(-.62,.105,10.48,1.02,.045,.38,0xffc84d),finalBrainPressurePad=box(.62,.105,10.48,1.02,.045,.38,0x46b9ff);[finalPlayerPressurePad,finalBrainPressurePad].forEach(o=>{o.material.emissive=new THREE.Color(o.material.color);o.material.emissiveIntensity=.5});"
+          ))
+          reps.append((
+            "const playerInFinish=p.z>FINAL_CHARGE_CRADLE_Z_MIN-.02&&p.z<FINAL_CHARGE_GATE_Z-.14&&Math.abs(p.x)<FINAL_CHARGE_CRADLE_HALF_X-.18,brainrotInFinish=bp.z>FINAL_CHARGE_CRADLE_Z_MIN-.02&&bp.z<FINAL_CHARGE_GATE_Z-.14&&Math.abs(bp.x)<FINAL_CHARGE_CRADLE_HALF_X-.18;setLamp(playerLamp,playerInFinish,0xffc84d);setLamp(brainLamp,brainrotInFinish,0x46b9ff);const bothInFinish=playerInFinish&&brainrotInFinish;",
+            "const playerInFinish=p.z>FINAL_CHARGE_CRADLE_Z_MIN-.02&&p.z<FINAL_CHARGE_GATE_Z-.14&&Math.abs(p.x)<FINAL_CHARGE_CRADLE_HALF_X-.18,brainrotInFinish=bp.z>FINAL_CHARGE_CRADLE_Z_MIN-.02&&bp.z<FINAL_CHARGE_GATE_Z-.14&&Math.abs(bp.x)<FINAL_CHARGE_CRADLE_HALF_X-.18,playerPressureStable=playerInFinish&&p.y<=FINAL_CHARGE_PLAYER_GROUND_Y&&Math.abs(vy)<=FINAL_CHARGE_MAX_PLAYER_VY,brainPressureStable=brainrotInFinish&&(carry||bp.y<=FINAL_CHARGE_BRAIN_GROUND_Y)&&(carry||Math.abs(bv.y)<=FINAL_CHARGE_MAX_BRAIN_VY);setLamp(playerLamp,playerPressureStable,0xffc84d);setLamp(brainLamp,brainPressureStable,0x46b9ff);finalPlayerPressurePad.material.emissiveIntensity=playerPressureStable?1.9:.5;finalBrainPressurePad.material.emissiveIntensity=brainPressureStable?1.9:.5;finalPlayerPressurePad.scale.y=playerPressureStable?.72:1;finalBrainPressurePad.scale.y=brainPressureStable?.72:1;const bothInFinish=playerPressureStable&&brainPressureStable;"
+          ))
+          reps.append((
+            "else if(!win&&failTimer<=0&&brainrotInFinish&&!playerInFinish)state.textContent='ИГРОК: НЕ ДОШЁЛ';else if(!win&&failTimer<=0&&playerInFinish&&!brainrotInFinish)state.textContent='БРЕЙНРОТ: НЕ ДОШЁЛ';",
+            "else if(!win&&failTimer<=0&&playerInFinish&&brainrotInFinish&&!bothInFinish)state.textContent='ФИНИШ · СТАБИЛИЗИРУЙСЯ НА ПЛИТАХ';else if(!win&&failTimer<=0&&brainrotInFinish&&!playerInFinish)state.textContent='ИГРОК: НЕ ДОШЁЛ';else if(!win&&failTimer<=0&&playerInFinish&&!brainrotInFinish)state.textContent='БРЕЙНРОТ: НЕ ДОШЁЛ';"
+          ))
+          for old,new in reps:
+              n=s.count(old)
+              if n!=1:
+                  raise SystemExit(f'expected exactly one replacement, got {n}: {old[:90]}')
+              s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+
+      - name: Validate exact browser module and pressure invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          checks=[
+            'full 3D lift route v60 · grounded pressure cradle',
+            'finalPlayerPressurePad=box(',
+            'finalBrainPressurePad=box(',
+            'playerPressureStable=playerInFinish&&p.y<=FINAL_CHARGE_PLAYER_GROUND_Y',
+            'brainPressureStable=brainrotInFinish&&(carry||bp.y<=FINAL_CHARGE_BRAIN_GROUND_Y)',
+            'const bothInFinish=playerPressureStable&&brainPressureStable',
+            "ФИНИШ · СТАБИЛИЗИРУЙСЯ НА ПЛИТАХ"
+          ]
+          missing=[x for x in checks if x not in s]
+          if missing: raise SystemExit('missing invariants: '+repr(missing))
+          start=s.index('<script type="module">')+len('<script type="module">')
+          end=s.rindex('</script>')
+          Path('/tmp/runtime.mjs').write_text(s[start:end])
+          print('pressure-cradle invariants PASS')
+          PY
+          node --check /tmp/runtime.mjs
+          node scripts/final-finish-charge-check.mjs
+
+      - name: Commit gameplay change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --check
+          git diff --cached --quiet && { echo 'No gameplay changes'; exit 1; }
+          git commit -m 'Require grounded finish pressure cradle'
+          git push origin HEAD:new-player-glb-overhaul
