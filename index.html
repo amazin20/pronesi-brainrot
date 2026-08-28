@@ -21,7 +21,7 @@
   <button id="resetBtn" class="iconBtn" aria-label="Перезапуск">↻</button>
   <button id="pauseBtn" class="iconBtn" aria-label="Пауза">Ⅱ</button>
 </header>
-<div id="hint" class="hint">WASD — относительно камеры · клик — толкнуть · удержать поверхность — физический хват · резкий жест + release — бросок</div>
+<div id="hint" class="hint">WASD — относительно камеры · мышь — плавный поворот камеры · клик — толкнуть · удержать поверхность — физический хват</div>
 <div id="interaction" class="interaction hidden"><b id="interactionTitle">ДИВАН</b><span id="interactionText">Курсор задаёт физическое усилие</span></div>
 <div id="gripMeter" class="gripMeter hidden"><span>ХВАТ</span><div><i id="gripFill"></i></div><b id="gripState">СТАБИЛЬНО</b></div>
 <div id="toast" class="toast hidden">БДЫЩ!</div>
@@ -49,6 +49,7 @@
 <script src="src/overhaul/05-mesh-data.js"></script>
 <script src="src/overhaul/05-renderer-v2.js"></script>
 <script src="src/overhaul/05-polish-v2.js"></script>
+<script src="src/overhaul/05-camera-v3.js"></script>
 <script src="src/overhaul/06-input-v2.js"></script>
 <script src="src/overhaul/07-platform.js"></script>
 <script src="src/overhaul/07-audio-v2.js"></script>
