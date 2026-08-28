@@ -1,0 +1,22 @@
+name: Final Puncher Physics Contract v65
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - 'index.html'
+      - 'scripts/final-puncher-physics-contract-v65.mjs'
+      - '.github/workflows/final-puncher-physics-contract-v65.yml'
+  workflow_dispatch:
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check final puncher contract
+        run: node --check scripts/final-puncher-physics-contract-v65.mjs
+      - name: Verify real final puncher physics envelope
+        run: node scripts/final-puncher-physics-contract-v65.mjs
