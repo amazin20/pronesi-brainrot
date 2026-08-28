@@ -1,4 +1,4 @@
-name: Level Regression v64
+name: Level Regression v67
 
 on:
   push:
@@ -19,13 +19,15 @@ jobs:
         with:
           node-version: 22
 
-      - name: Verify current v64 modeled level contract
+      - name: Verify current v67 modeled level contract
         run: |
           set -euo pipefail
-          grep -q "full 3D lift route v64 · shielded sweeper staging" index.html
+          grep -q "full 3D lift route v67 · carry-safe final midpoint" index.html
           grep -q "new THREE.CapsuleGeometry(.34,.72,4,8)" index.html
           grep -q "const crashBarriers=blocks.map" index.html
           grep -q "const bumperPillars=cylinders.map" index.html
+          grep -q "const finalPunchers=" index.html
+          grep -q "const finalMidSafePad=" index.html
           if grep -q "new THREE.BoxGeometry(8,.28,.4)" index.html; then
             echo "Legacy sweeper box visual returned"
             exit 1
@@ -51,6 +53,12 @@ jobs:
 
       - name: Verify first sweeper staging shield
         run: node scripts/first-sweeper-staging-shield-check.mjs
+
+      - name: Verify final puncher swept physics
+        run: node scripts/final-puncher-physics-contract-v65.mjs
+
+      - name: Verify final midpoint carry-safe pocket
+        run: node scripts/final-mid-pocket-v67-check.mjs
 
       - name: Verify final finish charge
         run: node scripts/final-finish-charge-check.mjs
