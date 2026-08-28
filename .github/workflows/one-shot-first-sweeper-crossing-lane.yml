@@ -1,0 +1,57 @@
+name: One-shot first sweeper crossing lane
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/one-shot-first-sweeper-crossing-lane.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch position-locked first sweeper carry lane
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old="FIRST_SWEEPER_RECOVER=.72,FIRST_SWEEPER_CARRY_GRACE=1.38,FIRST_SWEEPER_BURST_SPEED=-2.65"
+          new="FIRST_SWEEPER_RECOVER=.72,FIRST_SWEEPER_CARRY_GRACE=1.38,FIRST_SWEEPER_CROSSING_HALF_X=1.38,FIRST_SWEEPER_BURST_SPEED=-2.65"
+          assert old in s
+          s=s.replace(old,new,1)
+          old2="sweeps.forEach((s,i)=>{const w=i?secondSpeed:(firstSweeperActive?FIRST_SWEEPER_BURST_SPEED:0),from=s.rotation.y,to=from+w*dt;if(Math.abs(w)>.001&&(i!==0||firstSweeperPostGateGrace<=0)&&(i!==1||secondSweeperPostGateGrace<=0))sweeperHit(s,w,from,to);s.rotation.y=to});"
+          new2="const firstSweeperCarryLane=carry&&!firstSweeperCleared&&p.z>FIRST_SWEEPER_GATE_Z-.12&&p.z<FIRST_SWEEPER_CLEAR_Z+.18&&bp.z>FIRST_SWEEPER_GATE_Z-.35&&bp.z<FIRST_SWEEPER_CLEAR_Z+.18&&Math.abs(p.x)<FIRST_SWEEPER_CROSSING_HALF_X&&Math.abs(bp.x)<FIRST_SWEEPER_CROSSING_HALF_X+.22;sweeps.forEach((s,i)=>{const w=i?secondSpeed:(firstSweeperActive?FIRST_SWEEPER_BURST_SPEED:0),from=s.rotation.y,to=from+w*dt;if(Math.abs(w)>.001&&(i!==0||(!firstSweeperCarryLane&&firstSweeperPostGateGrace<=0))&&(i!==1||secondSweeperPostGateGrace<=0))sweeperHit(s,w,from,to);s.rotation.y=to});if(firstSweeperCarryLane&&!win&&failTimer<=0){sweeperEntryPad.material.emissive.setHex(0x149343);sweeperEntryPad.material.emissiveIntensity=1.8;state.textContent='SWEEPER · ЗАЩИЩЁННЫЙ КОРИДОР · НЕ СВОРАЧИВАЙ'}"
+          assert old2 in s
+          s=s.replace(old2,new2,1)
+          s=s.replace('full 3D lift route v47 · carry-safe first sweeper crossing','full 3D lift route v48 · position-locked sweeper crossing lane',1)
+          p.write_text(s)
+          PY
+      - name: Verify runtime syntax and gameplay invariants
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          assert 'FIRST_SWEEPER_CROSSING_HALF_X=1.38' in s
+          assert 'const firstSweeperCarryLane=carry&&!firstSweeperCleared' in s
+          assert '(!firstSweeperCarryLane&&firstSweeperPostGateGrace<=0)' in s
+          assert "SWEEPER · ЗАЩИЩЁННЫЙ КОРИДОР · НЕ СВОРАЧИВАЙ" in s
+          m=re.search(r'<script type="module">(.*)</script>',s,re.S)
+          assert m
+          Path('/tmp/runtime.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/runtime.mjs
+      - name: Commit gameplay patch
+        run: |
+          git config user.name amazin20
+          git config user.email 138931938+amazin20@users.noreply.github.com
+          git add index.html
+          git commit -m "Add position-locked safe lane through first sweeper"
+          git push origin HEAD:new-player-glb-overhaul
