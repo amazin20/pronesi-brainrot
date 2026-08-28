@@ -1,0 +1,57 @@
+name: One Shot Final Puncher Modeled v66
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/one-shot-final-puncher-modeled-v66.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Patch final puncher visuals
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old="""const FINAL_GAUNTLET_Z1=7.55,FINAL_GAUNTLET_Z2=8.38,FINAL_GAUNTLET_HOME_X=3.42,FINAL_GAUNTLET_IN_X=.92,FINAL_GAUNTLET_HALF_X=.68,FINAL_GAUNTLET_HALF_Z=.34,FINAL_GAUNTLET_CLEAR_Z=8.92,FINAL_GAUNTLET_SPEED=2.35;const FINAL_RECOVERY_Z_MIN=8.92,FINAL_RECOVERY_Z_MAX=9.62,FINAL_RECOVERY_HALF_X=2.58,FINAL_RECOVERY_GRACE=.72;const FINAL_FINISH_FUNNEL_Z_MIN=9.54,FINAL_FINISH_FUNNEL_Z_MAX=10.58,FINAL_FINISH_FUNNEL_HALF_X=2.42,FINAL_FINISH_FUNNEL_DAMP=10.5,FINAL_FINISH_FUNNEL_PULL=1.75;const FINAL_CHARGE_CRADLE_Z_MIN=10.30,FINAL_CHARGE_CRADLE_Z_MAX=11.06,FINAL_CHARGE_CRADLE_HALF_X=1.72,FINAL_CHARGE_CRADLE_DAMP=15.5,FINAL_CHARGE_CRADLE_PULL=2.65,FINAL_CHARGE_CARRY_OFFSET=.32,FINAL_CHARGE_PLAYER_GROUND_Y=.16,FINAL_CHARGE_BRAIN_GROUND_Y=.80,FINAL_CHARGE_MAX_PLAYER_VY=.55,FINAL_CHARGE_MAX_BRAIN_VY=.7,FINAL_CHARGE_GATE_Z=10.88,FINAL_CHARGE_GATE_HALF_X=1.72,FINAL_CHARGE_GATE_CLOSED_Y=.62,FINAL_CHARGE_GATE_OPEN_Y=2.55;const FINAL_FINISH_CHARGE=.55,FINAL_FINISH_HOLD_Z=10.12,FINAL_FINISH_HOLD_STRENGTH=5.8,FINAL_FINISH_HOLD_MIN=.34,FINAL_FINISH_PLAYER_MAX_PULL=1.35,FINAL_FINISH_BRAIN_MAX_ACCEL=11.5;const finalGauntletPad1=box(0,.025,FINAL_GAUNTLET_Z1,6.65,.05,.72,0xffb12b),finalGauntletPad2=box(0,.025,FINAL_GAUNTLET_Z2,6.65,.05,.72,0xff557c);[finalGauntletPad1,finalGauntletPad2].forEach(o=>{o.material.emissive=new THREE.Color(o.material.color);o.material.emissiveIntensity=.62});const finalPunchers=[[-1,FINAL_GAUNTLET_Z1,0xffb12b],[1,FINAL_GAUNTLET_Z2,0xff557c]].map(([side,z,c],i)=>{const mesh=box(side*FINAL_GAUNTLET_HOME_X,.62,z,FINAL_GAUNTLET_HALF_X*2,1.08,FINAL_GAUNTLET_HALF_Z*2,c);mesh.material.emissive=new THREE.Color(c);mesh.material.emissiveIntensity=.8;const cap=box(side*(FINAL_GAUNTLET_HOME_X-FINAL_GAUNTLET_HALF_X-.12),.62,z,.18,1.22,.84,0xffffff);cap.material.emissive=new THREE.Color(c);cap.material.emissiveIntensity=1.15;return{mesh,cap,side,z,lastX:mesh.position.x,index:i}});const finalGateL="""
+          new="""const FINAL_GAUNTLET_Z1=7.55,FINAL_GAUNTLET_Z2=8.38,FINAL_GAUNTLET_HOME_X=3.42,FINAL_GAUNTLET_IN_X=.92,FINAL_GAUNTLET_HALF_X=.68,FINAL_GAUNTLET_HALF_Z=.34,FINAL_GAUNTLET_CLEAR_Z=8.92,FINAL_GAUNTLET_SPEED=2.35;const FINAL_RECOVERY_Z_MIN=8.92,FINAL_RECOVERY_Z_MAX=9.62,FINAL_RECOVERY_HALF_X=2.58,FINAL_RECOVERY_GRACE=.72;const FINAL_FINISH_FUNNEL_Z_MIN=9.54,FINAL_FINISH_FUNNEL_Z_MAX=10.58,FINAL_FINISH_FUNNEL_HALF_X=2.42,FINAL_FINISH_FUNNEL_DAMP=10.5,FINAL_FINISH_FUNNEL_PULL=1.75;const FINAL_CHARGE_CRADLE_Z_MIN=10.30,FINAL_CHARGE_CRADLE_Z_MAX=11.06,FINAL_CHARGE_CRADLE_HALF_X=1.72,FINAL_CHARGE_CRADLE_DAMP=15.5,FINAL_CHARGE_CRADLE_PULL=2.65,FINAL_CHARGE_CARRY_OFFSET=.32,FINAL_CHARGE_PLAYER_GROUND_Y=.16,FINAL_CHARGE_BRAIN_GROUND_Y=.80,FINAL_CHARGE_MAX_PLAYER_VY=.55,FINAL_CHARGE_MAX_BRAIN_VY=.7,FINAL_CHARGE_GATE_Z=10.88,FINAL_CHARGE_GATE_HALF_X=1.72,FINAL_CHARGE_GATE_CLOSED_Y=.62,FINAL_CHARGE_GATE_OPEN_Y=2.55;const FINAL_FINISH_CHARGE=.55,FINAL_FINISH_HOLD_Z=10.12,FINAL_FINISH_HOLD_STRENGTH=5.8,FINAL_FINISH_HOLD_MIN=.34,FINAL_FINISH_PLAYER_MAX_PULL=1.35,FINAL_FINISH_BRAIN_MAX_ACCEL=11.5;const finalGauntletPad1=box(0,.025,FINAL_GAUNTLET_Z1,6.65,.05,.72,0xffb12b),finalGauntletPad2=box(0,.025,FINAL_GAUNTLET_Z2,6.65,.05,.72,0xff557c);[finalGauntletPad1,finalGauntletPad2].forEach(o=>{o.material.emissive=new THREE.Color(o.material.color);o.material.emissiveIntensity=.62});function makeFinalPuncher(side,z,c,i){const mesh=new THREE.Mesh(new THREE.CapsuleGeometry(.34,.40,5,10),mat(c));mesh.position.set(side*FINAL_GAUNTLET_HOME_X,.62,z);mesh.rotation.z=Math.PI/2;mesh.scale.set(1.55,1,1);mesh.castShadow=mesh.receiveShadow=true;mesh.material.emissive=new THREE.Color(c);mesh.material.emissiveIntensity=.8;const spine=new THREE.Mesh(new THREE.CylinderGeometry(.21,.27,1.02,12),mat(0x30385e));spine.rotation.z=Math.PI/2;spine.position.x=-side*.18;spine.castShadow=true;mesh.add(spine);[-.34,.34].forEach(y=>{const guard=new THREE.Mesh(new THREE.TorusGeometry(.39,.085,7,14),mat(0xffffff));guard.rotation.y=Math.PI/2;guard.position.set(0,y,0);guard.scale.z=.78;guard.castShadow=true;mesh.add(guard)});const cap=new THREE.Mesh(new THREE.CylinderGeometry(.46,.46,.18,14),mat(0xffffff));cap.rotation.z=Math.PI/2;cap.position.set(side*(FINAL_GAUNTLET_HOME_X-FINAL_GAUNTLET_HALF_X-.12),.62,z);cap.castShadow=cap.receiveShadow=true;cap.material.emissive=new THREE.Color(c);cap.material.emissiveIntensity=1.15;const bumper=new THREE.Mesh(new THREE.TorusGeometry(.39,.085,8,16),mat(c));bumper.rotation.y=Math.PI/2;bumper.material.emissive=new THREE.Color(c);bumper.material.emissiveIntensity=.85;cap.add(bumper);scene.add(mesh,cap);return{mesh,cap,side,z,lastX:mesh.position.x,index:i}}const finalPunchers=[[-1,FINAL_GAUNTLET_Z1,0xffb12b],[1,FINAL_GAUNTLET_Z2,0xff557c]].map(([side,z,c],i)=>makeFinalPuncher(side,z,c,i));const finalGateL="""
+          if old not in s:
+              raise SystemExit('target final puncher block not found; refusing stale patch')
+          s=s.replace(old,new,1)
+          s=s.replace('full 3D lift route v64 · shielded sweeper staging','full 3D lift route v66 · modeled final punchers',1)
+          p.write_text(s)
+          PY
+      - name: Verify modeled punchers and preserved physics contract
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          req=['function makeFinalPuncher','new THREE.CapsuleGeometry(.34,.40,5,10)','new THREE.CylinderGeometry(.46,.46,.18,14)','new THREE.TorusGeometry(.39,.085,8,16)','maxStep=5.8*dt','FINAL_GAUNTLET_HALF_X=.68','FINAL_GAUNTLET_HALF_Z=.34']
+          for x in req:
+              assert x in s, x
+          assert 'const mesh=box(side*FINAL_GAUNTLET_HOME_X' not in s
+          assert 'const cap=box(side*(FINAL_GAUNTLET_HOME_X' not in s
+          print('PASS modeled final punchers + v65 swept envelope retained')
+          PY
+          node scripts/final-puncher-physics-contract-v65.mjs
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          js=s.split('<script type="module">',1)[1].split('</script>',1)[0]
+          Path('/tmp/runtime.mjs').write_text(js)
+          PY
+          node --check /tmp/runtime.mjs
+          git diff --check
+      - name: Commit gameplay change
+        run: |
+          git config user.name amazin20
+          git config user.email 138931938+amazin20@users.noreply.github.com
+          git add index.html
+          git commit -m "Model final punchers as 3D assemblies v66"
+          git push origin HEAD:new-player-glb-overhaul
