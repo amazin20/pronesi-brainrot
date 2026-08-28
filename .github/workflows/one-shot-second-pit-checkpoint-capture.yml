@@ -1,0 +1,91 @@
+name: One Shot Second Pit Checkpoint Capture
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - '.github/workflows/one-shot-second-pit-checkpoint-capture.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch second pit checkpoint capture lane
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old="clean build · new GLB only · full 3D lift route v51 · second pit carry-safe exit bridge"
+          new="clean build · new GLB only · full 3D lift route v52 · second pit checkpoint capture lane"
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="const CHECKPOINT_Z=6.35,CHECKPOINT_X=3.35;const checkpointPad=box(0,.08,CHECKPOINT_Z,7.3,.14,1.25,0x30d9ff);"
+          new="const SECOND_PIT_CHECKPOINT_CAPTURE_Z_MIN=6.02,SECOND_PIT_CHECKPOINT_CAPTURE_Z_MAX=6.82,SECOND_PIT_CHECKPOINT_CAPTURE_HALF_X=1.55,SECOND_PIT_CHECKPOINT_CAPTURE_DAMP=14.5,SECOND_PIT_CHECKPOINT_CAPTURE_PULL=2.2;const secondPitCheckpointCapturePad=box(0,.028,(SECOND_PIT_CHECKPOINT_CAPTURE_Z_MIN+SECOND_PIT_CHECKPOINT_CAPTURE_Z_MAX)*.5,SECOND_PIT_CHECKPOINT_CAPTURE_HALF_X*2,.056,SECOND_PIT_CHECKPOINT_CAPTURE_Z_MAX-SECOND_PIT_CHECKPOINT_CAPTURE_Z_MIN,0x49ff79),secondPitCheckpointCaptureL=box(-SECOND_PIT_CHECKPOINT_CAPTURE_HALF_X-.11,.42,(SECOND_PIT_CHECKPOINT_CAPTURE_Z_MIN+SECOND_PIT_CHECKPOINT_CAPTURE_Z_MAX)*.5,.18,.84,SECOND_PIT_CHECKPOINT_CAPTURE_Z_MAX-SECOND_PIT_CHECKPOINT_CAPTURE_Z_MIN,0x49ff79),secondPitCheckpointCaptureR=box(SECOND_PIT_CHECKPOINT_CAPTURE_HALF_X+.11,.42,(SECOND_PIT_CHECKPOINT_CAPTURE_Z_MIN+SECOND_PIT_CHECKPOINT_CAPTURE_Z_MAX)*.5,.18,.84,SECOND_PIT_CHECKPOINT_CAPTURE_Z_MAX-SECOND_PIT_CHECKPOINT_CAPTURE_Z_MIN,0x49ff79);[secondPitCheckpointCapturePad,secondPitCheckpointCaptureL,secondPitCheckpointCaptureR].forEach(o=>{o.material.emissive=new THREE.Color(0x159b43);o.material.emissiveIntensity=.62});const CHECKPOINT_Z=6.35,CHECKPOINT_X=3.35;const checkpointPad=box(0,.08,CHECKPOINT_Z,7.3,.14,1.25,0x30d9ff);"
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="function inSecondPitApproachRail(x,z,r=0){return z>SECOND_PIT_APPROACH_Z_MIN&&z<SECOND_PIT_APPROACH_Z_MAX&&Math.abs(x)>SECOND_PIT_APPROACH_HALF_X-r}function blocked(x,z){"
+          new="function inSecondPitApproachRail(x,z,r=0){return z>SECOND_PIT_APPROACH_Z_MIN&&z<SECOND_PIT_APPROACH_Z_MAX&&Math.abs(x)>SECOND_PIT_APPROACH_HALF_X-r}function inSecondPitCheckpointCaptureRail(x,z,r=0){return z>SECOND_PIT_CHECKPOINT_CAPTURE_Z_MIN&&z<SECOND_PIT_CHECKPOINT_CAPTURE_Z_MAX&&Math.abs(x)>SECOND_PIT_CHECKPOINT_CAPTURE_HALF_X-r}function blocked(x,z){"
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="if(inSecondPitApproachRail(x,z,.4))return true;if(z>FINISH_Z_MIN"
+          new="if(inSecondPitApproachRail(x,z,.4))return true;if(inSecondPitCheckpointCaptureRail(x,z,.4))return true;if(z>FINISH_Z_MIN"
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="if(inSecondPitApproachRail(x,z,r))return true;if(z>FINISH_Z_MIN"
+          new="if(inSecondPitApproachRail(x,z,r))return true;if(inSecondPitCheckpointCaptureRail(x,z,r))return true;if(z>FINISH_Z_MIN"
+          assert old in s
+          s=s.replace(old,new,1)
+
+          old="const playerLandingFunnel=p.z>SECOND_PIT_FUNNEL_Z_MIN&&p.z<SECOND_PIT_FUNNEL_Z_MAX&&p.y<.48,brainLandingFunnel=!carry&&bp.z>SECOND_PIT_FUNNEL_Z_MIN&&bp.z<SECOND_PIT_FUNNEL_Z_MAX&&bp.y<.92;"
+          new="const checkpointCaptureActive=carry&&!checkpoint&&p.z>SECOND_PIT_CHECKPOINT_CAPTURE_Z_MIN&&p.z<SECOND_PIT_CHECKPOINT_CAPTURE_Z_MAX&&p.y<.48,checkpointCapturePulse=.5+.5*Math.sin(t*10);[secondPitCheckpointCapturePad,secondPitCheckpointCaptureL,secondPitCheckpointCaptureR].forEach(o=>o.material.emissiveIntensity=checkpointCaptureActive?1.15+.5*checkpointCapturePulse:.62);if(checkpointCaptureActive){playerMomentumX*=Math.exp(-SECOND_PIT_CHECKPOINT_CAPTURE_DAMP*dt);playerMomentumZ*=Math.exp(-SECOND_PIT_CHECKPOINT_CAPTURE_DAMP*.65*dt);const centerStep=SECOND_PIT_CHECKPOINT_CAPTURE_PULL*dt;p.x+=Math.max(-centerStep,Math.min(centerStep,-p.x));if(!win&&failTimer<=0)state.textContent='ЧЕКПОИНТ · КОРИДОР ЗАХВАТА · ДЕРЖИ ПРЯМО'}const playerLandingFunnel=p.z>SECOND_PIT_FUNNEL_Z_MIN&&p.z<SECOND_PIT_FUNNEL_Z_MAX&&p.y<.48,brainLandingFunnel=!carry&&bp.z>SECOND_PIT_FUNNEL_Z_MIN&&bp.z<SECOND_PIT_FUNNEL_Z_MAX&&bp.y<.92;"
+          assert old in s
+          s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+      - name: Verify gameplay syntax and checkpoint capture invariants
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          a=s.index('<script type="module">')+len('<script type="module">')
+          b=s.index('</script>',a)
+          Path('/tmp/runtime.mjs').write_text(s[a:b])
+          assert 'full 3D lift route v52 · second pit checkpoint capture lane' in s
+          assert 'SECOND_PIT_CHECKPOINT_CAPTURE_Z_MIN=6.02' in s
+          assert 'SECOND_PIT_CHECKPOINT_CAPTURE_Z_MAX=6.82' in s
+          assert 'inSecondPitCheckpointCaptureRail' in s
+          assert "state.textContent='ЧЕКПОИНТ · КОРИДОР ЗАХВАТА · ДЕРЖИ ПРЯМО'" in s
+          assert 'playerMomentumX*=Math.exp(-SECOND_PIT_CHECKPOINT_CAPTURE_DAMP*dt)' in s
+          assert 'p.x+=Math.max(-centerStep,Math.min(centerStep,-p.x))' in s
+          # Capture lane overlaps the exit release and the checkpoint trigger.
+          zmin,zmax,release,checkpoint=6.02,6.82,6.02,6.35
+          assert zmin <= release <= zmax
+          assert zmin < checkpoint < zmax
+          print('second pit checkpoint capture invariants PASS')
+          PY
+          node --check /tmp/runtime.mjs
+      - name: Commit gameplay patch
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Add carry-safe checkpoint capture after second pit'
+          git push origin HEAD:new-player-glb-overhaul
