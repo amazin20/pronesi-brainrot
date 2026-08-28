@@ -1,0 +1,59 @@
+name: One-shot second sweeper crossing lane
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/one-shot-second-sweeper-crossing-lane.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Patch second sweeper carry-safe corridor
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old='clean build · new GLB only · full 3D lift route v48 · position-locked sweeper crossing lane'
+          new='clean build · new GLB only · full 3D lift route v49 · dual position-locked sweeper lanes'
+          assert old in s
+          s=s.replace(old,new,1)
+          old='SECOND_SWEEPER_POST_GATE_GRACE=.55,SECOND_SWEEPER_RECOVERY_Z_MIN=3.18'
+          new='SECOND_SWEEPER_POST_GATE_GRACE=.55,SECOND_SWEEPER_CROSSING_HALF_X=1.42,SECOND_SWEEPER_RECOVERY_Z_MIN=3.18'
+          assert old in s
+          s=s.replace(old,new,1)
+          old="const firstSweeperCarryLane=carry&&!firstSweeperCleared&&p.z>FIRST_SWEEPER_GATE_Z-.12&&p.z<FIRST_SWEEPER_CLEAR_Z+.18&&bp.z>FIRST_SWEEPER_GATE_Z-.35&&bp.z<FIRST_SWEEPER_CLEAR_Z+.18&&Math.abs(p.x)<FIRST_SWEEPER_CROSSING_HALF_X&&Math.abs(bp.x)<FIRST_SWEEPER_CROSSING_HALF_X+.22;sweeps.forEach((s,i)=>{const w=i?secondSpeed:(firstSweeperActive?FIRST_SWEEPER_BURST_SPEED:0),from=s.rotation.y,to=from+w*dt;if(Math.abs(w)>.001&&(i!==0||(!firstSweeperCarryLane&&firstSweeperPostGateGrace<=0))&&(i!==1||secondSweeperPostGateGrace<=0))sweeperHit(s,w,from,to);s.rotation.y=to});if(firstSweeperCarryLane&&!win&&failTimer<=0){sweeperEntryPad.material.emissive.setHex(0x149343);sweeperEntryPad.material.emissiveIntensity=1.8;state.textContent='SWEEPER · ЗАЩИЩЁННЫЙ КОРИДОР · НЕ СВОРАЧИВАЙ'}"
+          new="const firstSweeperCarryLane=carry&&!firstSweeperCleared&&p.z>FIRST_SWEEPER_GATE_Z-.12&&p.z<FIRST_SWEEPER_CLEAR_Z+.18&&bp.z>FIRST_SWEEPER_GATE_Z-.35&&bp.z<FIRST_SWEEPER_CLEAR_Z+.18&&Math.abs(p.x)<FIRST_SWEEPER_CROSSING_HALF_X&&Math.abs(bp.x)<FIRST_SWEEPER_CROSSING_HALF_X+.22,secondSweeperCarryLane=carry&&firstSweeperCleared&&!secondSweeperCleared&&p.z>SECOND_SWEEPER_GATE_Z-.12&&p.z<SECOND_SWEEPER_CLEAR_Z+.18&&bp.z>SECOND_SWEEPER_GATE_Z-.35&&bp.z<SECOND_SWEEPER_CLEAR_Z+.18&&Math.abs(p.x)<SECOND_SWEEPER_CROSSING_HALF_X&&Math.abs(bp.x)<SECOND_SWEEPER_CROSSING_HALF_X+.22;sweeps.forEach((s,i)=>{const w=i?secondSpeed:(firstSweeperActive?FIRST_SWEEPER_BURST_SPEED:0),from=s.rotation.y,to=from+w*dt;if(Math.abs(w)>.001&&(i!==0||(!firstSweeperCarryLane&&firstSweeperPostGateGrace<=0))&&(i!==1||(!secondSweeperCarryLane&&secondSweeperPostGateGrace<=0)))sweeperHit(s,w,from,to);s.rotation.y=to});if(firstSweeperCarryLane&&!win&&failTimer<=0){sweeperEntryPad.material.emissive.setHex(0x149343);sweeperEntryPad.material.emissiveIntensity=1.8;state.textContent='SWEEPER · ЗАЩИЩЁННЫЙ КОРИДОР · НЕ СВОРАЧИВАЙ'}if(secondSweeperCarryLane&&!win&&failTimer<=0){secondSweeperStagePad.material.emissive.setHex(0x149343);secondSweeperStagePad.material.emissiveIntensity=1.8;state.textContent='SWEEPER 2 · ЗАЩИЩЁННЫЙ КОРИДОР · ДЕРЖИ ЦЕНТР'}"
+          assert old in s
+          s=s.replace(old,new,1)
+          p.write_text(s)
+      - name: Verify runtime syntax and invariants
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          assert 'full 3D lift route v49 · dual position-locked sweeper lanes' in s
+          assert 'SECOND_SWEEPER_CROSSING_HALF_X=1.42' in s
+          assert 'secondSweeperCarryLane=carry&&firstSweeperCleared&&!secondSweeperCleared' in s
+          assert "SWEEPER 2 · ЗАЩИЩЁННЫЙ КОРИДОР · ДЕРЖИ ЦЕНТР" in s
+          assert '(i!==1||(!secondSweeperCarryLane&&secondSweeperPostGateGrace<=0))' in s
+          start=s.index('<script type="module">')+len('<script type="module">')
+          end=s.index('</script>',start)
+          Path('/tmp/runtime.mjs').write_text(s[start:end])
+          print('second sweeper crossing-lane invariants: PASS')
+          PY
+          node --check /tmp/runtime.mjs
+      - name: Commit gameplay patch
+        shell: bash
+        run: |
+          git config user.name 'amazin20'
+          git config user.email '138931938+amazin20@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Add position-locked safe lane through second sweeper'
+          git push origin HEAD:new-player-glb-overhaul
