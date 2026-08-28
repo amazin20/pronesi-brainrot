@@ -1,0 +1,53 @@
+name: One-shot sweeper model v61
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/one-shot-sweeper-model-v61.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Replace sweeper placeholder bars with real 3D padded arms
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          s=s.replace('full 3D lift route v60 · grounded pressure cradle','full 3D lift route v61 · padded sweeper arms',1)
+          old="const sweeps=[-9,1].map((z,i)=>{const g=new THREE.Group();g.position.set(0,.9,z);const b=new THREE.Mesh(new THREE.BoxGeometry(8,.28,.4),mat(0xff557c));g.add(b);scene.add(g);return g});"
+          new="const sweeps=[-9,1].map((z,i)=>{const g=new THREE.Group();g.position.set(0,.9,z);const hub=new THREE.Mesh(new THREE.CylinderGeometry(.36,.36,.62,16),mat(0x313657));hub.rotation.x=Math.PI/2;hub.castShadow=true;g.add(hub);const arm=new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,6.9,12),mat(0xff557c));arm.rotation.z=Math.PI/2;arm.castShadow=true;g.add(arm);[-3.45,3.45].forEach((x,j)=>{const pad=new THREE.Mesh(new THREE.CapsuleGeometry(.34,.72,4,8),mat(j?0xffd24b:0x38d8ff));pad.position.set(x,0,0);pad.rotation.z=Math.PI/2;pad.castShadow=true;g.add(pad)});const ring=new THREE.Mesh(new THREE.TorusGeometry(.5,.08,8,18),mat(0xffffff));ring.rotation.x=Math.PI/2;g.add(ring);scene.add(g);return g});"
+          assert old in s
+          s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+      - name: Verify real sweeper model and runtime syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          checks=['full 3D lift route v61 · padded sweeper arms','CylinderGeometry(.36,.36,.62,16)','CylinderGeometry(.13,.13,6.9,12)','CapsuleGeometry(.34,.72,4,8)','TorusGeometry(.5,.08,8,18)']
+          for x in checks: assert x in s, x
+          assert 'new THREE.BoxGeometry(8,.28,.4)' not in s
+          start=s.index('<script type="module">')+len('<script type="module">')
+          end=s.index('</script>',start)
+          Path('/tmp/game.mjs').write_text(s[start:end])
+          print('padded sweeper model invariants PASS')
+          PY
+          node --check /tmp/game.mjs
+      - name: Commit gameplay change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --check
+          git commit -m 'Replace sweeper bars with padded 3D arms'
+          git push origin HEAD:new-player-glb-overhaul
