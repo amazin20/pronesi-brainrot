@@ -1,0 +1,169 @@
+name: Route Diagnostic Capture v63
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify carry-safe lift support corridor
+        run: node scripts/lift-route-continuity-check.mjs
+
+      - name: Install Chromium capture tools
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0
+          npx playwright install --with-deps chromium
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Serve exact browser runtime
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/brainrot-http.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/index.html >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/brainrot-http.log
+          exit 1
+
+      - name: Capture real route diagnostics
+        run: |
+          mkdir -p artifacts/raw-video artifacts/stages
+          cat > route-diagnostic.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs';
+
+          const browser = await chromium.launch({headless:true,args:['--use-angle=swiftshader','--enable-webgl','--ignore-gpu-blocklist']});
+          const context = await browser.newContext({
+            viewport:{width:1280,height:720},
+            recordVideo:{dir:'artifacts/raw-video',size:{width:1280,height:720}}
+          });
+          const page = await context.newPage();
+          const errors=[];
+          const timeline=[];
+          const started=Date.now();
+          page.on('console',m=>{if(m.type()==='error') errors.push(m.text())});
+          page.on('pageerror',e=>errors.push(String(e)));
+          await page.goto('http://127.0.0.1:4173/index.html',{waitUntil:'domcontentloaded',timeout:60000});
+          await page.waitForSelector('#load',{state:'detached',timeout:60000});
+          await page.waitForTimeout(800);
+
+          const state=async()=>page.locator('#state').innerText().catch(()=> 'UNKNOWN');
+          const snap=async label=>{
+            const s=await state();
+            timeline.push(`${Date.now()-started}ms ${label} :: ${s}`);
+            await page.screenshot({path:`artifacts/stages/${label}.png`});
+          };
+          const observe=async(ms,label)=>{
+            const end=Date.now()+ms;
+            let last='';
+            while(Date.now()<end){
+              const s=await state();
+              if(s!==last){timeline.push(`${Date.now()-started}ms ${label} :: ${s}`);last=s}
+              await page.waitForTimeout(80);
+            }
+          };
+          const hold=async(codes,ms,label)=>{
+            for(const code of codes) await page.keyboard.down(code);
+            await observe(ms,label);
+            for(const code of [...codes].reverse()) await page.keyboard.up(code);
+          };
+
+          await snap('00-ready');
+          await hold(['KeyW'],720,'pickup-approach');
+          await page.keyboard.press('KeyE');
+          await observe(900,'pickup');
+          await snap('01-carried');
+
+          await page.keyboard.down('KeyW');
+          await observe(760,'first-pit-approach');
+          await page.keyboard.press('Space');
+          await observe(900,'first-pit-jump');
+          await page.keyboard.up('KeyW');
+          await observe(320,'first-pit-settle');
+          await snap('02-first-pit');
+
+          await hold(['KeyW'],650,'lift-entry');
+          await observe(1700,'lift-wait');
+          await snap('03-lift-wait');
+          await page.keyboard.down('KeyW');
+          await observe(2300,'lift-cross');
+          await page.keyboard.press('Space');
+          await observe(650,'lift-exit-jump');
+          await page.keyboard.up('KeyW');
+          await observe(350,'lift-exit-settle');
+          await snap('04-lift-exit');
+
+          await hold(['KeyW'],5200,'first-sweeper');
+          await observe(800,'first-sweeper-settle');
+          await snap('05-first-sweeper');
+
+          await hold(['KeyW'],6200,'second-sweeper');
+          await observe(650,'second-sweeper-settle');
+          await snap('06-second-sweeper');
+
+          await hold(['KeyW'],4300,'second-pit-crossing');
+          await observe(500,'second-pit-settle');
+          await snap('07-second-pit');
+
+          await hold(['KeyW'],3000,'checkpoint-approach');
+          await observe(500,'checkpoint-settle');
+          await snap('08-checkpoint');
+
+          // Continue genuine input into the final puncher/finish section even if an
+          // earlier gate slowed the run. This makes the trace show the exact stop.
+          await hold(['KeyW'],5200,'final-gauntlet-attempt');
+          await observe(900,'final-settle');
+          await snap('09-final-attempt');
+
+          const finalState=await state();
+          const canvas=await page.locator('canvas').boundingBox();
+          fs.writeFileSync('artifacts/route-diagnostic.txt',[
+            `head=${process.env.GITHUB_SHA||'unknown'}`,
+            `finalState=${finalState}`,
+            `canvas=${canvas?`${Math.round(canvas.width)}x${Math.round(canvas.height)}`:'missing'}`,
+            `errors=${errors.join(' | ')}`,
+            ...timeline
+          ].join('\n')+'\n');
+
+          if(!canvas || canvas.width<1000 || canvas.height<600) throw new Error('WebGL canvas missing or undersized');
+          if(errors.length) throw new Error(errors.join('\n'));
+          await context.close();
+          await browser.close();
+          EOF
+          node route-diagnostic.mjs
+
+      - name: Convert actual Chromium recording to MP4
+        if: always()
+        run: |
+          set -e
+          WEBM=$(find artifacts/raw-video -type f \( -name '*.webm' -o -name '*.mkv' \) | head -n1)
+          test -n "$WEBM"
+          ffmpeg -y -i "$WEBM" -c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p -movflags +faststart -an artifacts/brainrot-route-diagnostic-v63.mp4
+          ffprobe -v error -show_entries format=duration,size -of default=noprint_wrappers=1 artifacts/brainrot-route-diagnostic-v63.mp4
+
+      - name: Upload real browser QA artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: route-diagnostic-v63-${{ github.sha }}
+          path: |
+            artifacts/brainrot-route-diagnostic-v63.mp4
+            artifacts/route-diagnostic.txt
+            artifacts/stages/*.png
+          if-no-files-found: error
+          retention-days: 7
