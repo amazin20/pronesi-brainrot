@@ -1,0 +1,91 @@
+name: One-shot second pit exit bridge
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/one-shot-second-pit-exit-bridge.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch physical exit bridge
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old='clean build · new GLB only · full 3D lift route v50 · second pit physical boarding bridge'
+          new='clean build · new GLB only · full 3D lift route v51 · second pit carry-safe exit bridge'
+          assert old in s
+          s=s.replace(old,new,1)
+          old='SECOND_PIT_BOARD_BRIDGE_HALF_X=1.45,SECOND_PIT_BOARD_BRIDGE_HALF_Z=.18,SECOND_PIT_EXIT_RELEASE_Z=6.02;'
+          new='SECOND_PIT_BOARD_BRIDGE_HALF_X=1.45,SECOND_PIT_BOARD_BRIDGE_HALF_Z=.18,SECOND_PIT_EXIT_BRIDGE_Z=5.80,SECOND_PIT_EXIT_BRIDGE_HALF_X=1.75,SECOND_PIT_EXIT_BRIDGE_HALF_Z=.28,SECOND_PIT_EXIT_RELEASE_Z=6.02;'
+          assert old in s
+          s=s.replace(old,new,1)
+          old='secondPitBoardBridge.visible=false;const secondPitExitPad=box(0,.035,5.98,3.35,.07,.44,0x49ff79);secondPitExitPad.material.emissive=new THREE.Color(0x19b24e);secondPitExitPad.material.emissiveIntensity=.58;'
+          new='secondPitBoardBridge.visible=false;const secondPitExitBridge=box(0,.02,SECOND_PIT_EXIT_BRIDGE_Z,SECOND_PIT_EXIT_BRIDGE_HALF_X*2,.08,SECOND_PIT_EXIT_BRIDGE_HALF_Z*2,0x49ff79),secondPitExitPad=box(0,.035,5.98,3.35,.07,.44,0x49ff79);secondPitExitBridge.material.emissive=new THREE.Color(0x19b24e);secondPitExitBridge.material.emissiveIntensity=.9;secondPitExitPad.material.emissive=new THREE.Color(0x19b24e);secondPitExitPad.material.emissiveIntensity=.58;'
+          assert old in s
+          s=s.replace(old,new,1)
+          old='function onSecondPitBoardBridge(x,y,z,brain=false){if(!secondPitBoardBridgeActive)return false;const target=PIT_PLATFORM_TOP+(brain?.56:0),mx=brain?.16:.08,mz=brain?.12:.06;return Math.abs(x)<=SECOND_PIT_BOARD_BRIDGE_HALF_X+mx&&Math.abs(z-SECOND_PIT_BOARD_BRIDGE_Z)<=SECOND_PIT_BOARD_BRIDGE_HALF_Z+mz&&Math.abs(y-target)<=.24}function movePitPlatform'
+          new='function onSecondPitBoardBridge(x,y,z,brain=false){if(!secondPitBoardBridgeActive)return false;const target=PIT_PLATFORM_TOP+(brain?.56:0),mx=brain?.16:.08,mz=brain?.12:.06;return Math.abs(x)<=SECOND_PIT_BOARD_BRIDGE_HALF_X+mx&&Math.abs(z-SECOND_PIT_BOARD_BRIDGE_Z)<=SECOND_PIT_BOARD_BRIDGE_HALF_Z+mz&&Math.abs(y-target)<=.24}function onSecondPitExitBridge(x,y,z,brain=false){const target=PIT_PLATFORM_TOP+(brain?.56:0),mx=brain?.16:.08,mz=brain?.14:.07;return Math.abs(x)<=SECOND_PIT_EXIT_BRIDGE_HALF_X+mx&&Math.abs(z-SECOND_PIT_EXIT_BRIDGE_Z)<=SECOND_PIT_EXIT_BRIDGE_HALF_Z+mz&&Math.abs(y-target)<=.24}function movePitPlatform'
+          assert old in s
+          s=s.replace(old,new,1)
+          old='||supportedBySecondPit(p.x,p.y,p.z,false)||onSecondPitBoardBridge(p.x,p.y,p.z,false)||playerOnLift)'
+          new='||supportedBySecondPit(p.x,p.y,p.z,false)||onSecondPitBoardBridge(p.x,p.y,p.z,false)||onSecondPitExitBridge(p.x,p.y,p.z,false)||playerOnLift)'
+          assert old in s
+          s=s.replace(old,new,1)
+          old='||supportedBySecondPit(bp.x,bp.y,bp.z,true)||onSecondPitBoardBridge(bp.x,bp.y,bp.z,true)||brainOnLift)'
+          new='||supportedBySecondPit(bp.x,bp.y,bp.z,true)||onSecondPitBoardBridge(bp.x,bp.y,bp.z,true)||onSecondPitExitBridge(bp.x,bp.y,bp.z,true)||brainOnLift)'
+          assert old in s
+          s=s.replace(old,new,1)
+          old='secondPitExitPad.material.emissiveIntensity=crossing?1.4+.35*pulse:.58;'
+          new='secondPitExitBridge.material.emissiveIntensity=crossing?1.45+.45*pulse:.9;secondPitExitPad.material.emissiveIntensity=crossing?1.4+.35*pulse:.58;'
+          assert old in s
+          s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+      - name: Verify gameplay syntax and bridge geometry
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          assert 'full 3D lift route v51' in s
+          assert 'function onSecondPitExitBridge' in s
+          assert s.count('onSecondPitExitBridge(p.x,p.y,p.z,false)')==1
+          assert s.count('onSecondPitExitBridge(bp.x,bp.y,bp.z,true)')==1
+          pit_end=5.82
+          platform_center=(5.05+5.82)*.5
+          platform_front=platform_center+.34
+          bridge_center=5.80
+          bridge_half=.28
+          bridge_back=bridge_center-bridge_half
+          bridge_front=bridge_center+bridge_half
+          assert bridge_back < platform_front, (bridge_back,platform_front)
+          assert bridge_front > pit_end, (bridge_front,pit_end)
+          assert 1.75 >= 1.55
+          print('exit bridge overlap platform:',round(platform_front-bridge_back,3),'m')
+          print('exit bridge overlap safe floor:',round(bridge_front-pit_end,3),'m')
+          PY
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          a=s.index('<script type="module">')+len('<script type="module">')
+          b=s.index('</script></body></html>',a)
+          Path('/tmp/runtime.mjs').write_text(s[a:b])
+          PY
+          node --check /tmp/runtime.mjs
+      - name: Commit gameplay change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Add carry-safe exit bridge to second pit'
+          git push origin HEAD:new-player-glb-overhaul
