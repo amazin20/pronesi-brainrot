@@ -1,0 +1,76 @@
+name: One-shot final charge cradle v57
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/one-shot-final-charge-cradle-v57.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch physical final charge cradle
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          s=s.replace('full 3D lift route v56 · physical finish capture funnel','full 3D lift route v57 · physical finish charge cradle',1)
+          old='const FINAL_FINISH_FUNNEL_Z_MIN=9.54,FINAL_FINISH_FUNNEL_Z_MAX=10.58,FINAL_FINISH_FUNNEL_HALF_X=2.42,FINAL_FINISH_FUNNEL_DAMP=10.5,FINAL_FINISH_FUNNEL_PULL=1.75;const FINAL_FINISH_CHARGE=.55'
+          new='const FINAL_FINISH_FUNNEL_Z_MIN=9.54,FINAL_FINISH_FUNNEL_Z_MAX=10.58,FINAL_FINISH_FUNNEL_HALF_X=2.42,FINAL_FINISH_FUNNEL_DAMP=10.5,FINAL_FINISH_FUNNEL_PULL=1.75;const FINAL_CHARGE_CRADLE_Z_MIN=10.30,FINAL_CHARGE_CRADLE_Z_MAX=11.06,FINAL_CHARGE_CRADLE_HALF_X=1.72,FINAL_CHARGE_CRADLE_DAMP=15.5,FINAL_CHARGE_CRADLE_PULL=2.65;const FINAL_FINISH_CHARGE=.55'
+          assert old in s
+          s=s.replace(old,new,1)
+          anchor='const finishChargePad=box(0,.17,10.46,4.8,.055,.52,0xffffff);'
+          insert="const finalChargeCradlePad=box(0,.045,(FINAL_CHARGE_CRADLE_Z_MIN+FINAL_CHARGE_CRADLE_Z_MAX)*.5,FINAL_CHARGE_CRADLE_HALF_X*2,.09,FINAL_CHARGE_CRADLE_Z_MAX-FINAL_CHARGE_CRADLE_Z_MIN,0xffef6a),finalChargeCradleL=box(-FINAL_CHARGE_CRADLE_HALF_X-.10,.48,(FINAL_CHARGE_CRADLE_Z_MIN+FINAL_CHARGE_CRADLE_Z_MAX)*.5,.18,.96,FINAL_CHARGE_CRADLE_Z_MAX-FINAL_CHARGE_CRADLE_Z_MIN,0xffef6a),finalChargeCradleR=box(FINAL_CHARGE_CRADLE_HALF_X+.10,.48,(FINAL_CHARGE_CRADLE_Z_MIN+FINAL_CHARGE_CRADLE_Z_MAX)*.5,.18,.96,FINAL_CHARGE_CRADLE_Z_MAX-FINAL_CHARGE_CRADLE_Z_MIN,0xffef6a);[finalChargeCradlePad,finalChargeCradleL,finalChargeCradleR].forEach(o=>{o.material.emissive=new THREE.Color(0xc99700);o.material.emissiveIntensity=.82});"+anchor
+          assert anchor in s
+          s=s.replace(anchor,insert,1)
+          old_fn='function inFinalFinishFunnelRail(x,z,r=0){return z>FINAL_FINISH_FUNNEL_Z_MIN&&z<FINAL_FINISH_FUNNEL_Z_MAX&&Math.abs(x)>FINAL_FINISH_FUNNEL_HALF_X-r}'
+          new_fn=old_fn+'function inFinalChargeCradleRail(x,z,r=0){return z>FINAL_CHARGE_CRADLE_Z_MIN&&z<FINAL_CHARGE_CRADLE_Z_MAX&&Math.abs(x)>FINAL_CHARGE_CRADLE_HALF_X-r}'
+          assert old_fn in s
+          s=s.replace(old_fn,new_fn,1)
+          s=s.replace('if(inFinalFinishFunnelRail(x,z,.4))return true;if(z>FINISH_Z_MIN','if(inFinalFinishFunnelRail(x,z,.4))return true;if(inFinalChargeCradleRail(x,z,.4))return true;if(z>FINISH_Z_MIN',1)
+          s=s.replace('if(inFinalFinishFunnelRail(x,z,r))return true;if(z>FINISH_Z_MIN','if(inFinalFinishFunnelRail(x,z,r))return true;if(inFinalChargeCradleRail(x,z,r))return true;if(z>FINISH_Z_MIN',1)
+          anchor_tick="if(finalFinishFunnelActive){playerMomentumX*=Math.exp(-FINAL_FINISH_FUNNEL_DAMP*dt);playerMomentumZ*=Math.exp(-FINAL_FINISH_FUNNEL_DAMP*.55*dt);const funnelStep=FINAL_FINISH_FUNNEL_PULL*dt;p.x+=Math.max(-funnelStep,Math.min(funnelStep,-p.x));if(!carry){bv.x*=Math.exp(-FINAL_FINISH_FUNNEL_DAMP*.72*dt);bv.z*=Math.exp(-FINAL_FINISH_FUNNEL_DAMP*.42*dt)}if(failTimer<=0)state.textContent='ФИНИШ · НАПРАВЛЯЮЩИЙ КОРИДОР'}"
+          add=anchor_tick+"const finalChargeCradleActive=finalGauntletCleared&&p.z>FINAL_CHARGE_CRADLE_Z_MIN&&p.z<FINAL_CHARGE_CRADLE_Z_MAX&&!win&&failTimer<=0,finalChargeCradlePulse=.5+.5*Math.sin(t*14);[finalChargeCradlePad,finalChargeCradleL,finalChargeCradleR].forEach(o=>o.material.emissiveIntensity=finalChargeCradleActive?1.35+.5*finalChargeCradlePulse:.82);if(finalChargeCradleActive){playerMomentumX*=Math.exp(-FINAL_CHARGE_CRADLE_DAMP*dt);playerMomentumZ*=Math.exp(-FINAL_CHARGE_CRADLE_DAMP*dt);const cradleStep=FINAL_CHARGE_CRADLE_PULL*dt;p.x+=Math.max(-cradleStep,Math.min(cradleStep,-p.x));if(!carry){bv.x*=Math.exp(-FINAL_CHARGE_CRADLE_DAMP*dt);bv.z*=Math.exp(-FINAL_CHARGE_CRADLE_DAMP*dt)}if(failTimer<=0)state.textContent='ФИНИШ · УДЕРЖИВАЙ 0.55 С'}"
+          assert anchor_tick in s
+          s=s.replace(anchor_tick,add,1)
+          p.write_text(s)
+          PY
+      - name: Verify runtime and finish behavior
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          checks=[
+            'full 3D lift route v57 · physical finish charge cradle',
+            'FINAL_CHARGE_CRADLE_Z_MIN=10.30',
+            'FINAL_CHARGE_CRADLE_HALF_X=1.72',
+            'finalChargeCradlePad=box(',
+            'function inFinalChargeCradleRail',
+            'if(inFinalChargeCradleRail(x,z,.4))return true',
+            'if(inFinalChargeCradleRail(x,z,r))return true',
+            "state.textContent='ФИНИШ · УДЕРЖИВАЙ 0.55 С'"
+          ]
+          for x in checks: assert x in s, x
+          start=s.index('<script type="module">')+len('<script type="module">')
+          end=s.index('</script>',start)
+          Path('/tmp/game.mjs').write_text(s[start:end])
+          print('final charge cradle invariants PASS')
+          PY
+          node --check /tmp/game.mjs
+          node scripts/final-finish-charge-check.mjs
+          node scripts/final-finish-residual-momentum-check.mjs
+      - name: Commit gameplay change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Add physical final charge cradle'
+          git push origin HEAD:new-player-glb-overhaul
