@@ -1,0 +1,88 @@
+name: Final Finish Funnel V78 Patch
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/final-finish-funnel-v78.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch real runtime finish funnel v78
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old="const finalRecoveryL=makeFinalRecoveryGuard(-1),finalRecoveryR=makeFinalRecoveryGuard(1);const finalFinishFunnelPad=box(0,.032,(FINAL_FINISH_FUNNEL_Z_MIN+FINAL_FINISH_FUNNEL_Z_MAX)*.5,FINAL_FINISH_FUNNEL_HALF_X*2,.064,FINAL_FINISH_FUNNEL_Z_MAX-FINAL_FINISH_FUNNEL_Z_MIN,0x49ff79),finalFinishFunnelL=box(-FINAL_FINISH_FUNNEL_HALF_X-.11,.43,(FINAL_FINISH_FUNNEL_Z_MIN+FINAL_FINISH_FUNNEL_Z_MAX)*.5,.18,.86,FINAL_FINISH_FUNNEL_Z_MAX-FINAL_FINISH_FUNNEL_Z_MIN,0x49ff79),finalFinishFunnelR=box(FINAL_FINISH_FUNNEL_HALF_X+.11,.43,(FINAL_FINISH_FUNNEL_Z_MIN+FINAL_FINISH_FUNNEL_Z_MAX)*.5,.18,.86,FINAL_FINISH_FUNNEL_Z_MAX-FINAL_FINISH_FUNNEL_Z_MIN,0x49ff79);[finalFinishFunnelPad,finalFinishFunnelL,finalFinishFunnelR].forEach(o=>{o.material.emissive=new THREE.Color(0x159b43);o.material.emissiveIntensity=.7});"
+          new="const finalRecoveryL=makeFinalRecoveryGuard(-1),finalRecoveryR=makeFinalRecoveryGuard(1);const FINAL_FINISH_FUNNEL_MODEL_V78=true;const finalFinishFunnelPad=box(0,.032,(FINAL_FINISH_FUNNEL_Z_MIN+FINAL_FINISH_FUNNEL_Z_MAX)*.5,FINAL_FINISH_FUNNEL_HALF_X*2,.064,FINAL_FINISH_FUNNEL_Z_MAX-FINAL_FINISH_FUNNEL_Z_MIN,0x49ff79);finalFinishFunnelPad.material.emissive=new THREE.Color(0x159b43);finalFinishFunnelPad.material.emissiveIntensity=.7;function makeFinalFinishFunnelGuard(side){const g=new THREE.Group();g.name='FinalFinishFunnelGuardV78';g.position.set(side*(FINAL_FINISH_FUNNEL_HALF_X+.11),0,(FINAL_FINISH_FUNNEL_Z_MIN+FINAL_FINISH_FUNNEL_Z_MAX)*.5);const railMat=mat(0x49ff79),dark=mat(0x15372f),white=mat(0xeaffef);const rail=new THREE.Mesh(new THREE.CapsuleGeometry(.10,.86,4,8),railMat);rail.name='FinalFinishFunnelRailV78';rail.rotation.x=Math.PI/2;rail.position.y=.43;rail.castShadow=rail.receiveShadow=true;rail.material.emissive=new THREE.Color(0x159b43);rail.material.emissiveIntensity=.7;g.add(rail);[-.39,0,.39].forEach((z,i)=>{const post=new THREE.Mesh(new THREE.CylinderGeometry(.07,.10,.78,8),dark);post.name='FinalFinishFunnelPostV78';post.position.set(0,.37,z);post.castShadow=post.receiveShadow=true;g.add(post);const beacon=new THREE.Mesh(new THREE.TorusGeometry(.11,.028,6,10),white);beacon.name='FinalFinishFunnelBeaconV78';beacon.rotation.x=Math.PI/2;beacon.position.set(0,.79,z);beacon.castShadow=true;beacon.material.emissive=new THREE.Color(i===1?0xffffff:0x49ff79);beacon.material.emissiveIntensity=.82;g.add(beacon)});scene.add(g);return g}const finalFinishFunnelL=makeFinalFinishFunnelGuard(-1),finalFinishFunnelR=makeFinalFinishFunnelGuard(1);"
+          if old not in s:
+              raise SystemExit('expected v77 finish-funnel source not found')
+          s=s.replace(old,new,1)
+          s=s.replace('full 3D lift route v77 · modeled final recovery','full 3D lift route v78 · modeled finish funnel',1)
+          p.write_text(s)
+          PY
+      - name: Verify v78 modeled geometry invariants
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          checks={
+            'model flag':'FINAL_FINISH_FUNNEL_MODEL_V78=true',
+            'guard factory':'function makeFinalFinishFunnelGuard(side)',
+            'capsule rail':"new THREE.CapsuleGeometry(.10,.86,4,8)",
+            'posts':"FinalFinishFunnelPostV78",
+            'beacons':"FinalFinishFunnelBeaconV78",
+            'left guard':'makeFinalFinishFunnelGuard(-1)',
+            'right guard':'makeFinalFinishFunnelGuard(1)',
+            'collision helper':'function inFinalFinishFunnelRail(x,z,r=0)',
+            'player collision':'if(inFinalFinishFunnelRail(x,z,.4))return true',
+            'brain collision':'if(inFinalFinishFunnelRail(x,z,r))return true',
+          }
+          missing=[k for k,v in checks.items() if v not in s]
+          if missing: raise SystemExit('missing: '+', '.join(missing))
+          stale=[
+            'finalFinishFunnelL=box(-FINAL_FINISH_FUNNEL_HALF_X-.11',
+            'finalFinishFunnelR=box(FINAL_FINISH_FUNNEL_HALF_X+.11'
+          ]
+          if any(x in s for x in stale): raise SystemExit('stale box funnel geometry remains')
+          print('FINAL_FINISH_FUNNEL_MODEL_V78: PASS')
+          PY
+      - name: Browser module syntax check
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          m=re.search(r'<script type="module">(.*)</script>',s,re.S)
+          if not m: raise SystemExit('module script not found')
+          js=m.group(1)
+          js=re.sub(r"^import .*?;",'',js,flags=re.M)
+          Path('/tmp/runtime-v78.mjs').write_text(js)
+          PY
+          node --check /tmp/runtime-v78.mjs
+      - name: Existing gameplay contracts
+        run: |
+          set -e
+          for f in scripts/*final*puncher*.mjs scripts/*second*pit*motion*.mjs scripts/*second*pit*route*.mjs; do
+            [ -f "$f" ] || continue
+            echo "RUN $f"
+            node "$f"
+          done
+      - name: Diff check
+        run: git diff --check
+      - name: Commit gameplay patch
+        run: |
+          git config user.name 'amazin20'
+          git config user.email '138931938+amazin20@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Model final finish funnel guardrails v78'
+          git push origin HEAD:new-player-glb-overhaul
