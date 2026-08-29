@@ -1,0 +1,60 @@
+name: One-shot checkpoint capture v74
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/one-shot-checkpoint-capture-v74.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Model checkpoint capture corridor
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html'); s=p.read_text()
+          s=s.replace('full 3D lift route v73 · modeled second-pit funnel guardrails','full 3D lift route v74 · modeled checkpoint capture corridor',1)
+          old="const SECOND_PIT_CHECKPOINT_CAPTURE_Z_MIN=6.02,SECOND_PIT_CHECKPOINT_CAPTURE_Z_MAX=6.82,SECOND_PIT_CHECKPOINT_CAPTURE_HALF_X=1.55,SECOND_PIT_CHECKPOINT_CAPTURE_DAMP=14.5,SECOND_PIT_CHECKPOINT_CAPTURE_PULL=2.2;const secondPitCheckpointCapturePad=box(0,.028,(SECOND_PIT_CHECKPOINT_CAPTURE_Z_MIN+SECOND_PIT_CHECKPOINT_CAPTURE_Z_MAX)*.5,SECOND_PIT_CHECKPOINT_CAPTURE_HALF_X*2,.056,SECOND_PIT_CHECKPOINT_CAPTURE_Z_MAX-SECOND_PIT_CHECKPOINT_CAPTURE_Z_MIN,0x49ff79),secondPitCheckpointCaptureL=box(-SECOND_PIT_CHECKPOINT_CAPTURE_HALF_X-.11,.42,(SECOND_PIT_CHECKPOINT_CAPTURE_Z_MIN+SECOND_PIT_CHECKPOINT_CAPTURE_Z_MAX)*.5,.18,.84,SECOND_PIT_CHECKPOINT_CAPTURE_Z_MAX-SECOND_PIT_CHECKPOINT_CAPTURE_Z_MIN,0x49ff79),secondPitCheckpointCaptureR=box(SECOND_PIT_CHECKPOINT_CAPTURE_HALF_X+.11,.42,(SECOND_PIT_CHECKPOINT_CAPTURE_Z_MIN+SECOND_PIT_CHECKPOINT_CAPTURE_Z_MAX)*.5,.18,.84,SECOND_PIT_CHECKPOINT_CAPTURE_Z_MAX-SECOND_PIT_CHECKPOINT_CAPTURE_Z_MIN,0x49ff79);[secondPitCheckpointCapturePad,secondPitCheckpointCaptureL,secondPitCheckpointCaptureR].forEach(o=>{o.material.emissive=new THREE.Color(0x159b43);o.material.emissiveIntensity=.62});"
+          new="const SECOND_PIT_CHECKPOINT_CAPTURE_Z_MIN=6.02,SECOND_PIT_CHECKPOINT_CAPTURE_Z_MAX=6.82,SECOND_PIT_CHECKPOINT_CAPTURE_HALF_X=1.55,SECOND_PIT_CHECKPOINT_CAPTURE_DAMP=14.5,SECOND_PIT_CHECKPOINT_CAPTURE_PULL=2.2,SECOND_PIT_CHECKPOINT_CAPTURE_MODEL_V74=true;const secondPitCheckpointCapturePad=box(0,.028,(SECOND_PIT_CHECKPOINT_CAPTURE_Z_MIN+SECOND_PIT_CHECKPOINT_CAPTURE_Z_MAX)*.5,SECOND_PIT_CHECKPOINT_CAPTURE_HALF_X*2,.056,SECOND_PIT_CHECKPOINT_CAPTURE_Z_MAX-SECOND_PIT_CHECKPOINT_CAPTURE_Z_MIN,0x49ff79);secondPitCheckpointCapturePad.material.emissive=new THREE.Color(0x159b43);secondPitCheckpointCapturePad.material.emissiveIntensity=.62;function makeCheckpointCaptureGuard(side){const g=new THREE.Group();g.name='CheckpointCaptureGuardV74';g.position.set(side*(SECOND_PIT_CHECKPOINT_CAPTURE_HALF_X+.11),0,(SECOND_PIT_CHECKPOINT_CAPTURE_Z_MIN+SECOND_PIT_CHECKPOINT_CAPTURE_Z_MAX)*.5);const railMat=mat(0x49ff79),dark=mat(0x173a32),white=mat(0xeaffef);const rail=new THREE.Mesh(new THREE.CapsuleGeometry(.09,.62,4,8),railMat);rail.name='CheckpointCaptureRailV74';rail.rotation.x=Math.PI/2;rail.position.y=.42;rail.castShadow=rail.receiveShadow=true;rail.material.emissive=new THREE.Color(0x159b43);rail.material.emissiveIntensity=.62;g.add(rail);[-.30,.30].forEach(z=>{const post=new THREE.Mesh(new THREE.CylinderGeometry(.07,.09,.74,8),dark);post.name='CheckpointCapturePostV74';post.position.set(0,.35,z);post.castShadow=post.receiveShadow=true;g.add(post);const beacon=new THREE.Mesh(new THREE.TorusGeometry(.105,.026,6,10),white);beacon.name='CheckpointCaptureBeaconV74';beacon.rotation.x=Math.PI/2;beacon.position.set(0,.76,z);beacon.castShadow=true;beacon.material.emissive=new THREE.Color(0x49ff79);beacon.material.emissiveIntensity=.72;g.add(beacon)});scene.add(g);return g}const secondPitCheckpointCaptureL=makeCheckpointCaptureGuard(-1),secondPitCheckpointCaptureR=makeCheckpointCaptureGuard(1);"
+          assert old in s, 'checkpoint capture primitive block missing'
+          s=s.replace(old,new,1)
+          old_tick="[secondPitCheckpointCapturePad,secondPitCheckpointCaptureL,secondPitCheckpointCaptureR].forEach(o=>o.material.emissiveIntensity=checkpointCaptureActive?1.15+.5*checkpointCapturePulse:.62);"
+          new_tick="secondPitCheckpointCapturePad.material.emissiveIntensity=checkpointCaptureActive?1.15+.5*checkpointCapturePulse:.62;[secondPitCheckpointCaptureL,secondPitCheckpointCaptureR].forEach(g=>{const rail=g.children[0];rail.material.emissiveIntensity=checkpointCaptureActive?1.15+.5*checkpointCapturePulse:.62;g.children.slice(3).forEach(b=>{if(b.material?.emissive)b.material.emissiveIntensity=checkpointCaptureActive?1.35:.72})});"
+          assert old_tick in s, 'checkpoint capture tick hook missing'
+          s=s.replace(old_tick,new_tick,1)
+          p.write_text(s)
+          PY
+      - name: Verify modeled corridor and runtime
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=['full 3D lift route v74 · modeled checkpoint capture corridor','SECOND_PIT_CHECKPOINT_CAPTURE_MODEL_V74=true','CheckpointCaptureGuardV74','CheckpointCaptureRailV74','CheckpointCapturePostV74','CheckpointCaptureBeaconV74','inSecondPitCheckpointCaptureRail(x,z,r=0)']
+          for x in required: assert x in s,x
+          assert 'secondPitCheckpointCaptureL=box(' not in s
+          assert 'secondPitCheckpointCaptureR=box(' not in s
+          assert 'Math.abs(x)>SECOND_PIT_CHECKPOINT_CAPTURE_HALF_X-r' in s
+          start=s.index('<script type="module">')+len('<script type="module">'); end=s.index('</script>',start)
+          Path('/tmp/game.mjs').write_text(s[start:end])
+          print('checkpoint capture modeled corridor v74 invariants PASS')
+          PY
+          node --check /tmp/game.mjs
+          node scripts/second-pit-route-continuity-v70-check.mjs
+          node scripts/second-pit-platform-motion-v71-check.mjs
+          node scripts/second-pit-checkpoint-funnel-check.mjs
+          git diff --check
+      - name: Commit gameplay change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Model checkpoint capture corridor v74'
+          git push origin HEAD:new-player-glb-overhaul
