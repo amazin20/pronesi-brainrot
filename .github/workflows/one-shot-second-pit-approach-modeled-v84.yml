@@ -13,9 +13,11 @@ jobs:
         with:
           ref: new-player-glb-overhaul
           fetch-depth: 0
-      - name: Verify expected parent
+      - name: Verify expected ancestry
         run: |
-          test "$(git rev-parse HEAD)" = "c1653614a6c939f8590c55fc75d8f538e013d251" || { echo "Branch moved; refusing stale patch"; exit 1; }
+          git merge-base --is-ancestor c1653614a6c939f8590c55fc75d8f538e013d251 HEAD || { echo "Expected source commit is not an ancestor; refusing patch"; exit 1; }
+          grep -q "secondPitApproachL=box" index.html || { echo "Expected temporary second-pit approach block already changed; refusing patch"; exit 1; }
+          ! grep -q "SECOND_PIT_APPROACH_MODEL_V84=true" index.html || { echo "v84 patch already present; refusing duplicate patch"; exit 1; }
       - name: Model second-pit approach guardrails v84
         run: |
           python3 - <<'PY'
