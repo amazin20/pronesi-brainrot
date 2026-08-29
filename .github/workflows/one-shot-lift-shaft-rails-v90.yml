@@ -1,0 +1,57 @@
+name: One-shot lift shaft rails v90
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/one-shot-lift-shaft-rails-v90.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Model lift shaft support rails
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html'); s=p.read_text()
+          old_header='full 3D lift route v89 · modeled second sweeper recovery'
+          new_header='full 3D lift route v90 · modeled lift shaft supports'
+          assert old_header in s
+          s=s.replace(old_header,new_header,1)
+          old="[-1,1].forEach(s=>{const rail=box(s*2.05,1.1,LIFT_Z,.16,2.7,.16,0x6bf5ff);rail.material.emissive=new THREE.Color(0x168faa);rail.material.emissiveIntensity=.9});"
+          new="const LIFT_SHAFT_SUPPORT_MODEL_V90=true;function makeLiftShaftSupport(side){const g=new THREE.Group();g.name='LiftShaftSupportV90';g.position.set(side*2.05,0,LIFT_Z);const cyan=mat(0x6bf5ff),dark=mat(0x183f50),accent=mat(0xdfffff);const spine=new THREE.Mesh(new THREE.CapsuleGeometry(.10,2.42,5,8),cyan);spine.name='LiftShaftSpineV90';spine.position.y=1.35;spine.castShadow=spine.receiveShadow=true;spine.material.emissive=new THREE.Color(0x168faa);spine.material.emissiveIntensity=.9;g.add(spine);[.18,1.34,2.50].forEach((y,i)=>{const brace=new THREE.Mesh(new THREE.CylinderGeometry(.07,.09,.42,8),dark);brace.name='LiftShaftBraceV90';brace.rotation.z=Math.PI/2;brace.position.set(-side*.17,y,0);brace.castShadow=brace.receiveShadow=true;g.add(brace);const collar=new THREE.Mesh(new THREE.TorusGeometry(.145,.032,6,10),accent);collar.name='LiftShaftCollarV90';collar.rotation.x=Math.PI/2;collar.position.y=y;collar.castShadow=true;collar.material.emissive=new THREE.Color(i===1?0x49ff79:0x6bf5ff);collar.material.emissiveIntensity=i===1?.95:.72;g.add(collar)});const foot=new THREE.Mesh(new THREE.CylinderGeometry(.20,.27,.18,10),dark);foot.name='LiftShaftFootV90';foot.position.y=.09;foot.castShadow=foot.receiveShadow=true;g.add(foot);const beacon=new THREE.Mesh(new THREE.OctahedronGeometry(.10,0),accent);beacon.name='LiftShaftBeaconV90';beacon.position.y=2.72;beacon.castShadow=true;beacon.material.emissive=new THREE.Color(0x6bf5ff);beacon.material.emissiveIntensity=1.05;g.add(beacon);scene.add(g);return g}const liftShaftSupportL=makeLiftShaftSupport(-1),liftShaftSupportR=makeLiftShaftSupport(1);"
+          assert old in s
+          s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+      - name: Verify runtime syntax and lift clearance invariants
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=['full 3D lift route v90 · modeled lift shaft supports','LIFT_SHAFT_SUPPORT_MODEL_V90=true','LiftShaftSupportV90','LiftShaftSpineV90','LiftShaftBraceV90','LiftShaftCollarV90','LiftShaftFootV90','LiftShaftBeaconV90']
+          for x in required: assert x in s,x
+          assert "rail=box(s*2.05,1.1,LIFT_Z,.16,2.7,.16,0x6bf5ff)" not in s
+          assert 'LIFT_HALF_X=1.65' in s
+          assert 'side*2.05' in s
+          assert 2.05-.10 > 1.65
+          start=s.index('<script type="module">')+len('<script type="module">'); end=s.index('</script>',start)
+          Path('/tmp/game.mjs').write_text(s[start:end])
+          print('lift shaft support v90 invariants PASS')
+          PY
+          node --check /tmp/game.mjs
+          git diff --check
+      - name: Commit gameplay change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Model lift shaft support rails v90'
+          git push origin HEAD:new-player-glb-overhaul
