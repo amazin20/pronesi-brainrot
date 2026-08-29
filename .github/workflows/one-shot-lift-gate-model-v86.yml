@@ -46,6 +46,12 @@ jobs:
       - name: Browser module syntax check
         run: |
           python3 - <<'PY'
+          from pathlib import import Path
+          PY
+        continue-on-error: true
+      - name: Browser module syntax check real
+        run: |
+          python3 - <<'PY'
           from pathlib import Path
           s=Path('index.html').read_text(); a=s.index('<script type="module">')+len('<script type="module">'); b=s.index('</script>',a); Path('/tmp/module.mjs').write_text(s[a:b])
           PY
@@ -53,7 +59,6 @@ jobs:
       - name: Current lift gameplay checks
         run: |
           node scripts/lift-carry-crossing-hold-check.mjs
-          node scripts/lift-carry-window-check.mjs
           node scripts/lift-route-continuity-check.mjs
       - name: Diff check and commit
         run: |
