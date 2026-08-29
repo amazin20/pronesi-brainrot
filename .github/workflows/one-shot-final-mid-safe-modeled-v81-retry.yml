@@ -1,0 +1,70 @@
+name: One-shot Final Mid Safe Modeled V81 Retry
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/one-shot-final-mid-safe-modeled-v81-retry.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  patch-check-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch final mid-safe pocket v81
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html'); s=p.read_text()
+          old="const finalMidSafePad=box(0,.032,(FINAL_MID_SAFE_Z_MIN+FINAL_MID_SAFE_Z_MAX)*.5,FINAL_MID_SAFE_HALF_X*2,.064,FINAL_MID_SAFE_Z_MAX-FINAL_MID_SAFE_Z_MIN,0x49ff79),finalMidSafeL=box(-FINAL_MID_SAFE_HALF_X-.10,.40,(FINAL_MID_SAFE_Z_MIN+FINAL_MID_SAFE_Z_MAX)*.5,.16,.80,FINAL_MID_SAFE_Z_MAX-FINAL_MID_SAFE_Z_MIN,0x49ff79),finalMidSafeR=box(FINAL_MID_SAFE_HALF_X+.10,.40,(FINAL_MID_SAFE_Z_MIN+FINAL_MID_SAFE_Z_MAX)*.5,.16,.80,FINAL_MID_SAFE_Z_MAX-FINAL_MID_SAFE_Z_MIN,0x49ff79);[finalMidSafePad,finalMidSafeL,finalMidSafeR].forEach(o=>{o.material.emissive=new THREE.Color(0x159b43);o.material.emissiveIntensity=.62});"
+          new="const FINAL_MID_SAFE_MODEL_V81=true;const finalMidSafePad=box(0,.032,(FINAL_MID_SAFE_Z_MIN+FINAL_MID_SAFE_Z_MAX)*.5,FINAL_MID_SAFE_HALF_X*2,.064,FINAL_MID_SAFE_Z_MAX-FINAL_MID_SAFE_Z_MIN,0x49ff79);finalMidSafePad.material.emissive=new THREE.Color(0x159b43);finalMidSafePad.material.emissiveIntensity=.62;function makeFinalMidSafeGuard(side){const g=new THREE.Group();g.name='FinalMidSafeGuardV81';g.position.set(side*(FINAL_MID_SAFE_HALF_X+.10),0,(FINAL_MID_SAFE_Z_MIN+FINAL_MID_SAFE_Z_MAX)*.5);const railMat=mat(0x49ff79),dark=mat(0x14352d),accent=mat(0xdffff0);const rail=new THREE.Mesh(new THREE.CapsuleGeometry(.085,.18,4,8),railMat);rail.name='FinalMidSafeRailV81';rail.rotation.x=Math.PI/2;rail.position.y=.42;rail.castShadow=rail.receiveShadow=true;rail.material.emissive=new THREE.Color(0x159b43);rail.material.emissiveIntensity=.62;g.add(rail);[-.10,.10].forEach((z,i)=>{const post=new THREE.Mesh(new THREE.CylinderGeometry(.07,.095,.74,8),dark);post.name='FinalMidSafePostV81';post.position.set(0,.35,z);post.castShadow=post.receiveShadow=true;g.add(post);const beacon=new THREE.Mesh(new THREE.TorusGeometry(.105,.026,6,10),accent);beacon.name='FinalMidSafeBeaconV81';beacon.rotation.x=Math.PI/2;beacon.position.set(0,.76,z);beacon.castShadow=true;beacon.material.emissive=new THREE.Color(i?0x49ff79:0xb4ffd5);beacon.material.emissiveIntensity=.78;g.add(beacon)});scene.add(g);return g}const finalMidSafeL=makeFinalMidSafeGuard(-1),finalMidSafeR=makeFinalMidSafeGuard(1);"
+          if old not in s: raise SystemExit('expected final mid-safe boxes not found')
+          s=s.replace(old,new,1)
+          oldpulse="[finalMidSafePad,finalMidSafeL,finalMidSafeR].forEach(o=>o.material.emissiveIntensity=midSafe?1.35+.55*midPulse:.62);"
+          newpulse="finalMidSafePad.material.emissiveIntensity=midSafe?1.35+.55*midPulse:.62;[finalMidSafeL,finalMidSafeR].forEach(g=>{const rail=g.children.find(c=>c.name==='FinalMidSafeRailV81');if(rail)rail.material.emissiveIntensity=midSafe?1.35+.55*midPulse:.62;g.children.filter(c=>c.name==='FinalMidSafeBeaconV81').forEach(b=>b.material.emissiveIntensity=midSafe?1.25+.45*midPulse:.78)});"
+          if oldpulse not in s: raise SystemExit('expected final mid-safe pulse loop not found')
+          s=s.replace(oldpulse,newpulse,1)
+          s=s.replace('full 3D lift route v80 · modeled charge cradle','full 3D lift route v81 · modeled mid-safe pocket',1)
+          p.write_text(s)
+          q=Path('scripts/final-mid-pocket-v67-check.mjs'); t=q.read_text(); t=t.replace("'full 3D lift route v67 · carry-safe final midpoint',\n", "'FINAL_MID_SAFE_MODEL_V81=true',\n  'FinalMidSafeGuardV81',\n  'FinalMidSafeRailV81',\n")
+          q.write_text(t)
+          PY
+      - name: Verify modeled pocket and preserved gameplay contract
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=['FINAL_MID_SAFE_MODEL_V81=true','FinalMidSafeGuardV81','FinalMidSafeRailV81','FinalMidSafePostV81','FinalMidSafeBeaconV81','FINAL_MID_SAFE_Z_MIN=7.88','FINAL_MID_SAFE_Z_MAX=8.18','FINAL_MID_SAFE_HALF_X=1.52','FINAL_MID_SAFE_DAMP=14.0','function inFinalMidSafeRail','i===1&&midSafe','playerMomentumX*=Math.exp(-FINAL_MID_SAFE_DAMP*dt)']
+          for x in required:
+            if x not in s: raise SystemExit('missing '+x)
+          if 'finalMidSafeL=box(' in s or 'finalMidSafeR=box(' in s: raise SystemExit('stale box mid-safe rail remains')
+          print('FINAL_MID_SAFE_MODELED_V81: PASS')
+          PY
+      - name: Browser module syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text(); a=s.index('<script type="module">')+len('<script type="module">'); b=s.index('</script>',a); Path('/tmp/runtime.mjs').write_text(s[a:b])
+          PY
+          node --check /tmp/runtime.mjs
+      - name: Relevant final-gauntlet contracts
+        run: |
+          node scripts/final-mid-pocket-v67-check.mjs
+          node scripts/final-puncher-physics-contract-v65.mjs
+      - name: Diff whitespace check
+        run: git diff --check
+      - name: Commit gameplay geometry and QA
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html scripts/final-mid-pocket-v67-check.mjs
+          git commit -m 'Model final mid-safe pocket guardrails v81'
+          git push origin HEAD:new-player-glb-overhaul
