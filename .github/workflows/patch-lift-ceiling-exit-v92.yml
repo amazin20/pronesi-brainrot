@@ -1,0 +1,104 @@
+name: Patch lift ceiling exit v92
+
+on:
+  push:
+    branches:
+      - new-player-glb-overhaul
+    paths:
+      - .github/workflows/patch-lift-ceiling-exit-v92.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact branch head
+        uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+
+      - name: Patch modeled lift ceiling exit assembly v92
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text()
+          old_header = 'full 3D lift route v91 · modeled overhead lift truss'
+          new_header = 'full 3D lift route v92 · modeled lift ceiling exit assembly'
+          old = "const liftCeilingTopStripe=box(0,LIFT_CEILING_TOP+.025,LIFT_Z,2.8,.04,1.02,0x49ff79);liftCeilingTopStripe.material.emissive=new THREE.Color(0x19b24e);liftCeilingTopStripe.material.emissiveIntensity=1.05;const LIFT_SHAFT_SUPPORT_MODEL_V90=true;"
+          new = "const LIFT_CEILING_EXIT_MODEL_V92=true;const liftCeilingTopStripe=new THREE.Mesh(new THREE.CapsuleGeometry(.06,2.68,4,8),mat(0x49ff79));liftCeilingTopStripe.name='LiftCeilingExitCrossbarV92';liftCeilingTopStripe.rotation.z=Math.PI/2;liftCeilingTopStripe.position.set(0,LIFT_CEILING_TOP+.025,LIFT_Z);liftCeilingTopStripe.castShadow=liftCeilingTopStripe.receiveShadow=true;liftCeilingTopStripe.material.emissive=new THREE.Color(0x19b24e);liftCeilingTopStripe.material.emissiveIntensity=1.05;const liftExitDark=mat(0x173a32),liftExitAccent=mat(0xeaffef);[-1.12,1.12].forEach((x,i)=>{const runner=new THREE.Mesh(new THREE.CapsuleGeometry(.05,.76,4,8),liftExitDark);runner.name='LiftCeilingExitRunnerV92';runner.rotation.x=Math.PI/2;runner.position.set(x,0,0);runner.castShadow=runner.receiveShadow=true;liftCeilingTopStripe.add(runner);[-.34,.34].forEach(z=>{const beacon=new THREE.Mesh(new THREE.TorusGeometry(.105,.026,6,10),liftExitAccent);beacon.name='LiftCeilingExitBeaconV92';beacon.rotation.x=Math.PI/2;beacon.position.set(x,0,z);beacon.castShadow=true;beacon.material.emissive=new THREE.Color(i?0x49ff79:0x8affc5);beacon.material.emissiveIntensity=.82;liftCeilingTopStripe.add(beacon)})});[-.78,0,.78].forEach((x,i)=>{const node=new THREE.Mesh(new THREE.TorusGeometry(.12,.03,6,10),liftExitAccent);node.name='LiftCeilingExitNodeV92';node.rotation.y=Math.PI/2;node.position.set(x,0,0);node.castShadow=true;node.material.emissive=new THREE.Color(i===1?0xffffff:0x49ff79);node.material.emissiveIntensity=.86;liftCeilingTopStripe.add(node)});scene.add(liftCeilingTopStripe);const LIFT_SHAFT_SUPPORT_MODEL_V90=true;"
+          if old_header not in s:
+              raise SystemExit('expected v91 header not found')
+          if s.count(old) != 1:
+              raise SystemExit(f'expected exactly one old liftCeilingTopStripe block, found {s.count(old)}')
+          s = s.replace(old_header, new_header, 1).replace(old, new, 1)
+          p.write_text(s)
+          PY
+
+      - name: Validate v92 geometry and preserved lift envelope
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          s = Path('index.html').read_text()
+          required = [
+              'const LIFT_CEILING_EXIT_MODEL_V92=true;',
+              "LiftCeilingExitCrossbarV92",
+              "LiftCeilingExitRunnerV92",
+              "LiftCeilingExitBeaconV92",
+              "LiftCeilingExitNodeV92",
+              'LIFT_CEILING_BOTTOM=3.5,LIFT_CEILING_TOP=3.82,LIFT_CEILING_HALF_X=1.85,LIFT_CEILING_HALF_Z=.675',
+              "function underLiftCeiling(x,z,r=.32)",
+              "function liftCeilingSideBlocked(x,y,z,r=.38,halfHeight=.56)",
+              "function landPlayerOnLiftCeiling(previousY)",
+              "function landBrainrotOnLiftCeiling(previousY)",
+          ]
+          for token in required:
+              if token not in s:
+                  raise SystemExit(f'missing invariant: {token}')
+          forbidden = 'const liftCeilingTopStripe=box(0,LIFT_CEILING_TOP+.025,LIFT_Z,2.8,.04,1.02,0x49ff79)'
+          if forbidden in s:
+              raise SystemExit('old box lift ceiling top stripe still present')
+          print('v92 modeled exit + lift envelope invariants: OK')
+          PY
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          a=s.index('<script type="module">')+len('<script type="module">')
+          b=s.index('</script>',a)
+          Path('/tmp/game-module.mjs').write_text(s[a:b])
+          PY
+          node --check /tmp/game-module.mjs
+          git diff --check
+
+      - name: Commit and push real gameplay change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'amazin20'
+          git config user.email '138931938+amazin20@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Model lift ceiling exit assembly v92'
+          git push origin HEAD:new-player-glb-overhaul
+          echo "GAMEPLAY_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Remove one-shot workflow without rewriting history
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/patch-lift-ceiling-exit-v92.yml
+          git commit -m 'Remove one-shot lift ceiling exit v92 workflow'
+          git push origin HEAD:new-player-glb-overhaul
+          echo "CLEAN_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Report exact SHAs
+        shell: bash
+        run: |
+          echo "gameplay=${GAMEPLAY_SHA}"
+          echo "clean=${CLEAN_SHA}"
