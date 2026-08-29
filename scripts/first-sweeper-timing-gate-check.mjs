@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 const s=fs.readFileSync('index.html','utf8');
 const must=[
-  "full 3D lift route v67 · carry-safe final midpoint",
+  "full 3D lift route v69 · physical second sweeper shield and recovery",
   "FIRST_SWEEPER_GATE_Z=-10.62",
   "FIRST_SWEEPER_GATE_CLOSED_Y=.62",
   "FIRST_SWEEPER_GATE_OPEN_Y=2.82",
@@ -17,4 +17,4 @@ if(!(s.indexOf('firstSweeperTimingGateBlocks')<s.indexOf('function blocked'))) t
 const closed=.62-.11, open=2.82-.11, playerTop=2.12, brainTop=1.68;
 if(!(closed<brainTop&&closed<playerTop)) throw new Error('closed gate must block both bodies');
 if(!(open>playerTop&&open>brainTop)) throw new Error('open gate must clear both bodies');
-console.log('first sweeper v67 physical timing gate: PASS',{closedBottom:closed,openBottom:open,playerTop,brainTop,crossingLatch:true});
+console.log('first sweeper v70 physical timing gate: PASS',{closedBottom:closed,openBottom:open,playerTop,brainTop,crossingLatch:true});
