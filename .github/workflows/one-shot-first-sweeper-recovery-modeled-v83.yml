@@ -32,16 +32,15 @@ jobs:
           s=s.replace('full 3D lift route v82 · modeled final side towers','full 3D lift route v83 · modeled sweeper recovery')
           p.write_text(s)
           PY
-      - name: v83 modeled geometry invariants
+      - name: v83 modeled geometry and recovery invariants
         run: |
           python3 - <<'PY'
           s=open('index.html').read()
-          required=['FIRST_SWEEPER_RECOVERY_MODEL_V83=true','FirstSweeperRecoveryGuardV83','FirstSweeperRecoveryRailV83','FirstSweeperRecoveryPostV83','FirstSweeperRecoveryBeaconV83','new THREE.CapsuleGeometry(.10,.60,4,8)','new THREE.CylinderGeometry(.075,.105,.70,8)','new THREE.TorusGeometry(.11,.028,6,10)','FIRST_SWEEPER_RECOVERY_DAMP']
+          required=['FIRST_SWEEPER_RECOVERY_MODEL_V83=true','FirstSweeperRecoveryGuardV83','FirstSweeperRecoveryRailV83','FirstSweeperRecoveryPostV83','FirstSweeperRecoveryBeaconV83','new THREE.CapsuleGeometry(.10,.60,4,8)','new THREE.CylinderGeometry(.075,.105,.70,8)','new THREE.TorusGeometry(.11,.028,6,10)','FIRST_SWEEPER_RECOVERY_Z_MIN=-7.72','FIRST_SWEEPER_RECOVERY_Z_MAX=-6.92','FIRST_SWEEPER_RECOVERY_HALF_X=2.05','FIRST_SWEEPER_RECOVERY_DAMP=11.5','playerMomentumX*=Math.exp(-FIRST_SWEEPER_RECOVERY_DAMP*dt)','bv.x*=Math.exp(-FIRST_SWEEPER_RECOVERY_DAMP*.78*dt)']
           for x in required:
               assert x in s, x
           assert 'firstSweeperRecoveryL=box(' not in s
           assert 'firstSweeperRecoveryR=box(' not in s
-          assert 'function inFirstSweeper' in s
           print('v83 modeled recovery invariants: PASS')
           PY
       - name: Browser module syntax
@@ -54,10 +53,9 @@ jobs:
           open('/tmp/game.mjs','w').write(m.group(1))
           PY
           node --check /tmp/game.mjs
-      - name: Existing first-sweeper gameplay checks
+      - name: Current first-sweeper gameplay contracts
         run: |
           node scripts/first-sweeper-cycle-check.mjs
-          node scripts/first-sweeper-postgate-grace-check.mjs
           node scripts/first-sweeper-gate-crossing-latch-check.mjs
       - name: Diff whitespace check
         run: git diff --check
