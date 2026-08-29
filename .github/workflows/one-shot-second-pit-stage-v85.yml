@@ -27,64 +27,36 @@ jobs:
           new="const SECOND_PIT_STAGE_MODEL_V85=true;const secondPitStagePad=box(0,.035,SECOND_PIT_STAGE_Z,3.35,.07,.82,0x44e7ff);function makeSecondPitStageTower(side){const g=new THREE.Group();g.name='SecondPitStageTowerV85';g.position.set(side*1.62,0,4.92);const cyan=mat(0x44e7ff),dark=mat(0x173b52),white=mat(0xe8fbff);const spine=new THREE.Mesh(new THREE.CapsuleGeometry(.10,.94,4,8),cyan);spine.name='SecondPitStageSpineV85';spine.position.y=.58;spine.castShadow=spine.receiveShadow=true;spine.material.emissive=new THREE.Color(0x087fa8);spine.material.emissiveIntensity=.72;g.add(spine);const foot=new THREE.Mesh(new THREE.CylinderGeometry(.19,.26,.18,10),dark);foot.name='SecondPitStageFootV85';foot.position.y=.09;foot.castShadow=foot.receiveShadow=true;g.add(foot);[.32,.78].forEach((y,i)=>{const collar=new THREE.Mesh(new THREE.TorusGeometry(.15,.035,6,10),white);collar.name='SecondPitStageCollarV85';collar.rotation.x=Math.PI/2;collar.position.y=y;collar.castShadow=true;collar.material.emissive=new THREE.Color(i?0x44e7ff:0x49ff79);collar.material.emissiveIntensity=.82;g.add(collar)});scene.add(g);return g}const secondPitStageL=makeSecondPitStageTower(-1),secondPitStageR=makeSecondPitStageTower(1);const secondPitStageTop=new THREE.Mesh(new THREE.CapsuleGeometry(.10,3.18,4,8),mat(0x44e7ff));secondPitStageTop.name='SecondPitStageTopV85';secondPitStageTop.rotation.z=Math.PI/2;secondPitStageTop.position.set(0,1.11,4.92);secondPitStageTop.castShadow=secondPitStageTop.receiveShadow=true;secondPitStageTop.material.emissive=new THREE.Color(0x087fa8);secondPitStageTop.material.emissiveIntensity=.72;[-1.18,0,1.18].forEach((y,i)=>{const beacon=new THREE.Mesh(new THREE.TorusGeometry(.13,.03,6,10),mat(0xe8fbff));beacon.name='SecondPitStageBeaconV85';beacon.rotation.y=Math.PI/2;beacon.position.set(0,y,0);beacon.castShadow=true;beacon.material.emissive=new THREE.Color(i===1?0x49ff79:0x44e7ff);beacon.material.emissiveIntensity=.86;secondPitStageTop.add(beacon)});scene.add(secondPitStageTop);"
           if old not in s:
               raise SystemExit('expected v84 secondPitStage box gate not found')
-          s=s.replace(old,new,1)
-          s=s.replace('full 3D lift route v84 · modeled second-pit approach','full 3D lift route v85 · modeled second-pit stage gate',1)
-          p.write_text(s)
+          p.write_text(s.replace(old,new,1).replace('full 3D lift route v84 · modeled second-pit approach','full 3D lift route v85 · modeled second-pit stage gate',1))
           PY
       - name: Verify v85 geometry invariants
-        shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
           s=Path('index.html').read_text()
-          required=[
-            'SECOND_PIT_STAGE_MODEL_V85=true',
-            "SecondPitStageTowerV85",
-            "SecondPitStageSpineV85",
-            "SecondPitStageFootV85",
-            "SecondPitStageTopV85",
-            "SecondPitStageBeaconV85",
-            'SECOND_PIT_STAGE_Z=4.55',
-            'SECOND_PIT_STAGE_Z_MIN=3.55',
-            'SECOND_PIT_STAGE_HALF_X=1.55',
-            'SECOND_PIT_BOARD_BRIDGE_Z=5.055',
-          ]
+          required=['SECOND_PIT_STAGE_MODEL_V85=true','SecondPitStageTowerV85','SecondPitStageSpineV85','SecondPitStageFootV85','SecondPitStageTopV85','SecondPitStageBeaconV85','SECOND_PIT_STAGE_Z=4.55','SECOND_PIT_STAGE_Z_MIN=3.55','SECOND_PIT_STAGE_HALF_X=1.55','SECOND_PIT_BOARD_BRIDGE_Z=5.055']
           missing=[x for x in required if x not in s]
           assert not missing, missing
-          forbidden=[
-            'secondPitStageL=box(-1.62,.58,4.92,.14,1.16,.14,0x44e7ff)',
-            'secondPitStageR=box(1.62,.58,4.92,.14,1.16,.14,0x44e7ff)',
-            'secondPitStageTop=box(0,1.11,4.92,3.38,.14,.14,0x44e7ff)',
-          ]
-          stale=[x for x in forbidden if x in s]
-          assert not stale, stale
+          forbidden=['secondPitStageL=box(-1.62,.58,4.92,.14,1.16,.14,0x44e7ff)','secondPitStageR=box(1.62,.58,4.92,.14,1.16,.14,0x44e7ff)','secondPitStageTop=box(0,1.11,4.92,3.38,.14,.14,0x44e7ff)']
+          assert not [x for x in forbidden if x in s]
           print('v85 modeled second-pit stage invariants OK')
           PY
       - name: Browser module syntax check
-        shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          s=Path('index.html').read_text()
-          start=s.index('<script type="module">')+len('<script type="module">')
-          end=s.index('</script>',start)
-          Path('/tmp/module.mjs').write_text(s[start:end])
+          s=Path('index.html').read_text(); a=s.index('<script type="module">')+len('<script type="module">'); b=s.index('</script>',a); Path('/tmp/module.mjs').write_text(s[a:b])
           PY
           node --check /tmp/module.mjs
-      - name: Existing second pit route checks
-        shell: bash
+      - name: Current second pit route checks
         run: |
-          set -e
-          for f in scripts/*second*pit*.mjs scripts/*platform*.mjs; do
-            [ -f "$f" ] || continue
-            echo "RUN $f"
-            node "$f"
-          done
+          node scripts/second-pit-approach-corridor-check.mjs
+          node scripts/second-pit-carrier-model-v72-check.mjs
+          node scripts/second-pit-platform-motion-v71-check.mjs
+          node scripts/second-pit-route-continuity-v70-check.mjs
       - name: Diff check and commit
-        shell: bash
         run: |
           git diff --check
-          git status --short
           git config user.name 'amazin20'
           git config user.email '138931938+amazin20@users.noreply.github.com'
           git add index.html
