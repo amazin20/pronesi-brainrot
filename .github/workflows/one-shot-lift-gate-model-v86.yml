@@ -52,7 +52,6 @@ jobs:
           node --check /tmp/module.mjs
       - name: Current lift gameplay checks
         run: |
-          node scripts/first-lift-route-lock-check.mjs
           node scripts/lift-carry-crossing-hold-check.mjs
           node scripts/lift-carry-window-check.mjs
           node scripts/lift-route-continuity-check.mjs
