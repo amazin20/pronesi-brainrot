@@ -1,0 +1,86 @@
+name: One-shot second sweeper physical rails v69
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/one-shot-second-sweeper-physical-rails-v69.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch second sweeper physical shield and recovery rails
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html'); s=p.read_text()
+          old_marker='full 3D lift route v68 · shielded second sweeper staging'
+          new_marker='full 3D lift route v69 · physical second sweeper shield and recovery'
+          assert old_marker in s; s=s.replace(old_marker,new_marker,1)
+
+          old_recovery="const secondSweeperRecoveryPad=box(0,.03,(SECOND_SWEEPER_RECOVERY_Z_MIN+SECOND_SWEEPER_RECOVERY_Z_MAX)*.5,SECOND_SWEEPER_RECOVERY_HALF_X*2,.06,SECOND_SWEEPER_RECOVERY_Z_MAX-SECOND_SWEEPER_RECOVERY_Z_MIN,0x49ff79),secondSweeperRecoveryL=box(-SECOND_SWEEPER_RECOVERY_HALF_X-.1,.34,(SECOND_SWEEPER_RECOVERY_Z_MIN+SECOND_SWEEPER_RECOVERY_Z_MAX)*.5,.12,.68,SECOND_SWEEPER_RECOVERY_Z_MAX-SECOND_SWEEPER_RECOVERY_Z_MIN,0x49ff79),secondSweeperRecoveryR=box(SECOND_SWEEPER_RECOVERY_HALF_X+.1,.34,(SECOND_SWEEPER_RECOVERY_Z_MIN+SECOND_SWEEPER_RECOVERY_Z_MAX)*.5,.12,.68,SECOND_SWEEPER_RECOVERY_Z_MAX-SECOND_SWEEPER_RECOVERY_Z_MIN,0x49ff79);[secondSweeperRecoveryPad,secondSweeperRecoveryL,secondSweeperRecoveryR].forEach(o=>{o.material.emissive=new THREE.Color(0x159b43);o.material.emissiveIntensity=.5});"
+          new_recovery="const secondSweeperRecoveryPad=box(0,.03,(SECOND_SWEEPER_RECOVERY_Z_MIN+SECOND_SWEEPER_RECOVERY_Z_MAX)*.5,SECOND_SWEEPER_RECOVERY_HALF_X*2,.06,SECOND_SWEEPER_RECOVERY_Z_MAX-SECOND_SWEEPER_RECOVERY_Z_MIN,0x49ff79);function makeSecondSweeperRecoveryRail(x){const g=new THREE.Group();g.position.set(x,0,(SECOND_SWEEPER_RECOVERY_Z_MIN+SECOND_SWEEPER_RECOVERY_Z_MAX)*.5);const rail=new THREE.Mesh(new THREE.CapsuleGeometry(.14,.34,4,8),mat(0x49ff79));rail.position.y=.34;rail.rotation.x=Math.PI/2;rail.castShadow=rail.receiveShadow=true;rail.material.emissive=new THREE.Color(0x159b43);rail.material.emissiveIntensity=.5;g.add(rail);[-.16,.16].forEach(z=>{const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.15,.58,10),mat(0x2b375b));post.position.set(0,.29,z);post.castShadow=post.receiveShadow=true;g.add(post)});scene.add(g);return g}const secondSweeperRecoveryL=makeSecondSweeperRecoveryRail(-SECOND_SWEEPER_RECOVERY_HALF_X-.10),secondSweeperRecoveryR=makeSecondSweeperRecoveryRail(SECOND_SWEEPER_RECOVERY_HALF_X+.10);secondSweeperRecoveryPad.material.emissive=new THREE.Color(0x159b43);secondSweeperRecoveryPad.material.emissiveIntensity=.5;"
+          assert old_recovery in s; s=s.replace(old_recovery,new_recovery,1)
+
+          old_helpers="function inFirstSweeperStagingRail(x,z,r=0){return z>FIRST_SWEEPER_STAGING_Z_MIN&&z<FIRST_SWEEPER_STAGING_Z_MAX&&Math.abs(x)>FIRST_SWEEPER_STAGING_HALF_X-r}function inSecondPitFunnel"
+          new_helpers="function inFirstSweeperStagingRail(x,z,r=0){return z>FIRST_SWEEPER_STAGING_Z_MIN&&z<FIRST_SWEEPER_STAGING_Z_MAX&&Math.abs(x)>FIRST_SWEEPER_STAGING_HALF_X-r}function inSecondSweeperStagingRail(x,z,r=0){return z>SECOND_SWEEPER_STAGING_Z_MIN&&z<SECOND_SWEEPER_STAGING_Z_MAX&&Math.abs(x)>SECOND_SWEEPER_STAGING_HALF_X-r}function inSecondSweeperRecoveryRail(x,z,r=0){return z>SECOND_SWEEPER_RECOVERY_Z_MIN&&z<SECOND_SWEEPER_RECOVERY_Z_MAX&&Math.abs(x)>SECOND_SWEEPER_RECOVERY_HALF_X-r}function inSecondPitFunnel"
+          assert old_helpers in s; s=s.replace(old_helpers,new_helpers,1)
+
+          old_blocked="if(inFirstSweeperStagingRail(x,z,.4))return true;if(inSecondPitFunnel"
+          new_blocked="if(inFirstSweeperStagingRail(x,z,.4))return true;if(inSecondSweeperStagingRail(x,z,.4))return true;if(inSecondSweeperRecoveryRail(x,z,.4))return true;if(inSecondPitFunnel"
+          assert s.count(old_blocked)==1; s=s.replace(old_blocked,new_blocked,1)
+
+          old_brain="if(inFirstSweeperStagingRail(x,z,r))return true;if(inSecondPitFunnel"
+          new_brain="if(inFirstSweeperStagingRail(x,z,r))return true;if(inSecondSweeperStagingRail(x,z,r))return true;if(inSecondSweeperRecoveryRail(x,z,r))return true;if(inSecondPitFunnel"
+          assert s.count(old_brain)==1; s=s.replace(old_brain,new_brain,1)
+
+          old_visual="[secondSweeperRecoveryPad,secondSweeperRecoveryL,secondSweeperRecoveryR].forEach(o=>o.material.emissiveIntensity=secondSweeperRecoveryActive?1.05+.55*secondSweeperRecoveryPulse:.5);"
+          new_visual="secondSweeperRecoveryPad.material.emissiveIntensity=secondSweeperRecoveryActive?1.05+.55*secondSweeperRecoveryPulse:.5;[secondSweeperRecoveryL,secondSweeperRecoveryR].forEach(g=>{const rail=g.children[0];rail.material.emissiveIntensity=secondSweeperRecoveryActive?1.05+.55*secondSweeperRecoveryPulse:.5});"
+          assert old_visual in s; s=s.replace(old_visual,new_visual,1)
+          p.write_text(s)
+          PY
+      - name: Verify v69 runtime and physical rail invariants
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=[
+            'full 3D lift route v69 · physical second sweeper shield and recovery',
+            'function inSecondSweeperStagingRail',
+            'function inSecondSweeperRecoveryRail',
+            'if(inSecondSweeperStagingRail(x,z,.4))return true',
+            'if(inSecondSweeperRecoveryRail(x,z,.4))return true',
+            'if(inSecondSweeperStagingRail(x,z,r))return true',
+            'if(inSecondSweeperRecoveryRail(x,z,r))return true',
+            'function makeSecondSweeperRecoveryRail',
+            'new THREE.CapsuleGeometry(.14,.34,4,8)',
+          ]
+          for x in required: assert x in s,x
+          assert s.count('function inSecondSweeperStagingRail')==1
+          assert s.count('function inSecondSweeperRecoveryRail')==1
+          assert 'secondSweeperRecoveryL=box(' not in s
+          assert 'secondSweeperRecoveryR=box(' not in s
+          assert 2*1.72 > 2.0
+          assert 2*1.9 > 2.0
+          start=s.index('<script type="module">')+len('<script type="module">'); end=s.index('</script>',start)
+          Path('/tmp/game.mjs').write_text(s[start:end])
+          print('SECOND_SWEEPER_PHYSICAL_RAILS_V69 PASS')
+          PY
+          node --check /tmp/game.mjs
+          git diff --check
+      - name: Run existing final puncher physics contract
+        run: node scripts/final-puncher-physics-contract-v65.mjs
+      - name: Commit gameplay change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Make second sweeper rails physically solid v69'
+          git push origin HEAD:new-player-glb-overhaul
