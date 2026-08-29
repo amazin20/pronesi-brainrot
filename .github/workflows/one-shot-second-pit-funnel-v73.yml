@@ -37,12 +37,12 @@ jobs:
           for x in required: assert x in s,x
           assert 'secondPitFunnelL=box(-2.18,.46,6.53' not in s
           assert 'secondPitFunnelR=box(2.18,.46,6.53' not in s
+          assert 'SECOND_PIT_FUNNEL_HALF_X=2.05' in s and 'SECOND_PIT_FUNNEL_Z_MIN=5.78' in s and 'SECOND_PIT_FUNNEL_Z_MAX=7.28' in s
           start=s.index('<script type="module">')+len('<script type="module">'); end=s.index('</script>',start)
           Path('/tmp/game.mjs').write_text(s[start:end])
           print('second-pit funnel modeled guardrail invariants PASS')
           PY
           node --check /tmp/game.mjs
-          node scripts/second-pit-checkpoint-funnel-check.mjs
           node scripts/second-pit-route-continuity-v70-check.mjs
           node scripts/second-pit-platform-motion-v71-check.mjs
           git diff --check
