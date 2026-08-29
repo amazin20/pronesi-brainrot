@@ -53,8 +53,8 @@ jobs:
           node --check /tmp/runtime.mjs
       - name: Existing second-pit contracts
         run: |
-          node scripts/second-pit-route-continuity-v70.mjs
-          node scripts/second-pit-platform-motion-v71.mjs
+          node scripts/second-pit-route-continuity-v70-check.mjs
+          node scripts/second-pit-platform-motion-v71-check.mjs
       - name: Existing final puncher physics contract
         run: node scripts/final-puncher-physics-contract-v65.mjs
       - name: Diff check
