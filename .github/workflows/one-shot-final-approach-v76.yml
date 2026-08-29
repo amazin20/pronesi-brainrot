@@ -50,7 +50,8 @@ jobs:
             "FinalGauntletApproachRailV76",
             "FinalGauntletApproachPostV76",
             "FinalGauntletApproachBeaconV76",
-            'inFinalGauntletApproachRail(x,z,r=.4)',
+            'function inFinalGauntletApproachRail(x,z,r=0)',
+            'inFinalGauntletApproachRail(x,z,.4)',
             'inFinalGauntletApproachRail(x,z,r)'
           ];
           for(const token of must) if(!s.includes(token)) throw new Error('missing '+token);
