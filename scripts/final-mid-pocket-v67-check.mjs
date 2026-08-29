@@ -1,7 +1,9 @@
 import fs from 'node:fs';
 const s=fs.readFileSync('index.html','utf8');
 const must=[
-  'full 3D lift route v67 · carry-safe final midpoint',
+  'FINAL_MID_SAFE_MODEL_V81=true',
+  'FinalMidSafeGuardV81',
+  'FinalMidSafeRailV81',
   'FINAL_MID_SAFE_Z_MIN=7.88',
   'FINAL_MID_SAFE_Z_MAX=8.18',
   'function inFinalMidSafeRail',
