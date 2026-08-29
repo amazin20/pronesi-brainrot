@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 const s=fs.readFileSync('index.html','utf8');
 const must=[
-  "full 3D lift route v40 · post-gate sweeper grace",
+  "full 3D lift route v69 · physical second sweeper shield and recovery",
   "firstSweeperPostGateGrace=0",
   "firstSweeperPostGateGrace=.55",
   "firstSweeperPostGateGrace=Math.max(0,firstSweeperPostGateGrace-dt)",
@@ -17,4 +17,4 @@ const firstHitAllowed=(i,grace)=>i!==0||grace<=0;
 if(firstHitAllowed(0,.3)) throw new Error('first sweeper must not hit during post-gate grace');
 if(!firstHitAllowed(1,.3)) throw new Error('second sweeper must stay active');
 if(!firstHitAllowed(0,0)) throw new Error('first sweeper must reactivate after grace');
-console.log('first sweeper post-gate grace: PASS',seconds.toFixed(3)+'s');
+console.log('first sweeper v71 post-gate grace: PASS',seconds.toFixed(3)+'s');
