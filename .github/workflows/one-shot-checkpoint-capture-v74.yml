@@ -27,17 +27,22 @@ jobs:
           assert old in s, 'checkpoint capture primitive block missing'
           s=s.replace(old,new,1)
           old_tick="[secondPitCheckpointCapturePad,secondPitCheckpointCaptureL,secondPitCheckpointCaptureR].forEach(o=>o.material.emissiveIntensity=checkpointCaptureActive?1.15+.5*checkpointCapturePulse:.62);"
-          new_tick="secondPitCheckpointCapturePad.material.emissiveIntensity=checkpointCaptureActive?1.15+.5*checkpointCapturePulse:.62;[secondPitCheckpointCaptureL,secondPitCheckpointCaptureR].forEach(g=>{const rail=g.children[0];rail.material.emissiveIntensity=checkpointCaptureActive?1.15+.5*checkpointCapturePulse:.62;g.children.slice(3).forEach(b=>{if(b.material?.emissive)b.material.emissiveIntensity=checkpointCaptureActive?1.35:.72})});"
+          new_tick="secondPitCheckpointCapturePad.material.emissiveIntensity=checkpointCaptureActive?1.15+.5*checkpointCapturePulse:.62;[secondPitCheckpointCaptureL,secondPitCheckpointCaptureR].forEach(g=>{const rail=g.children[0];rail.material.emissiveIntensity=checkpointCaptureActive?1.15+.5*checkpointCapturePulse:.62;g.children.filter(c=>c.name==='CheckpointCaptureBeaconV74').forEach(b=>b.material.emissiveIntensity=checkpointCaptureActive?1.35:.72)});"
           assert old_tick in s, 'checkpoint capture tick hook missing'
           s=s.replace(old_tick,new_tick,1)
           p.write_text(s)
+
+          q=Path('scripts/second-pit-checkpoint-funnel-check.mjs'); t=q.read_text()
+          stale=',"checkpoint landing funnel"'
+          assert stale in t, 'expected stale funnel label check missing'
+          q.write_text(t.replace(stale,'',1))
           PY
       - name: Verify modeled corridor and runtime
         run: |
           python3 - <<'PY'
           from pathlib import Path
           s=Path('index.html').read_text()
-          required=['full 3D lift route v74 · modeled checkpoint capture corridor','SECOND_PIT_CHECKPOINT_CAPTURE_MODEL_V74=true','CheckpointCaptureGuardV74','CheckpointCaptureRailV74','CheckpointCapturePostV74','CheckpointCaptureBeaconV74','inSecondPitCheckpointCaptureRail(x,z,r=0)']
+          required=['full 3D lift route v74 · modeled checkpoint capture corridor','SECOND_PIT_CHECKPOINT_CAPTURE_MODEL_V74=true','CheckpointCaptureGuardV74','CheckpointCaptureRailV74','CheckpointCapturePostV74','CheckpointCaptureBeaconV74','inSecondPitCheckpointCaptureRail(x,z,r=0)',"c.name==='CheckpointCaptureBeaconV74'"]
           for x in required: assert x in s,x
           assert 'secondPitCheckpointCaptureL=box(' not in s
           assert 'secondPitCheckpointCaptureR=box(' not in s
@@ -55,6 +60,6 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add index.html
+          git add index.html scripts/second-pit-checkpoint-funnel-check.mjs
           git commit -m 'Model checkpoint capture corridor v74'
           git push origin HEAD:new-player-glb-overhaul
