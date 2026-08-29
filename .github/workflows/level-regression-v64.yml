@@ -1,4 +1,4 @@
-name: Level Regression v67
+name: Level Regression v70
 
 on:
   push:
@@ -19,15 +19,17 @@ jobs:
         with:
           node-version: 22
 
-      - name: Verify current v67 modeled level contract
+      - name: Verify current v70 modeled level contract
         run: |
           set -euo pipefail
-          grep -q "full 3D lift route v67 · carry-safe final midpoint" index.html
+          grep -q "full 3D lift route v69 · physical second sweeper shield and recovery" index.html
           grep -q "new THREE.CapsuleGeometry(.34,.72,4,8)" index.html
           grep -q "const crashBarriers=blocks.map" index.html
           grep -q "const bumperPillars=cylinders.map" index.html
           grep -q "const finalPunchers=" index.html
           grep -q "const finalMidSafePad=" index.html
+          grep -q "const secondSweeperShieldL=" index.html
+          grep -q "const secondSweeperRecoveryL=" index.html
           if grep -q "new THREE.BoxGeometry(8,.28,.4)" index.html; then
             echo "Legacy sweeper box visual returned"
             exit 1
@@ -53,6 +55,21 @@ jobs:
 
       - name: Verify first sweeper staging shield
         run: node scripts/first-sweeper-staging-shield-check.mjs
+
+      - name: Verify second pit approach corridor
+        run: node scripts/second-pit-approach-corridor-check.mjs
+
+      - name: Verify second pit boarding hold
+        run: node scripts/second-pit-boarding-hold-check.mjs
+
+      - name: Verify second pit carry window
+        run: node scripts/second-pit-carry-window-check.mjs
+
+      - name: Verify second pit checkpoint funnel
+        run: node scripts/second-pit-checkpoint-funnel-check.mjs
+
+      - name: Verify second pit full-route continuity v70
+        run: node scripts/second-pit-route-continuity-v70-check.mjs
 
       - name: Verify final puncher swept physics
         run: node scripts/final-puncher-physics-contract-v65.mjs
