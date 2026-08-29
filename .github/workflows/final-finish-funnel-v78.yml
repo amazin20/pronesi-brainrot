@@ -86,3 +86,4 @@ jobs:
           git add index.html
           git commit -m 'Model final finish funnel guardrails v78'
           git push origin HEAD:new-player-glb-overhaul
+# retrigger after workflow exists in branch
