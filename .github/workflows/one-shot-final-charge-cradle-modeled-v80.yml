@@ -1,0 +1,72 @@
+name: One-shot Final Charge Cradle Modeled V80
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/one-shot-final-charge-cradle-modeled-v80.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  patch-check-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch final charge cradle v80
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html'); s=p.read_text()
+          old="const finalChargeCradlePad=box(0,.045,(FINAL_CHARGE_CRADLE_Z_MIN+FINAL_CHARGE_CRADLE_Z_MAX)*.5,FINAL_CHARGE_CRADLE_HALF_X*2,.09,FINAL_CHARGE_CRADLE_Z_MAX-FINAL_CHARGE_CRADLE_Z_MIN,0xffef6a),finalChargeCradleL=box(-FINAL_CHARGE_CRADLE_HALF_X-.10,.48,(FINAL_CHARGE_CRADLE_Z_MIN+FINAL_CHARGE_CRADLE_Z_MAX)*.5,.18,.96,FINAL_CHARGE_CRADLE_Z_MAX-FINAL_CHARGE_CRADLE_Z_MIN,0xffef6a),finalChargeCradleR=box(FINAL_CHARGE_CRADLE_HALF_X+.10,.48,(FINAL_CHARGE_CRADLE_Z_MIN+FINAL_CHARGE_CRADLE_Z_MAX)*.5,.18,.96,FINAL_CHARGE_CRADLE_Z_MAX-FINAL_CHARGE_CRADLE_Z_MIN,0xffef6a);[finalChargeCradlePad,finalChargeCradleL,finalChargeCradleR].forEach(o=>{o.material.emissive=new THREE.Color(0xc99700);o.material.emissiveIntensity=.82});"
+          new="const FINAL_CHARGE_CRADLE_MODEL_V80=true;const finalChargeCradlePad=box(0,.045,(FINAL_CHARGE_CRADLE_Z_MIN+FINAL_CHARGE_CRADLE_Z_MAX)*.5,FINAL_CHARGE_CRADLE_HALF_X*2,.09,FINAL_CHARGE_CRADLE_Z_MAX-FINAL_CHARGE_CRADLE_Z_MIN,0xffef6a);finalChargeCradlePad.material.emissive=new THREE.Color(0xc99700);finalChargeCradlePad.material.emissiveIntensity=.82;function makeFinalChargeCradleGuard(side){const g=new THREE.Group();g.name='FinalChargeCradleGuardV80';g.position.set(side*(FINAL_CHARGE_CRADLE_HALF_X+.11),0,(FINAL_CHARGE_CRADLE_Z_MIN+FINAL_CHARGE_CRADLE_Z_MAX)*.5);const railMat=mat(0xffef6a),dark=mat(0x4d3a0d),accent=mat(0xfff7bd);const rail=new THREE.Mesh(new THREE.CapsuleGeometry(.10,.58,4,8),railMat);rail.name='FinalChargeCradleRailV80';rail.rotation.x=Math.PI/2;rail.position.y=.48;rail.castShadow=rail.receiveShadow=true;rail.material.emissive=new THREE.Color(0xc99700);rail.material.emissiveIntensity=.82;g.add(rail);[-.29,.29].forEach((z,i)=>{const post=new THREE.Mesh(new THREE.CylinderGeometry(.08,.11,.84,8),dark);post.name='FinalChargeCradlePostV80';post.position.set(0,.40,z);post.castShadow=post.receiveShadow=true;g.add(post);const beacon=new THREE.Mesh(new THREE.TorusGeometry(.12,.03,6,10),accent);beacon.name='FinalChargeCradleBeaconV80';beacon.rotation.x=Math.PI/2;beacon.position.set(0,.84,z);beacon.castShadow=true;beacon.material.emissive=new THREE.Color(i?0xffd23f:0xffef6a);beacon.material.emissiveIntensity=.9;g.add(beacon)});scene.add(g);return g}const finalChargeCradleL=makeFinalChargeCradleGuard(-1),finalChargeCradleR=makeFinalChargeCradleGuard(1);"
+          if old not in s: raise SystemExit('expected final charge cradle box rails not found')
+          s=s.replace(old,new,1)
+          old_gate="const finalChargeGateL=box(-FINAL_CHARGE_GATE_HALF_X-.11,.88,FINAL_CHARGE_GATE_Z,.18,1.76,.18,0xffef6a),finalChargeGateR=box(FINAL_CHARGE_GATE_HALF_X+.11,.88,FINAL_CHARGE_GATE_Z,.18,1.76,.18,0xffef6a),finalChargeGate=box(0,FINAL_CHARGE_GATE_CLOSED_Y,FINAL_CHARGE_GATE_Z,FINAL_CHARGE_GATE_HALF_X*2,.22,.22,0xffd23f);[finalChargeGateL,finalChargeGateR,finalChargeGate].forEach(o=>{o.material.emissive=new THREE.Color(0xc99700);o.material.emissiveIntensity=.9});"
+          new_gate="function makeFinalChargeGatePost(side){const post=new THREE.Mesh(new THREE.CapsuleGeometry(.12,1.50,5,10),mat(0xffef6a));post.name='FinalChargeGatePostV80';post.position.set(side*(FINAL_CHARGE_GATE_HALF_X+.11),.88,FINAL_CHARGE_GATE_Z);post.castShadow=post.receiveShadow=true;post.material.emissive=new THREE.Color(0xc99700);post.material.emissiveIntensity=.9;const foot=new THREE.Mesh(new THREE.CylinderGeometry(.22,.29,.18,10),mat(0x4d3a0d));foot.name='FinalChargeGateFootV80';foot.position.y=-.79;foot.castShadow=foot.receiveShadow=true;post.add(foot);const collar=new THREE.Mesh(new THREE.TorusGeometry(.17,.04,6,12),mat(0xfff7bd));collar.name='FinalChargeGateCollarV80';collar.rotation.x=Math.PI/2;collar.position.y=.55;collar.castShadow=true;post.add(collar);scene.add(post);return post}const finalChargeGateL=makeFinalChargeGatePost(-1),finalChargeGateR=makeFinalChargeGatePost(1),finalChargeGate=box(0,FINAL_CHARGE_GATE_CLOSED_Y,FINAL_CHARGE_GATE_Z,FINAL_CHARGE_GATE_HALF_X*2,.22,.22,0xffd23f);finalChargeGate.material.emissive=new THREE.Color(0xc99700);finalChargeGate.material.emissiveIntensity=.9;"
+          if old_gate not in s: raise SystemExit('expected final charge gate box posts not found')
+          s=s.replace(old_gate,new_gate,1)
+          s=s.replace('full 3D lift route v79 · modeled finish structure','full 3D lift route v80 · modeled charge cradle',1)
+          p.write_text(s)
+          PY
+      - name: Verify modeled charge cradle and preserved gameplay envelope
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=['FINAL_CHARGE_CRADLE_MODEL_V80=true','FinalChargeCradleGuardV80','FinalChargeCradleRailV80','FinalChargeCradlePostV80','FinalChargeCradleBeaconV80','FinalChargeGatePostV80','FinalChargeGateFootV80','FinalChargeGateCollarV80','FINAL_CHARGE_CRADLE_Z_MIN=10.30','FINAL_CHARGE_CRADLE_Z_MAX=11.06','FINAL_CHARGE_CRADLE_HALF_X=1.72','FINAL_CHARGE_GATE_Z=10.88','FINAL_CHARGE_GATE_HALF_X=1.72','function inFinalChargeCradleRail','function finalChargeGateBlocks']
+          for x in required:
+            if x not in s: raise SystemExit('missing '+x)
+          stale=['finalChargeCradleL=box(-FINAL_CHARGE_CRADLE_HALF_X-.10','finalChargeCradleR=box(FINAL_CHARGE_CRADLE_HALF_X+.10','finalChargeGateL=box(-FINAL_CHARGE_GATE_HALF_X-.11','finalChargeGateR=box(FINAL_CHARGE_GATE_HALF_X+.11']
+          for x in stale:
+            if x in s: raise SystemExit('stale primitive remains: '+x)
+          print('FINAL_CHARGE_CRADLE_MODELED_V80: PASS')
+          PY
+      - name: Browser module syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text(); a=s.index('<script type="module">')+len('<script type="module">'); b=s.index('</script>',a); Path('/tmp/runtime.mjs').write_text(s[a:b])
+          PY
+          node --check /tmp/runtime.mjs
+      - name: Relevant finish gameplay contracts
+        run: |
+          node scripts/final-finish-charge-check.mjs
+          node scripts/final-finish-residual-momentum-check.mjs
+          node scripts/final-finish-soft-hold-check.mjs
+          node scripts/final-puncher-physics-contract-v65.mjs
+      - name: Diff whitespace check
+        run: git diff --check
+      - name: Commit gameplay geometry
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Model final charge cradle and gate supports v80'
+          git push origin HEAD:new-player-glb-overhaul
