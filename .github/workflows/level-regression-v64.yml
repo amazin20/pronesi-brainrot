@@ -1,4 +1,4 @@
-name: Level Regression v70
+name: Level Regression v71
 
 on:
   push:
@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Verify current v70 modeled level contract
+      - name: Verify current v71 modeled level contract
         run: |
           set -euo pipefail
           grep -q "full 3D lift route v69 · physical second sweeper shield and recovery" index.html
@@ -64,6 +64,9 @@ jobs:
 
       - name: Verify second pit carry window
         run: node scripts/second-pit-carry-window-check.mjs
+
+      - name: Verify second pit moving-platform motion v71
+        run: node scripts/second-pit-platform-motion-v71-check.mjs
 
       - name: Verify second pit checkpoint funnel
         run: node scripts/second-pit-checkpoint-funnel-check.mjs
