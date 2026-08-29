@@ -1,0 +1,70 @@
+name: One-shot first sweeper recovery modeled v83
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/one-shot-first-sweeper-recovery-modeled-v83.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Patch real level geometry
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          if 'FIRST_SWEEPER_RECOVERY_MODEL_V83=true' in s:
+              raise SystemExit('v83 already present')
+          start=s.index('const firstSweeperRecoveryPad=box(')
+          end=s.index('const secondSweeperStagePad=', start)
+          replacement="""const FIRST_SWEEPER_RECOVERY_MODEL_V83=true;const firstSweeperRecoveryPad=box(0,.03,(FIRST_SWEEPER_RECOVERY_Z_MIN+FIRST_SWEEPER_RECOVERY_Z_MAX)*.5,FIRST_SWEEPER_RECOVERY_HALF_X*2,.06,FIRST_SWEEPER_RECOVERY_Z_MAX-FIRST_SWEEPER_RECOVERY_Z_MIN,0x49ff79);firstSweeperRecoveryPad.material.emissive=new THREE.Color(0x159b43);firstSweeperRecoveryPad.material.emissiveIntensity=.5;function makeFirstSweeperRecoveryGuard(side){const g=new THREE.Group();g.name='FirstSweeperRecoveryGuardV83';g.position.set(side*(FIRST_SWEEPER_RECOVERY_HALF_X+.10),0,(FIRST_SWEEPER_RECOVERY_Z_MIN+FIRST_SWEEPER_RECOVERY_Z_MAX)*.5);const railMat=mat(0x49ff79),dark=mat(0x14352d),accent=mat(0xdffff0);const rail=new THREE.Mesh(new THREE.CapsuleGeometry(.10,.60,4,8),railMat);rail.name='FirstSweeperRecoveryRailV83';rail.rotation.x=Math.PI/2;rail.position.y=.40;rail.castShadow=rail.receiveShadow=true;rail.material.emissive=new THREE.Color(0x159b43);rail.material.emissiveIntensity=.5;g.add(rail);[-.27,.27].forEach((z,i)=>{const post=new THREE.Mesh(new THREE.CylinderGeometry(.075,.105,.70,8),dark);post.name='FirstSweeperRecoveryPostV83';post.position.set(0,.34,z);post.castShadow=post.receiveShadow=true;g.add(post);const beacon=new THREE.Mesh(new THREE.TorusGeometry(.11,.028,6,10),accent);beacon.name='FirstSweeperRecoveryBeaconV83';beacon.rotation.x=Math.PI/2;beacon.position.set(0,.74,z);beacon.castShadow=true;beacon.material.emissive=new THREE.Color(i?0x49ff79:0x8affc5);beacon.material.emissiveIntensity=.72;g.add(beacon)});scene.add(g);return g}const firstSweeperRecoveryL=makeFirstSweeperRecoveryGuard(-1),firstSweeperRecoveryR=makeFirstSweeperRecoveryGuard(1);"""
+          s=s[:start]+replacement+s[end:]
+          rstart=s.index('const firstSweeperRecoveryActive=')
+          rend=s.index('if(failTimer>0)', rstart)
+          runtime="""const firstSweeperRecoveryActive=firstSweeperCleared&&p.z>FIRST_SWEEPER_RECOVERY_Z_MIN&&p.z<FIRST_SWEEPER_RECOVERY_Z_MAX&&Math.abs(p.x)<FIRST_SWEEPER_RECOVERY_HALF_X+.35&&!win&&failTimer<=0,firstSweeperRecoveryPulse=.5+.5*Math.sin(t*9);firstSweeperRecoveryPad.material.emissiveIntensity=firstSweeperRecoveryActive?1.05+.55*firstSweeperRecoveryPulse:.5;[firstSweeperRecoveryL,firstSweeperRecoveryR].forEach(g=>{const rail=g.children.find(c=>c.name==='FirstSweeperRecoveryRailV83');if(rail)rail.material.emissiveIntensity=firstSweeperRecoveryActive?1.05+.55*firstSweeperRecoveryPulse:.5;g.children.filter(c=>c.name==='FirstSweeperRecoveryBeaconV83').forEach(b=>b.material.emissiveIntensity=firstSweeperRecoveryActive?1.18+.35*firstSweeperRecoveryPulse:.72)});if(firstSweeperRecoveryActive){playerMomentumX*=Math.exp(-FIRST_SWEEPER_RECOVERY_DAMP*dt);playerMomentumZ*=Math.exp(-FIRST_SWEEPER_RECOVERY_DAMP*dt);if(!carry){bv.x*=Math.exp(-FIRST_SWEEPER_RECOVERY_DAMP*.78*dt);bv.z*=Math.exp(-FIRST_SWEEPER_RECOVERY_DAMP*.78*dt)}state.textContent='SWEEPER · ВОССТАНОВЛЕНИЕ'}"""
+          s=s[:rstart]+runtime+s[rend:]
+          s=s.replace('full 3D lift route v82 · modeled final side towers','full 3D lift route v83 · modeled sweeper recovery')
+          p.write_text(s)
+          PY
+      - name: v83 modeled geometry invariants
+        run: |
+          python3 - <<'PY'
+          s=open('index.html').read()
+          required=['FIRST_SWEEPER_RECOVERY_MODEL_V83=true','FirstSweeperRecoveryGuardV83','FirstSweeperRecoveryRailV83','FirstSweeperRecoveryPostV83','FirstSweeperRecoveryBeaconV83','new THREE.CapsuleGeometry(.10,.60,4,8)','new THREE.CylinderGeometry(.075,.105,.70,8)','new THREE.TorusGeometry(.11,.028,6,10)','FIRST_SWEEPER_RECOVERY_DAMP']
+          for x in required:
+              assert x in s, x
+          assert 'firstSweeperRecoveryL=box(' not in s
+          assert 'firstSweeperRecoveryR=box(' not in s
+          assert 'function inFirstSweeper' in s
+          print('v83 modeled recovery invariants: PASS')
+          PY
+      - name: Browser module syntax
+        run: |
+          python3 - <<'PY'
+          import re
+          s=open('index.html').read()
+          m=re.search(r'<script type="module">(.*)</script>',s,re.S)
+          assert m
+          open('/tmp/game.mjs','w').write(m.group(1))
+          PY
+          node --check /tmp/game.mjs
+      - name: Existing first-sweeper gameplay checks
+        run: |
+          node scripts/first-sweeper-cycle-check.mjs
+          node scripts/first-sweeper-postgate-grace-check.mjs
+          node scripts/first-sweeper-gate-crossing-latch-check.mjs
+      - name: Diff whitespace check
+        run: git diff --check
+      - name: Commit real gameplay change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Model first sweeper recovery guardrails v83'
+          git push origin HEAD:new-player-glb-overhaul
