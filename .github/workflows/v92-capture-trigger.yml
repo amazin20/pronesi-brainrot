@@ -1,0 +1,27 @@
+name: V92 capture trigger cleanup
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: [.github/workflows/v92-capture-trigger.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Remove capture trigger after branch capture has been queued
+        run: |
+          set -euo pipefail
+          sleep 8
+          git config user.name 'amazin20'
+          git config user.email '138931938+amazin20@users.noreply.github.com'
+          git rm .github/workflows/v92-capture-trigger.yml
+          git commit -m 'Remove v92 capture trigger'
+          git push origin HEAD:new-player-glb-overhaul
