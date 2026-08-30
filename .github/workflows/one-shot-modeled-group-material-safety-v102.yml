@@ -1,0 +1,74 @@
+name: One-shot Modeled Group Material Safety V102
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/one-shot-modeled-group-material-safety-v102.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  patch-check-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch modeled group material updates
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html'); s=p.read_text()
+          anchor="const clock=new THREE.Clock(),cg=new THREE.Vector3(),lg=new THREE.Vector3();function tick(){"
+          helper="const RUNTIME_GROUP_MATERIAL_SAFE_V102=true;function setEmissiveIntensityDeep(root,value){if(!root)return;if(root.isMesh&&root.material?.emissive)root.material.emissiveIntensity=value;root.traverse?.(o=>{if(o!==root&&o.isMesh&&o.material?.emissive)o.material.emissiveIntensity=value})}const clock=new THREE.Clock(),cg=new THREE.Vector3(),lg=new THREE.Vector3();function tick(){"
+          if anchor not in s: raise SystemExit('clock anchor not found')
+          s=s.replace(anchor,helper,1)
+          replacements={
+            "[finalRecoveryPad,finalRecoveryL,finalRecoveryR].forEach(o=>{o.material.emissiveIntensity=recoveryActive?1.0+.55*recoveryPulse:.72})":"[finalRecoveryPad,finalRecoveryL,finalRecoveryR].forEach(o=>setEmissiveIntensityDeep(o,recoveryActive?1.0+.55*recoveryPulse:.72))",
+            "[finalChargeCradlePad,finalChargeCradleL,finalChargeCradleR].forEach(o=>o.material.emissiveIntensity=finalChargeCradleActive?1.35+.5*finalChargeCradlePulse:.82)":"[finalChargeCradlePad,finalChargeCradleL,finalChargeCradleR].forEach(o=>setEmissiveIntensityDeep(o,finalChargeCradleActive?1.35+.5*finalChargeCradlePulse:.82))",
+            "[secondPitFunnelL,secondPitFunnelR,secondPitFunnelStripe].forEach(o=>o.material.emissiveIntensity=(playerLandingFunnel||brainLandingFunnel)?1.15+.42*funnelPulse:.72)":"[secondPitFunnelL,secondPitFunnelR,secondPitFunnelStripe].forEach(o=>setEmissiveIntensityDeep(o,(playerLandingFunnel||brainLandingFunnel)?1.15+.42*funnelPulse:.72))"
+          }
+          for old,new in replacements.items():
+            if old not in s: raise SystemExit('expected unsafe material update not found: '+old[:70])
+            s=s.replace(old,new,1)
+          s=s.replace('full 3D route v100 · modeled strike platforms','full 3D route v102 · modeled group runtime safety',1)
+          p.write_text(s)
+          PY
+      - name: Verify runtime safety invariants
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=['RUNTIME_GROUP_MATERIAL_SAFE_V102=true','function setEmissiveIntensityDeep(root,value)','setEmissiveIntensityDeep(o,recoveryActive?1.0+.55*recoveryPulse:.72)','setEmissiveIntensityDeep(o,finalChargeCradleActive?1.35+.5*finalChargeCradlePulse:.82)','setEmissiveIntensityDeep(o,(playerLandingFunnel||brainLandingFunnel)?1.15+.42*funnelPulse:.72)','FINAL_RECOVERY_MODEL_V77=true','FINAL_CHARGE_CRADLE_MODEL_V80=true','SECOND_PIT_FUNNEL_MODEL_V73=true']
+          for x in required:
+            if x not in s: raise SystemExit('missing '+x)
+          forbidden=['[finalRecoveryPad,finalRecoveryL,finalRecoveryR].forEach(o=>{o.material.emissiveIntensity','[finalChargeCradlePad,finalChargeCradleL,finalChargeCradleR].forEach(o=>o.material.emissiveIntensity','[secondPitFunnelL,secondPitFunnelR,secondPitFunnelStripe].forEach(o=>o.material.emissiveIntensity']
+          for x in forbidden:
+            if x in s: raise SystemExit('unsafe group material update remains: '+x)
+          print('MODELED_GROUP_MATERIAL_SAFETY_V102: PASS')
+          PY
+      - name: Browser module syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text(); a=s.index('<script type="module">')+len('<script type="module">'); b=s.index('</script>',a); Path('/tmp/runtime.mjs').write_text(s[a:b])
+          PY
+          node --check /tmp/runtime.mjs
+      - name: Gameplay contracts
+        run: |
+          node scripts/lift-route-continuity-check.mjs
+          node scripts/final-finish-charge-check.mjs
+      - name: Diff whitespace check
+        run: git diff --check
+      - name: Commit runtime gameplay fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Fix modeled group material runtime crashes v102'
+          git push origin HEAD:new-player-glb-overhaul
