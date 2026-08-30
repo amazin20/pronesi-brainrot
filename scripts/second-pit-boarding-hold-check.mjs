@@ -6,6 +6,15 @@ const required=[
   "SECOND_PIT_BOARD_X=.16",
   "SECOND_PIT_BOARD_SPEED=2.6",
   "SECOND_PIT_EXIT_RELEASE_Z=6.02",
+  "SECOND_PIT_CARRIER_MODEL_V72=true",
+  "SecondPitCarrierDeckV72",
+  "SecondPitCarrierPontoonV72",
+  "SecondPitCarrierThrusterRingV72",
+  "SECOND_PIT_STAGE_MODEL_V85=true",
+  "SecondPitStageTowerV85",
+  "SecondPitStageTopV85",
+  "SECOND_PIT_EXIT_MODEL_V94=true",
+  "SecondPitExitCollisionDeckV94",
   "secondPitBoardingIndex=-1",
   "const crossing=secondPitBoardingIndex>=0&&carry",
   "const holdActive=approaching||crossing",
@@ -16,11 +25,15 @@ const required=[
   "secondPitBoardBridge.visible=secondPitBoardBridgeActive",
   "ПЛАТФОРМА ЖДЁТ · ЗАХОДИ",
   "ПЛАТФОРМА ДЕРЖИТ ПЕРЕХОД",
-  "full 3D route v102"
+  "full 3D route v103"
 ];
 for(const needle of required){if(!s.includes(needle))throw new Error('missing '+needle)}
-if(s.includes('secondPitBoarding=stageReady'))throw new Error('stale stageReady boarding contract returned');
-if(s.includes('boardingLocked=stageReady'))throw new Error('stale stageReady lock contract returned');
+const forbidden=[
+  'full 3D route v102',
+  'secondPitBoarding=stageReady',
+  'boardingLocked=stageReady'
+];
+for(const needle of forbidden){if(s.includes(needle))throw new Error('stale second-pit contract returned: '+needle)}
 
 const boardX=.16,halfX=1.05,playerRadius=.4,brainRadius=.38;
 if(halfX-playerRadius<.6)throw new Error('player boarding width too narrow');
@@ -40,4 +53,4 @@ const stageMinZ=3.55,exitReleaseZ=6.02;
 if(stageMinZ>=pit[0])throw new Error('boarding sensor starts too late');
 if(exitReleaseZ<=pit[1])throw new Error('crossing latch releases before the far bank');
 
-console.log('second pit boarding/crossing hold v102: PASS',{centerClearance:halfX-playerRadius,uncovered,worstDockSeconds});
+console.log('second pit boarding/crossing hold v103: PASS',{centerClearance:halfX-playerRadius,uncovered,worstDockSeconds,modeledCarrier:'v72',modeledStage:'v85',modeledExit:'v94'});
