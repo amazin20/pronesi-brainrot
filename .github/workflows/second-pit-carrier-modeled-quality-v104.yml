@@ -1,0 +1,17 @@
+name: Second Pit Carrier Modeled Quality v104
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+  workflow_dispatch:
+
+jobs:
+  modeled-carrier-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify second pit carrier modeled assembly and carry footprint
+        run: node scripts/second-pit-carrier-modeled-quality-v104-check.mjs
