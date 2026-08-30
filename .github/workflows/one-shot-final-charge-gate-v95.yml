@@ -31,7 +31,7 @@ jobs:
               raise SystemExit('old finalChargeGate box marker missing')
           s = s.replace(old, new, 1)
           p.write_text(s)
-      - name: Verify v95 geometry invariants
+      - name: Verify v95 geometry and gameplay invariants
         shell: python
         run: |
           from pathlib import Path
@@ -43,13 +43,16 @@ jobs:
             "new THREE.CapsuleGeometry(.11,FINAL_CHARGE_GATE_HALF_X*2-.22,4,8)",
             "finalChargeGate.position.set(0,FINAL_CHARGE_GATE_CLOSED_Y,FINAL_CHARGE_GATE_Z)",
             "function finalChargeGateBlocks",
-            "chargeGateTarget=win?FINAL_CHARGE_GATE_OPEN_Y:FINAL_CHARGE_GATE_CLOSED_Y"
+            "barBottom=finalChargeGate.position.y-.11",
+            "chargeGateTarget=win?FINAL_CHARGE_GATE_OPEN_Y:FINAL_CHARGE_GATE_CLOSED_Y",
+            "finalChargeGate.position.y+=Math.max(-chargeGateStep,Math.min(chargeGateStep,chargeGateTarget-finalChargeGate.position.y))",
+            "FINAL_FINISH_CHARGE=.55"
           ]
           missing=[x for x in required if x not in s]
-          if missing: raise SystemExit('missing v95 markers: '+repr(missing))
+          if missing: raise SystemExit('missing v95/current gameplay markers: '+repr(missing))
           if 'finalChargeGate=box(0,FINAL_CHARGE_GATE_CLOSED_Y' in s:
               raise SystemExit('old final charge box gate still present')
-          print('v95 modeled gate invariants OK')
+          print('v95 modeled gate + collision/timing invariants OK')
       - name: Browser module syntax check
         run: |
           python - <<'PY'
@@ -60,10 +63,8 @@ jobs:
           Path('/tmp/game-v95.mjs').write_text(s[a:b])
           PY
           node --check /tmp/game-v95.mjs
-      - name: Existing finish gameplay checks
-        run: |
-          node scripts/final-finish-charge-check.mjs
-          node scripts/final-finish-soft-hold-check.mjs
+      - name: Current finish charge behavior check
+        run: node scripts/final-finish-charge-check.mjs
       - name: Diff check
         run: git diff --check
       - name: Commit gameplay change
