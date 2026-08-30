@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 const s=fs.readFileSync('index.html','utf8');
 const must=[
-  "full 3D lift route v69 · physical second sweeper shield and recovery",
+  "full 3D route v102 · modeled group runtime safety",
+  "FIRST_SWEEPER_GATE_Z=-10.62",
   "firstSweeperGateCrossing=false",
   "if(!firstSweeperGateCrossing&&(recover||cleared)&&gateSensor)firstSweeperGateCrossing=true",
   "if(firstSweeperGateCrossing&&p.z>FIRST_SWEEPER_GATE_Z+.72&&bp.z>FIRST_SWEEPER_GATE_Z+.72)",
@@ -24,4 +25,4 @@ q=simulate({phase:'burst',playerZ:release+.05,brainZ:release-.04,latch:q.latch,s
 if(!q.latch||!q.open) throw new Error('gate must wait for both bodies');
 q=simulate({phase:'burst',playerZ:release+.05,brainZ:release+.05,latch:q.latch,sensor:false});
 if(q.latch||q.open) throw new Error('gate may relock only after both bodies clear release plane');
-console.log('first sweeper v70 gate crossing latch: PASS');
+console.log('first sweeper v102 gate crossing latch: PASS',{releasePlane:release,requiresBothBodies:true,phaseIndependentAfterLatch:true});
