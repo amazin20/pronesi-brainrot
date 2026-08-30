@@ -34,7 +34,7 @@ jobs:
             'const FINAL_PRESSURE_STATION_MODEL_V98=true',
             'const FINAL_PRESSURE_PYLON_MODEL_V99=true',
             'const FINISH_DECK_MODEL_V97=true',
-            'const FINAL_CHARGE_GATE_MODEL_V95=true',
+            'FINAL_CHARGE_GATE_MODEL_V95=true',
             'const SECOND_PIT_EXIT_MODEL_V94=true',
             'const LIFT_CEILING_EXIT_MODEL_V92=true',
             'const LIFT_CEILING_MODEL_V91=true'
