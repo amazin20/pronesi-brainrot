@@ -1,0 +1,63 @@
+name: One Shot Runtime Group Material V101
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - '.github/workflows/one-shot-runtime-group-material-v101.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch modeled stage runtime material updates
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old="secondPitStageVisuals.forEach(o=>{o.material.color.setHex(stageColor);o.material.emissive.setHex(stageEmissive);o.material.emissiveIntensity=holdActive?1.25+.45*pulse:.72});"
+          new="secondPitStageVisuals.forEach(o=>o.traverse(n=>{if(!n.isMesh||!n.material)return;n.material.color.setHex(stageColor);n.material.emissive=n.material.emissive||new THREE.Color(stageEmissive);n.material.emissive.setHex(stageEmissive);n.material.emissiveIntensity=holdActive?1.25+.45*pulse:.72}));"
+          assert old in s, 'expected v100 direct Group material update not found'
+          s=s.replace(old,new,1)
+          assert old not in s
+          assert new in s
+          p.write_text(s)
+          PY
+      - name: Verify browser module and v101 runtime invariant
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          a=s.index('<script type="module">')+len('<script type="module">')
+          b=s.index('</script>',a)
+          Path('/tmp/runtime.mjs').write_text(s[a:b])
+          assert "secondPitStageVisuals.forEach(o=>o.traverse(n=>{if(!n.isMesh||!n.material)return;" in s
+          assert "secondPitStageVisuals.forEach(o=>{o.material.color.setHex(stageColor)" not in s
+          assert "RUNTIME_BOOTSTRAP_V93=true" in s
+          assert "SECOND_PIT_STAGE_MODEL_V85=true" in s
+          print('v101 modeled-stage runtime material invariant PASS')
+          PY
+          node --check /tmp/runtime.mjs
+          node scripts/final-finish-charge-check.mjs
+          git diff --check
+      - name: Commit gameplay runtime fix
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Fix modeled stage material updates in runtime'
+          git push origin HEAD:new-player-glb-overhaul
