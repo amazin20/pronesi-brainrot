@@ -1,4 +1,4 @@
-name: Level Regression v100
+name: Level Regression v102
 
 on:
   push:
@@ -19,10 +19,12 @@ jobs:
         with:
           node-version: 22
 
-      - name: Verify current v100 modeled level contract
+      - name: Verify current v102 modeled level contract
         run: |
           set -euo pipefail
-          grep -q "full 3D route v100 · modeled strike platforms" index.html
+          grep -q "full 3D route v102 · modeled group runtime safety" index.html
+          grep -q "const RUNTIME_GROUP_MATERIAL_SAFE_V102=true" index.html
+          grep -q "function setEmissiveIntensityDeep(root,value)" index.html
           grep -q "const FINAL_STRIKE_PLATFORM_MODEL_V100=true" index.html
           grep -q "StrikePlatformV100" index.html
           grep -q "const finalPunchers=" index.html
@@ -41,6 +43,48 @@ jobs:
             echo "Legacy sweeper box visual returned"
             exit 1
           fi
+
+      - name: Reject direct material access on modeled Group runtime targets
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+          const src = fs.readFileSync('index.html','utf8');
+          const forbidden = [
+            /finalRecovery[LR]\.material\./,
+            /finalChargeCradle[LR]\.material\./,
+            /secondPitFunnel[LR]\.material\./,
+            /secondPitStage[LR]\.material\./
+          ];
+          const hits = forbidden.filter(r => r.test(src));
+          if (hits.length) {
+            console.error('Unsafe modeled Group.material access returned:', hits.map(String).join(', '));
+            process.exit(1);
+          }
+          for (const target of ['finalRecoveryL','finalRecoveryR','finalChargeCradleL','finalChargeCradleR','secondPitFunnelL','secondPitFunnelR']) {
+            if (!src.includes(target)) {
+              console.error(`Expected modeled runtime target missing: ${target}`);
+              process.exit(1);
+            }
+          }
+          if (!src.includes('setEmissiveIntensityDeep(o,')) {
+            console.error('Deep emissive helper is not wired into live runtime updates');
+            process.exit(1);
+          }
+          console.log('modeled Group runtime material safety contract: PASS');
+          NODE
+
+      - name: Verify browser module parses
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          src = Path('index.html').read_text()
+          start = src.index('<script type="module">') + len('<script type="module">')
+          end = src.rindex('</script>')
+          Path('/tmp/brainrot-module.mjs').write_text(src[start:end])
+          PY
+          node --check /tmp/brainrot-module.mjs
 
       - name: Verify lift carry route
         run: node scripts/lift-route-continuity-check.mjs
