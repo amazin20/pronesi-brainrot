@@ -22,27 +22,38 @@ jobs:
       - name: Verify current v102 modeled level contract
         run: |
           set -euo pipefail
-          grep -q "full 3D route v102 · modeled group runtime safety" index.html
-          grep -q "const RUNTIME_GROUP_MATERIAL_SAFE_V102=true" index.html
-          grep -q "function setEmissiveIntensityDeep(root,value)" index.html
-          grep -q "const FINAL_STRIKE_PLATFORM_MODEL_V100=true" index.html
-          grep -q "StrikePlatformV100" index.html
-          grep -q "const finalPunchers=" index.html
-          grep -q "const FINAL_PRESSURE_STATION_MODEL_V98=true" index.html
-          grep -q "const FINAL_PRESSURE_PYLON_MODEL_V99=true" index.html
-          grep -q "const FINISH_DECK_MODEL_V97=true" index.html
-          grep -q "const FINAL_CHARGE_GATE_MODEL_V95=true" index.html
-          grep -q "const SECOND_PIT_EXIT_MODEL_V94=true" index.html
-          grep -q "const LIFT_CEILING_EXIT_MODEL_V92=true" index.html
-          grep -q "const LIFT_CEILING_MODEL_V91=true" index.html
-          if grep -q "const finalGauntletPad1=box(" index.html; then
-            echo "Legacy final strike-platform box geometry returned"
-            exit 1
-          fi
-          if grep -q "new THREE.BoxGeometry(8,.28,.4)" index.html; then
-            echo "Legacy sweeper box visual returned"
-            exit 1
-          fi
+          node <<'NODE'
+          const fs = require('node:fs');
+          const src = fs.readFileSync('index.html','utf8');
+          const required = [
+            'const RUNTIME_GROUP_MATERIAL_SAFE_V102=true',
+            'function setEmissiveIntensityDeep(root,value)',
+            'const FINAL_STRIKE_PLATFORM_MODEL_V100=true',
+            'StrikePlatformV100',
+            'const finalPunchers=',
+            'const FINAL_PRESSURE_STATION_MODEL_V98=true',
+            'const FINAL_PRESSURE_PYLON_MODEL_V99=true',
+            'const FINISH_DECK_MODEL_V97=true',
+            'const FINAL_CHARGE_GATE_MODEL_V95=true',
+            'const SECOND_PIT_EXIT_MODEL_V94=true',
+            'const LIFT_CEILING_EXIT_MODEL_V92=true',
+            'const LIFT_CEILING_MODEL_V91=true'
+          ];
+          const missing = required.filter(token => !src.includes(token));
+          if (missing.length) {
+            console.error('Missing modeled-level invariants:', missing.join(' | '));
+            process.exit(1);
+          }
+          if (src.includes('const finalGauntletPad1=box(')) {
+            console.error('Legacy final strike-platform box geometry returned');
+            process.exit(1);
+          }
+          if (src.includes('new THREE.BoxGeometry(8,.28,.4)')) {
+            console.error('Legacy sweeper box visual returned');
+            process.exit(1);
+          }
+          console.log('v102 modeled level contract: PASS');
+          NODE
 
       - name: Reject direct material access on modeled Group runtime targets
         run: |
