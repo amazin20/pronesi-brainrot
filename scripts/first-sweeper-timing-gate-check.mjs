@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 const s=fs.readFileSync('index.html','utf8');
 const must=[
-  "full 3D route v102 · modeled group runtime safety",
+  "full 3D route v103 · modeled first pit carrier",
   "FIRST_SWEEPER_RECOVER=.72",
   "FIRST_SWEEPER_GATE_Z=-10.62",
   "FIRST_SWEEPER_GATE_CLOSED_Y=.62",
@@ -23,4 +23,4 @@ if(!(closedBottom<brainTop&&closedBottom<playerTop)) throw new Error('closed gat
 if(!(openBottom>playerTop&&openBottom>brainTop)) throw new Error('open gate must clear both bodies');
 if(!(openingTime<recover)) throw new Error('gate must physically clear before recovery window ends');
 if(!(fullyOpenWindow>=.30)) throw new Error(`usable carry window too short: ${fullyOpenWindow.toFixed(3)}s`);
-console.log('first sweeper v102 physical timing gate: PASS',{closedBottom,openBottom,playerTop,brainTop,openingTime:Number(openingTime.toFixed(3)),fullyOpenWindow:Number(fullyOpenWindow.toFixed(3)),crossingLatch:true});
+console.log('first sweeper v103 physical timing gate: PASS',{closedBottom,openBottom,playerTop,brainTop,openingTime:Number(openingTime.toFixed(3)),fullyOpenWindow:Number(fullyOpenWindow.toFixed(3)),crossingLatch:true});
