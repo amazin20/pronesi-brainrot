@@ -97,6 +97,9 @@ jobs:
           PY
           node --check /tmp/brainrot-module.mjs
 
+      - name: Verify first pit carrier continuity
+        run: node scripts/first-pit-carrier-continuity-check.mjs
+
       - name: Verify lift carry route
         run: node scripts/lift-route-continuity-check.mjs
 
