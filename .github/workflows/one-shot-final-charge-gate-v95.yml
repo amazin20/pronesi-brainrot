@@ -1,0 +1,75 @@
+name: One-shot final charge gate v95
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - '.github/workflows/one-shot-final-charge-gate-v95.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Patch final charge gate model
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text()
+          old_header = "full 3D route v94 · modeled second-pit exit"
+          new_header = "full 3D route v95 · modeled final charge gate"
+          if old_header not in s:
+              raise SystemExit('v94 header marker missing')
+          s = s.replace(old_header, new_header, 1)
+          old = "const finalChargeGateL=makeFinalChargeGatePost(-1),finalChargeGateR=makeFinalChargeGatePost(1),finalChargeGate=box(0,FINAL_CHARGE_GATE_CLOSED_Y,FINAL_CHARGE_GATE_Z,FINAL_CHARGE_GATE_HALF_X*2,.22,.22,0xffd23f);finalChargeGate.material.emissive=new THREE.Color(0xc99700);finalChargeGate.material.emissiveIntensity=.9;"
+          new = "const finalChargeGateL=makeFinalChargeGatePost(-1),finalChargeGateR=makeFinalChargeGatePost(1),FINAL_CHARGE_GATE_MODEL_V95=true;const finalChargeGate=new THREE.Mesh(new THREE.CapsuleGeometry(.11,FINAL_CHARGE_GATE_HALF_X*2-.22,4,8),mat(0xffd23f));finalChargeGate.name='FinalChargeGateBarV95';finalChargeGate.rotation.z=Math.PI/2;finalChargeGate.position.set(0,FINAL_CHARGE_GATE_CLOSED_Y,FINAL_CHARGE_GATE_Z);finalChargeGate.castShadow=finalChargeGate.receiveShadow=true;finalChargeGate.material.emissive=new THREE.Color(0xc99700);finalChargeGate.material.emissiveIntensity=.9;[-1.18,0,1.18].forEach((x,i)=>{const ring=new THREE.Mesh(new THREE.TorusGeometry(.14,.032,6,10),mat(0xfff7bd));ring.name='FinalChargeGateRingV95';ring.rotation.y=Math.PI/2;ring.position.set(0,x,0);ring.castShadow=true;ring.material.emissive=new THREE.Color(i===1?0xffffff:0xffd23f);ring.material.emissiveIntensity=.86;finalChargeGate.add(ring)});scene.add(finalChargeGate);"
+          if old not in s:
+              raise SystemExit('old finalChargeGate box marker missing')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+      - name: Verify v95 geometry invariants
+        shell: python
+        run: |
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=[
+            'FINAL_CHARGE_GATE_MODEL_V95=true',
+            "FinalChargeGateBarV95",
+            "FinalChargeGateRingV95",
+            "new THREE.CapsuleGeometry(.11,FINAL_CHARGE_GATE_HALF_X*2-.22,4,8)",
+            "finalChargeGate.position.set(0,FINAL_CHARGE_GATE_CLOSED_Y,FINAL_CHARGE_GATE_Z)",
+            "function finalChargeGateBlocks",
+            "chargeGateTarget=win?FINAL_CHARGE_GATE_OPEN_Y:FINAL_CHARGE_GATE_CLOSED_Y"
+          ]
+          missing=[x for x in required if x not in s]
+          if missing: raise SystemExit('missing v95 markers: '+repr(missing))
+          if 'finalChargeGate=box(0,FINAL_CHARGE_GATE_CLOSED_Y' in s:
+              raise SystemExit('old final charge box gate still present')
+          print('v95 modeled gate invariants OK')
+      - name: Browser module syntax check
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          a=s.index('<script type="module">')+len('<script type="module">')
+          b=s.index('</script>',a)
+          Path('/tmp/game-v95.mjs').write_text(s[a:b])
+          PY
+          node --check /tmp/game-v95.mjs
+      - name: Existing finish gameplay checks
+        run: |
+          node scripts/final-finish-charge-check.mjs
+          node scripts/final-finish-soft-hold-check.mjs
+      - name: Diff check
+        run: git diff --check
+      - name: Commit gameplay change
+        run: |
+          git config user.name 'amazin20'
+          git config user.email '138931938+amazin20@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Model final charge gate assembly v95'
+          git push origin HEAD:new-player-glb-overhaul
