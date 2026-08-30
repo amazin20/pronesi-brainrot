@@ -1,4 +1,4 @@
-name: Level Regression v71
+name: Level Regression v100
 
 on:
   push:
@@ -19,17 +19,24 @@ jobs:
         with:
           node-version: 22
 
-      - name: Verify current v71 modeled level contract
+      - name: Verify current v100 modeled level contract
         run: |
           set -euo pipefail
-          grep -q "full 3D lift route v69 · physical second sweeper shield and recovery" index.html
-          grep -q "new THREE.CapsuleGeometry(.34,.72,4,8)" index.html
-          grep -q "const crashBarriers=blocks.map" index.html
-          grep -q "const bumperPillars=cylinders.map" index.html
+          grep -q "full 3D route v100 · modeled strike platforms" index.html
+          grep -q "const FINAL_STRIKE_PLATFORM_MODEL_V100=true" index.html
+          grep -q "StrikePlatformV100" index.html
           grep -q "const finalPunchers=" index.html
-          grep -q "const finalMidSafePad=" index.html
-          grep -q "const secondSweeperShieldL=" index.html
-          grep -q "const secondSweeperRecoveryL=" index.html
+          grep -q "const FINAL_PRESSURE_STATION_MODEL_V98=true" index.html
+          grep -q "const FINAL_PRESSURE_PYLON_MODEL_V99=true" index.html
+          grep -q "const FINISH_DECK_MODEL_V97=true" index.html
+          grep -q "const FINAL_CHARGE_GATE_MODEL_V95=true" index.html
+          grep -q "const SECOND_PIT_EXIT_MODEL_V94=true" index.html
+          grep -q "const LIFT_CEILING_EXIT_MODEL_V92=true" index.html
+          grep -q "const LIFT_CEILING_MODEL_V91=true" index.html
+          if grep -q "const finalGauntletPad1=box(" index.html; then
+            echo "Legacy final strike-platform box geometry returned"
+            exit 1
+          fi
           if grep -q "new THREE.BoxGeometry(8,.28,.4)" index.html; then
             echo "Legacy sweeper box visual returned"
             exit 1
