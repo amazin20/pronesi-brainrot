@@ -37,24 +37,27 @@ function step(progress, x, z) {
   return { holdStrength, holdAlpha, pullX, pullZ, x: x + pullX, z: z + pullZ };
 }
 
-const early = step(0, 1.8, 9.72);
-const late = step(1, 1.8, 9.72);
-assert.ok(early.holdStrength < late.holdStrength, 'hold must ramp with charge progress');
-assert.ok(early.holdAlpha < late.holdAlpha, 'per-frame correction must ramp gradually');
-assert.ok(Math.abs(early.pullX) <= maxPullSpeed * dt + 1e-12, 'early X correction must respect player pull cap');
-assert.ok(Math.abs(late.pullX) <= maxPullSpeed * dt + 1e-12, 'late X correction must respect player pull cap');
-assert.ok(Math.abs(late.pullZ) <= maxPullSpeed * dt + 1e-12, 'late Z correction must respect player pull cap');
-assert.ok(Math.abs(early.x) < 1.8 && early.z > 9.72 && early.z < 10.12, 'early hold should gently move player toward center/hold Z');
-assert.ok(Math.abs(late.x) < Math.abs(early.x), 'late charge should stabilize more strongly than early charge');
-assert.ok(late.holdAlpha < 0.1, 'single-frame hold must remain soft at 60 Hz');
+const farEarly = step(0, 1.8, 9.72);
+const farLate = step(1, 1.8, 9.72);
+const nearEarly = step(0, 0.18, 10.04);
+const nearLate = step(1, 0.18, 10.04);
+assert.ok(farEarly.holdStrength < farLate.holdStrength, 'hold must ramp with charge progress');
+assert.ok(farEarly.holdAlpha < farLate.holdAlpha, 'per-frame correction must ramp gradually');
+assert.ok(Math.abs(farEarly.pullX) <= maxPullSpeed * dt + 1e-12, 'early X correction must respect player pull cap');
+assert.ok(Math.abs(farLate.pullX) <= maxPullSpeed * dt + 1e-12, 'late X correction must respect player pull cap');
+assert.ok(Math.abs(farLate.pullZ) <= maxPullSpeed * dt + 1e-12, 'late Z correction must respect player pull cap');
+assert.ok(Math.abs(farEarly.x) < 1.8 && farEarly.z > 9.72 && farEarly.z < 10.12, 'early hold should gently move player toward center/hold Z');
+assert.ok(Math.abs(nearLate.pullX) > Math.abs(nearEarly.pullX), 'late charge should stabilize near-center offsets more strongly');
+assert.ok(Math.abs(nearLate.pullZ) > Math.abs(nearEarly.pullZ), 'late charge should stabilize near-target Z offsets more strongly');
+assert.ok(farLate.holdAlpha < 0.1, 'single-frame hold must remain soft at 60 Hz');
 
 const brainX = 2.4;
 const brainZ = 9.6;
-const rawAx = (-brainX) * late.holdStrength;
-const rawAz = (10.12 + 0.12 - brainZ) * late.holdStrength;
+const rawAx = (-brainX) * farLate.holdStrength;
+const rawAz = (10.12 + 0.12 - brainZ) * farLate.holdStrength;
 const ax = Math.max(-maxBrainAccel, Math.min(maxBrainAccel, rawAx));
 const az = Math.max(-maxBrainAccel, Math.min(maxBrainAccel, rawAz));
 assert.ok(Math.abs(ax) <= maxBrainAccel && Math.abs(az) <= maxBrainAccel, 'brainrot soft hold must cap acceleration');
 assert.ok(ax < 0 && az > 0, 'brainrot acceleration should point toward the finish hold target');
 
-console.log('finish pressure-cradle soft-hold regression: PASS', { early, late, ax, az });
+console.log('finish pressure-cradle soft-hold regression: PASS', { farEarly, farLate, nearEarly, nearLate, ax, az });
