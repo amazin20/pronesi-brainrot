@@ -1,0 +1,85 @@
+name: One-shot Finish Deck V97
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/one-shot-finish-deck-v97.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch finish platform into modeled deck v97
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old="const finish=box(0,.1,10,7.35,.2,1.9,0x49ff79);finish.material.emissive=new THREE.Color(0x18a943);finish.material.emissiveIntensity=.35;"
+          new="const FINISH_DECK_MODEL_V97=true;function makeFinishDeck(){const g=new THREE.Group();g.name='FinishDeckV97';g.position.set(0,.065,10);const green=mat(0x49ff79),dark=mat(0x173a32),white=mat(0xeaffef);const core=new THREE.Mesh(new THREE.CapsuleGeometry(.075,6.88,4,8),green);core.name='FinishDeckCoreV97';core.rotation.z=Math.PI/2;core.castShadow=core.receiveShadow=true;core.material.emissive=new THREE.Color(0x18a943);core.material.emissiveIntensity=.35;g.add(core);[-.72,.72].forEach(z=>{const edge=new THREE.Mesh(new THREE.CapsuleGeometry(.065,6.72,4,8),green);edge.name='FinishDeckEdgeV97';edge.rotation.z=Math.PI/2;edge.position.z=z;edge.castShadow=edge.receiveShadow=true;edge.material.emissive=new THREE.Color(0x18a943);edge.material.emissiveIntensity=.30;g.add(edge)});[-2.65,-1.32,0,1.32,2.65].forEach((x,i)=>{const runner=new THREE.Mesh(new THREE.CapsuleGeometry(.055,1.45,4,8),dark);runner.name='FinishDeckRunnerV97';runner.rotation.x=Math.PI/2;runner.position.set(x,-.015,0);runner.castShadow=runner.receiveShadow=true;g.add(runner);[-.68,.68].forEach(z=>{const node=new THREE.Mesh(new THREE.TorusGeometry(.105,.026,6,10),white);node.name='FinishDeckNodeV97';node.rotation.x=Math.PI/2;node.position.set(x,.035,z);node.castShadow=true;node.material.emissive=new THREE.Color(i===2?0xffffff:0x49ff79);node.material.emissiveIntensity=i===2?.95:.68;g.add(node)})});g.material=core.material;scene.add(g);return g}const finish=makeFinishDeck();"
+          if old not in s:
+              raise SystemExit('expected v96 finish box not found')
+          s=s.replace(old,new,1)
+          s=s.replace('full 3D route v96 · modeled finish charge indicator','full 3D route v97 · modeled finish deck',1)
+          p.write_text(s)
+          PY
+      - name: Verify v97 finish deck invariants
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=[
+            'FINISH_DECK_MODEL_V97=true',
+            "FinishDeckV97",
+            "FinishDeckCoreV97",
+            "FinishDeckEdgeV97",
+            "FinishDeckRunnerV97",
+            "FinishDeckNodeV97",
+            'const finish=makeFinishDeck();',
+            'finish.material.emissiveIntensity=.35+finishProgress*1.35',
+            'FINAL_CHARGE_CRADLE_Z_MIN=10.30',
+            'FINAL_CHARGE_GATE_Z=10.88'
+          ]
+          missing=[x for x in required if x not in s]
+          if missing: raise SystemExit('missing v97 invariants: '+repr(missing))
+          if 'const finish=box(0,.1,10,7.35,.2,1.9,0x49ff79)' in s:
+              raise SystemExit('stale finish box remains')
+          print('FINISH_DECK_V97: PASS')
+          PY
+      - name: Browser module syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          a=s.index('<script type="module">')+len('<script type="module">')
+          b=s.index('</script>',a)
+          Path('/tmp/runtime.mjs').write_text(s[a:b])
+          PY
+          node --check /tmp/runtime.mjs
+      - name: Existing finish gameplay contract
+        run: node scripts/final-finish-charge-check.mjs
+      - name: Diff whitespace check
+        run: git diff --check
+      - name: Commit gameplay geometry
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Model finish deck assembly v97'
+          git push origin HEAD:new-player-glb-overhaul
+      - name: Remove one-shot workflow
+        run: |
+          git pull --ff-only origin new-player-glb-overhaul
+          git rm .github/workflows/one-shot-finish-deck-v97.yml
+          git commit -m 'Remove v97 one-shot patch workflow'
+          git push origin HEAD:new-player-glb-overhaul
