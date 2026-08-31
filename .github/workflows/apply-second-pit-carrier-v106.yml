@@ -39,15 +39,16 @@ jobs:
           PY
       - name: Verify browser module syntax
         run: |
-          node --input-type=module - <<'NODE'
-          import fs from 'node:fs';
-          const src=fs.readFileSync('index.html','utf8');
-          const m=src.match(/<script type="module">([\s\S]*?)<\/script>/);
-          if(!m) throw new Error('module script missing');
-          let body=m[1].replace(/^import .*$/gm,'');
-          new Function(body);
-          console.log('PASS browser module parse');
-          NODE
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          src=Path('index.html').read_text()
+          m=re.search(r'<script type="module">([\s\S]*?)</script>',src)
+          if not m: raise SystemExit('module script missing')
+          Path('/tmp/runtime-module.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/runtime-module.mjs
+          echo 'PASS browser module parse'
       - name: Verify carrier budgets and route contracts
         run: |
           node scripts/second-pit-carrier-webgl-budget-v105-check.mjs
