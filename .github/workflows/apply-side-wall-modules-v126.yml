@@ -1,0 +1,92 @@
+name: Apply Side Wall Modules v126
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-side-wall-modules-v126.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+      - name: Replace temporary side wall boxes with modeled modules v126
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          if 'SIDE_WALL_MODULES_V126=true' in s:
+              raise SystemExit('v126 already present')
+          old="for(let i=0;i<10;i++){let z=-23+i*4.4;box(-5.1,.4,z,.45,1.3,3.1,i%2?0x38d8ff:0xff6b9e);box(5.1,.4,z,.45,1.3,3.1,i%2?0xffd24b:0x51e7a1)}const blocks="
+          if old not in s:
+              raise SystemExit('legacy side-wall anchor missing')
+          new="""const SIDE_WALL_MODULES_V126=true;const sideWallCarriersV126=[],sideWallModulesV126=[];const sideWallDarkV126=mat(0x171d38),sideWallWhiteV126=mat(0xf3fbff),sideWallCyanV126=mat(0x38d8ff),sideWallPinkV126=mat(0xff6b9e),sideWallGoldV126=mat(0xffd24b),sideWallGreenV126=mat(0x51e7a1);sideWallDarkV126.metalness=.48;sideWallDarkV126.roughness=.30;[sideWallCyanV126,sideWallPinkV126,sideWallGoldV126,sideWallGreenV126].forEach(m=>{m.metalness=.30;m.roughness=.26});const sideWallPanelGeoV126=new THREE.BoxGeometry(.34,.70,.82),sideWallSpineGeoV126=new THREE.BoxGeometry(.26,1.12,2.82),sideWallPostGeoV126=new THREE.CylinderGeometry(.105,.145,1.18,8),sideWallRailGeoV126=new THREE.CapsuleGeometry(.045,2.38,4,8),sideWallRingGeoV126=new THREE.TorusGeometry(.12,.028,6,10),sideWallFootGeoV126=new THREE.CylinderGeometry(.18,.25,.18,8);function makeSideWallModuleV126(side,z,i){const legacy=box(side*5.1,.4,z,.45,1.3,3.1,side<0?(i%2?0x38d8ff:0xff6b9e):(i%2?0xffd24b:0x51e7a1));legacy.name='SideWallLegacyCollisionCarrierV126';legacy.material.transparent=true;legacy.material.opacity=.028;legacy.material.depthWrite=false;sideWallCarriersV126.push(legacy);const g=new THREE.Group();g.name='SideWallAssemblyV126';g.position.set(side*5.1,0,z);const accent=side<0?(i%2?sideWallCyanV126:sideWallPinkV126):(i%2?sideWallGoldV126:sideWallGreenV126);const glow=side<0?(i%2?0x38d8ff:0xff6b9e):(i%2?0xffd24b:0x51e7a1);const spine=new THREE.Mesh(sideWallSpineGeoV126,sideWallDarkV126);spine.name='SideWallSpineV126';spine.position.y=.58;spine.castShadow=spine.receiveShadow=true;g.add(spine);[-1.02,0,1.02].forEach((zz,k)=>{const panel=new THREE.Mesh(sideWallPanelGeoV126,k===1?sideWallWhiteV126:accent);panel.name='SideWallArmorPanelV126';panel.position.set(-side*.055,.62,zz);panel.rotation.x=(k-1)*.045;panel.castShadow=panel.receiveShadow=true;panel.material.emissive=new THREE.Color(k===1?0xffffff:glow);panel.material.emissiveIntensity=k===1?.26:.42;g.add(panel)});[-1.30,1.30].forEach((zz,k)=>{const post=new THREE.Mesh(sideWallPostGeoV126,sideWallDarkV126);post.name='SideWallReinforcedPostV126';post.position.set(0,.59,zz);post.castShadow=post.receiveShadow=true;g.add(post);const foot=new THREE.Mesh(sideWallFootGeoV126,sideWallDarkV126);foot.name='SideWallFootV126';foot.position.set(0,.09,zz);foot.castShadow=foot.receiveShadow=true;g.add(foot);const beacon=new THREE.Mesh(sideWallRingGeoV126,sideWallWhiteV126);beacon.name='SideWallBeaconV126';beacon.rotation.x=Math.PI/2;beacon.position.set(-side*.20,1.17,zz);beacon.castShadow=true;beacon.material.emissive=new THREE.Color(k?glow:0xffffff);beacon.material.emissiveIntensity=1.0;g.add(beacon)});const rail=new THREE.Mesh(sideWallRailGeoV126,accent);rail.name='SideWallEnergyRailV126';rail.rotation.x=Math.PI/2;rail.position.set(-side*.21,.97,0);rail.castShadow=rail.receiveShadow=true;rail.material.emissive=new THREE.Color(glow);rail.material.emissiveIntensity=.72;g.add(rail);scene.add(g);sideWallModulesV126.push(g);return g}for(let i=0;i<10;i++){const z=-23+i*4.4;makeSideWallModuleV126(-1,z,i);makeSideWallModuleV126(1,z,i)}const blocks="""
+          s=s.replace(old,new,1)
+          p.write_text(s)
+      - name: Verify v126 modeled walls and preserved gameplay
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=[
+            'SIDE_WALL_MODULES_V126=true',
+            'SideWallLegacyCollisionCarrierV126',
+            'SideWallAssemblyV126',
+            'SideWallSpineV126',
+            'SideWallArmorPanelV126',
+            'SideWallReinforcedPostV126',
+            'SideWallEnergyRailV126',
+            'SideWallBeaconV126',
+            'sideWallPanelGeoV126=new THREE.BoxGeometry',
+            'sideWallRingGeoV126=new THREE.TorusGeometry',
+            'for(let i=0;i<10;i++){const z=-23+i*4.4;makeSideWallModuleV126(-1,z,i);makeSideWallModuleV126(1,z,i)}',
+            'STATIC_HAZARD_MODELS_V125=true',
+            'SWEEPER_VISUAL_MODEL_V124=true'
+          ]
+          for token in required:
+              assert token in s, token
+          assert s.count('SIDE_WALL_MODULES_V126=true') == 1
+          assert s.count("sideWallCarriersV126.push(legacy)") == 1
+          assert s.count("sideWallModulesV126.push(g)") == 1
+          assert "box(-5.1,.4,z,.45,1.3,3.1" not in s
+          print('Side wall modules v126 contract: SUCCESS')
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          m=re.search(r'<script type="module">(.*?)</script>',s,re.S)
+          assert m, 'module script not found'
+          Path('/tmp/brainrot-module.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/brainrot-module.mjs
+          node scripts/final-puncher-physics-contract-v65.mjs
+          node scripts/final-finish-residual-momentum-check.mjs
+          node scripts/final-finish-soft-hold-check.mjs
+          node scripts/final-finish-charge-check.mjs
+      - name: Commit real level change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-level-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
+          git commit -m "Level: model side wall modules v126"
+          git push origin HEAD:new-player-glb-overhaul
