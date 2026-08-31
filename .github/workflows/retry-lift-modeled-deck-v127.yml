@@ -1,0 +1,73 @@
+name: Retry Lift Modeled Deck v127
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/retry-lift-modeled-deck-v127.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+      - name: Apply v127 patch from reviewed workflow
+        shell: python
+        run: |
+          from pathlib import Path
+          import re, textwrap
+          w=Path('.github/workflows/apply-lift-modeled-deck-v127.yml').read_text()
+          m=re.search(r"      - name: Model lift deck and docks v127\n        shell: python\n        run: \|\n(.*?)\n      - name: Verify modeled lift deck v127",w,re.S)
+          assert m, 'reviewed v127 patch block not found'
+          code=textwrap.dedent(m.group(1))
+          exec(compile(code,'v127-patch','exec'),{})
+      - name: Verify modeled lift deck v127 and preserved gameplay
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=['LIFT_MODELED_DECK_V127=true','LiftLegacyCollisionCarrierV127','LiftDeckSlatV127','LiftDeckEdgeRailV127','LiftDeckBumperV127','LiftDeckBeaconRingV127','LiftDeckCrossBraceV127','LiftDeckGuideRingV127','LiftDockLegacyCollisionCarrierV127','LiftDockArmorPlateV127','LiftDockClampV127','LiftDockBeaconV127','LIFT_BASE_Y=-.04,LIFT_TRAVEL_Y=1.65','function moveLiftPlatform(t,dt)','liftPlatform.position.y=newY','onLiftPlatform(x,y,z,brain=false)','SIDE_WALL_MODULES_V126=true']
+          for token in required: assert token in s, token
+          assert s.count('LIFT_MODELED_DECK_V127=true') == 1
+          assert s.count("name='LiftLegacyCollisionCarrierV127'") == 1
+          assert s.count("name='LiftDockLegacyCollisionCarrierV127'") == 1
+          assert 'LIFT_MAX_SPEED=1.45' in s
+          print('Lift modeled deck v127 contract: SUCCESS')
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          m=re.search(r'<script type="module">(.*?)</script>',s,re.S)
+          assert m, 'module script not found'
+          Path('/tmp/brainrot-module.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/brainrot-module.mjs
+          node scripts/final-puncher-physics-contract-v65.mjs
+          node scripts/final-finish-residual-momentum-check.mjs
+          node scripts/final-finish-soft-hold-check.mjs
+          node scripts/final-finish-charge-check.mjs
+      - name: Commit real level change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-level-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
+          git commit -m "Level: model lift deck and docks v127"
+          git push origin HEAD:new-player-glb-overhaul
