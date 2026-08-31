@@ -1,0 +1,93 @@
+name: Apply Second Pit Approach Pad v110
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-second-pit-approach-pad-v110.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+      - name: Model second pit approach deck v110
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old="const SECOND_PIT_APPROACH_MODEL_V84=true;const secondPitApproachPad=box(0,.026,(SECOND_PIT_APPROACH_Z_MIN+SECOND_PIT_APPROACH_Z_MAX)*.5,SECOND_PIT_APPROACH_HALF_X*2,.052,SECOND_PIT_APPROACH_Z_MAX-SECOND_PIT_APPROACH_Z_MIN,0x49ff79);secondPitApproachPad.material.emissive=new THREE.Color(0x159b43);secondPitApproachPad.material.emissiveIntensity=.58;function makeSecondPitApproachGuard(side)"
+          new="const SECOND_PIT_APPROACH_MODEL_V84=true,SECOND_PIT_APPROACH_PAD_MODEL_V110=true;const secondPitApproachPad=box(0,.026,(SECOND_PIT_APPROACH_Z_MIN+SECOND_PIT_APPROACH_Z_MAX)*.5,SECOND_PIT_APPROACH_HALF_X*2,.052,SECOND_PIT_APPROACH_Z_MAX-SECOND_PIT_APPROACH_Z_MIN,0x49ff79);secondPitApproachPad.name='SecondPitApproachCollisionPadV110';secondPitApproachPad.material.emissive=new THREE.Color(0x159b43);secondPitApproachPad.material.emissiveIntensity=.18;secondPitApproachPad.material.transparent=true;secondPitApproachPad.material.opacity=.055;secondPitApproachPad.material.depthWrite=false;const approachDeckGreen=mat(0x49ff79),approachDeckDark=mat(0x14352d),approachDeckWhite=mat(0xdffff0);approachDeckGreen.metalness=.28;approachDeckGreen.roughness=.30;[-.65,-.39,-.13,.13,.39,.65].forEach((z,i)=>{const slat=new THREE.Mesh(new THREE.BoxGeometry(2.70,.055,.18),i===2||i===3?approachDeckWhite:approachDeckGreen);slat.name='SecondPitApproachSlatV110';slat.position.set(0,.062,z);slat.castShadow=slat.receiveShadow=true;slat.material.emissive=new THREE.Color(i===2||i===3?0xb8ffe0:0x159b43);slat.material.emissiveIntensity=i===2||i===3?.62:.42;secondPitApproachPad.add(slat)});[-1.31,1.31].forEach((x,i)=>{const edge=new THREE.Mesh(new THREE.CapsuleGeometry(.035,1.22,4,8),approachDeckWhite);edge.name='SecondPitApproachEdgeRailV110';edge.rotation.x=Math.PI/2;edge.position.set(x,.16,0);edge.castShadow=edge.receiveShadow=true;edge.material.emissive=new THREE.Color(i?0x44e7ff:0x49ff79);edge.material.emissiveIntensity=.56;secondPitApproachPad.add(edge)});[-.52,0,.52].forEach((z,i)=>{const node=new THREE.Mesh(new THREE.TorusGeometry(.105,.025,6,10),approachDeckWhite);node.name='SecondPitApproachGuideRingV110';node.rotation.x=Math.PI/2;node.position.set(0,.10,z);node.castShadow=true;node.material.emissive=new THREE.Color(i===1?0xffffff:0x49ff79);node.material.emissiveIntensity=i===1?.92:.72;secondPitApproachPad.add(node)});[-.72,.72].forEach((z,i)=>{const bumper=new THREE.Mesh(new THREE.CylinderGeometry(.10,.14,.24,8),approachDeckDark);bumper.name='SecondPitApproachBumperV110';bumper.rotation.z=Math.PI/2;bumper.position.set(0,.07,z);bumper.castShadow=bumper.receiveShadow=true;secondPitApproachPad.add(bumper)});function makeSecondPitApproachGuard(side)"
+          if old not in s:
+              raise SystemExit('v110 approach pad anchor missing or already changed')
+          s=s.replace(old,new,1)
+          old_tick="secondPitApproachPad.material.emissiveIntensity=secondPitApproachActive?1.05+.45*secondPitApproachPulse:.58;[secondPitApproachL,secondPitApproachR].forEach"
+          new_tick="secondPitApproachPad.material.emissiveIntensity=secondPitApproachActive?.30:.18;secondPitApproachPad.children.forEach(n=>{if(!n.isMesh||!n.material?.emissive)return;const guide=n.name==='SecondPitApproachGuideRingV110';n.material.emissiveIntensity=secondPitApproachActive?(guide?1.18+.42*secondPitApproachPulse:.82+.30*secondPitApproachPulse):(guide?.72:.46)});[secondPitApproachL,secondPitApproachR].forEach"
+          if old_tick not in s:
+              raise SystemExit('v110 runtime pulse anchor missing')
+          s=s.replace(old_tick,new_tick,1)
+          p.write_text(s)
+      - name: Verify v110 modeled approach and preserved gameplay contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=[
+            "SECOND_PIT_APPROACH_PAD_MODEL_V110=true",
+            "SecondPitApproachCollisionPadV110",
+            "SecondPitApproachSlatV110",
+            "SecondPitApproachEdgeRailV110",
+            "SecondPitApproachGuideRingV110",
+            "SecondPitApproachBumperV110",
+            "secondPitApproachPad.material.opacity=.055",
+            "SECOND_PIT_APPROACH_Z_MIN=3.48",
+            "SECOND_PIT_APPROACH_Z_MAX=5.04",
+            "SECOND_PIT_APPROACH_HALF_X=1.55",
+            "inSecondPitApproachRail(x,z,r=0)",
+            "secondPitApproachActive=secondSweeperCleared&&carry"
+          ]
+          for token in required:
+            assert token in s, token
+          assert s.count("SecondPitApproachSlatV110")==1
+          assert s.count("new THREE.BoxGeometry(2.70,.055,.18)")==1
+          assert "secondPitApproachPad.material.opacity=.055" in s
+          assert "secondPitApproachPad.material.emissiveIntensity=secondPitApproachActive?.30:.18" in s
+          print('Second Pit Approach Pad v110 contract: SUCCESS')
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          m=re.search(r'<script type="module">(.*?)</script>',s,re.S)
+          assert m, 'module script not found'
+          Path('/tmp/brainrot-module.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/brainrot-module.mjs
+          for f in scripts/second-pit-carry-window-check.mjs scripts/second-pit-platform-motion-v71-check.mjs scripts/second-pit-route-continuity-v70-check.mjs; do
+            if [ -f "$f" ]; then node "$f"; else echo "SKIP missing $f"; fi
+          done
+      - name: Commit real level change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-level-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
+          git commit -m "Level: model second pit approach deck v110"
+          git push origin HEAD:new-player-glb-overhaul
