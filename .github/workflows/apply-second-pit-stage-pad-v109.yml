@@ -1,0 +1,61 @@
+name: Apply Second Pit Stage Pad v109
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/apply-second-pit-stage-pad-v109.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  patch-level:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Patch real second-pit stage pad assembly
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old="const SECOND_PIT_STAGE_MODEL_V85=true;const secondPitStagePad=box(0,.035,SECOND_PIT_STAGE_Z,3.35,.07,.82,0x44e7ff);"
+          new="const SECOND_PIT_STAGE_MODEL_V85=true,SECOND_PIT_STAGE_PAD_MODEL_V109=true;const secondPitStagePad=box(0,.035,SECOND_PIT_STAGE_Z,3.35,.07,.82,0x44e7ff);secondPitStagePad.name='SecondPitStageCollisionPadV109';secondPitStagePad.material.transparent=true;secondPitStagePad.material.opacity=.055;secondPitStagePad.material.depthWrite=false;const stagePadCyan=mat(0x44e7ff),stagePadDark=mat(0x173b52),stagePadWhite=mat(0xe8fbff);stagePadCyan.metalness=.30;stagePadCyan.roughness=.28;[-1.28,-.64,0,.64,1.28].forEach((x,i)=>{const slat=new THREE.Mesh(new THREE.BoxGeometry(.48,.075,.62),i===2?stagePadWhite:stagePadCyan);slat.name='SecondPitStageSlatV109';slat.position.set(x,.078,0);slat.castShadow=slat.receiveShadow=true;slat.material.emissive=new THREE.Color(i===2?0xb7f7ff:0x087fa8);slat.material.emissiveIntensity=i===2?.78:.48;secondPitStagePad.add(slat)});[-.36,.36].forEach(z=>{const rail=new THREE.Mesh(new THREE.CapsuleGeometry(.038,2.82,4,8),stagePadWhite);rail.name='SecondPitStageEdgeRailV109';rail.rotation.z=Math.PI/2;rail.position.set(0,.18,z);rail.castShadow=true;rail.material.emissive=new THREE.Color(0x44e7ff);rail.material.emissiveIntensity=.62;secondPitStagePad.add(rail)});[-1.52,1.52].forEach((x,i)=>{const bumper=new THREE.Mesh(new THREE.CylinderGeometry(.12,.17,.38,8),stagePadDark);bumper.name='SecondPitStageBumperV109';bumper.rotation.z=Math.PI/2;bumper.position.set(x,.085,0);bumper.castShadow=bumper.receiveShadow=true;secondPitStagePad.add(bumper);const beacon=new THREE.Mesh(new THREE.TorusGeometry(.16,.032,6,10),stagePadWhite);beacon.name='SecondPitStageBeaconRingV109';beacon.rotation.y=Math.PI/2;beacon.position.set(x,.11,0);beacon.castShadow=true;beacon.material.emissive=new THREE.Color(i?0x49ff79:0x44e7ff);beacon.material.emissiveIntensity=1.05;secondPitStagePad.add(beacon)});"
+          if old not in s:
+              raise SystemExit('missing expected second-pit stage pad runtime fragment')
+          s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+      - name: Verify browser module syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          src=Path('index.html').read_text()
+          m=re.search(r'<script type="module">([\s\S]*?)</script>',src)
+          if not m: raise SystemExit('module script missing')
+          Path('/tmp/runtime-module.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/runtime-module.mjs
+          echo 'PASS browser module parse'
+      - name: Verify modeled stage pad and second-pit route physics
+        run: |
+          grep -q "SECOND_PIT_STAGE_PAD_MODEL_V109=true" index.html
+          grep -q "SecondPitStageCollisionPadV109" index.html
+          grep -q "SecondPitStageSlatV109" index.html
+          grep -q "SecondPitStageEdgeRailV109" index.html
+          grep -q "SecondPitStageBumperV109" index.html
+          grep -q "SecondPitStageBeaconRingV109" index.html
+          node scripts/second-pit-carry-window-check.mjs
+          node scripts/second-pit-platform-motion-v71-check.mjs
+          node scripts/second-pit-route-continuity-v70-check.mjs
+      - name: Commit gameplay level change
+        run: |
+          git config user.name 'amazin20'
+          git config user.email '138931938+amazin20@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Level: model second pit stage pad v109'
+          git push origin HEAD:new-player-glb-overhaul
