@@ -1,4 +1,4 @@
-name: Apply Final Finish Funnel Pad v114
+name: Apply Final Charge Cradle v115
 
 on:
   push:
@@ -23,19 +23,23 @@ jobs:
           set -euo pipefail
           git fetch origin new-player-glb-overhaul
           test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
-      - name: Model final finish funnel deck v114
+      - name: Model final charge cradle v115
         shell: python
         run: |
           from pathlib import Path
+          import re
           p=Path('index.html')
           s=p.read_text()
-          old="const FINAL_FINISH_FUNNEL_MODEL_V78=true;const finalFinishFunnelPad=box(0,.032,(FINAL_FINISH_FUNNEL_Z_MIN+FINAL_FINISH_FUNNEL_Z_MAX)*.5,FINAL_FINISH_FUNNEL_HALF_X*2,.064,FINAL_FINISH_FUNNEL_Z_MAX-FINAL_FINISH_FUNNEL_Z_MIN,0x49ff79);finalFinishFunnelPad.material.emissive=new THREE.Color(0x159b43);finalFinishFunnelPad.material.emissiveIntensity=.7;function makeFinalFinishFunnelGuard(side)"
-          new="const FINAL_FINISH_FUNNEL_MODEL_V78=true,FINAL_FINISH_FUNNEL_PAD_MODEL_V114=true;const finalFinishFunnelPad=box(0,.032,(FINAL_FINISH_FUNNEL_Z_MIN+FINAL_FINISH_FUNNEL_Z_MAX)*.5,FINAL_FINISH_FUNNEL_HALF_X*2,.064,FINAL_FINISH_FUNNEL_Z_MAX-FINAL_FINISH_FUNNEL_Z_MIN,0x49ff79);finalFinishFunnelPad.name='FinalFinishFunnelCollisionPadV114';finalFinishFunnelPad.material.emissive=new THREE.Color(0x159b43);finalFinishFunnelPad.material.emissiveIntensity=.14;finalFinishFunnelPad.material.transparent=true;finalFinishFunnelPad.material.opacity=.042;finalFinishFunnelPad.material.depthWrite=false;const finalFunnelGreen=mat(0x49ff79),finalFunnelDark=mat(0x15372f),finalFunnelWhite=mat(0xeaffef),finalFunnelGold=mat(0xffef6a);finalFunnelGreen.metalness=.30;finalFunnelGreen.roughness=.27;[-2.08,-1.39,-.70,0,.70,1.39,2.08].forEach((x,i)=>{const slat=new THREE.Mesh(new THREE.BoxGeometry(.50,.068,.84),i===3?finalFunnelWhite:finalFunnelGreen);slat.name='FinalFinishFunnelSlatV114';slat.position.set(x,.073,0);slat.castShadow=slat.receiveShadow=true;slat.material.emissive=new THREE.Color(i===3?0xffffff:0x159b43);slat.material.emissiveIntensity=i===3?.92:.50;finalFinishFunnelPad.add(slat)});[-.45,.45].forEach((z,i)=>{const rail=new THREE.Mesh(new THREE.CapsuleGeometry(.04,4.46,4,8),finalFunnelWhite);rail.name='FinalFinishFunnelEdgeRailV114';rail.rotation.z=Math.PI/2;rail.position.set(0,.17,z);rail.castShadow=rail.receiveShadow=true;rail.material.emissive=new THREE.Color(i?0x49ff79:0xb4ffd5);rail.material.emissiveIntensity=.70;finalFinishFunnelPad.add(rail)});[-1.28,0,1.28].forEach((x,i)=>{const ring=new THREE.Mesh(new THREE.TorusGeometry(.115,.028,6,10),i===1?finalFunnelGold:finalFunnelWhite);ring.name='FinalFinishFunnelGuideRingV114';ring.rotation.x=Math.PI/2;ring.position.set(x,.125,0);ring.castShadow=true;ring.material.emissive=new THREE.Color(i===1?0xffd23f:0x49ff79);ring.material.emissiveIntensity=i===1?1.05:.80;finalFinishFunnelPad.add(ring)});[-2.28,2.28].forEach(x=>{const bumper=new THREE.Mesh(new THREE.CylinderGeometry(.09,.13,.32,8),finalFunnelDark);bumper.name='FinalFinishFunnelBumperV114';bumper.rotation.z=Math.PI/2;bumper.position.set(x,.09,0);bumper.castShadow=bumper.receiveShadow=true;finalFinishFunnelPad.add(bumper)});[-.28,.28].forEach((x,i)=>{const chevron=new THREE.Mesh(new THREE.CapsuleGeometry(.035,.34,4,8),finalFunnelGold);chevron.name='FinalFinishFunnelChevronV114';chevron.rotation.y=i?-.70:.70;chevron.position.set(x,.13,.10);chevron.castShadow=true;chevron.material.emissive=new THREE.Color(0xffd23f);chevron.material.emissiveIntensity=.92;finalFinishFunnelPad.add(chevron)});function makeFinalFinishFunnelGuard(side)"
-          if old not in s:
-              raise SystemExit('v114 final finish funnel anchor missing or already changed')
-          s=s.replace(old,new,1)
+          if 'FINAL_CHARGE_CRADLE_PAD_MODEL_V115=true' in s:
+              raise SystemExit('v115 already present')
+          pat=r"(const finalChargeCradlePad=box\([^;]+\);)"
+          m=re.search(pat,s)
+          if not m:
+              raise SystemExit('finalChargeCradlePad creation anchor missing')
+          addon="""const FINAL_CHARGE_CRADLE_PAD_MODEL_V115=true;finalChargeCradlePad.name='FinalChargeCradleCollisionPadV115';finalChargeCradlePad.material.transparent=true;finalChargeCradlePad.material.opacity=.04;finalChargeCradlePad.material.depthWrite=false;const finalCradleCyan=mat(0x44e7ff),finalCradleDark=mat(0x17273f),finalCradleWhite=mat(0xf1fdff),finalCradleGold=mat(0xffdf63);finalCradleCyan.metalness=.34;finalCradleCyan.roughness=.24;[-.82,-.54,-.27,0,.27,.54,.82].forEach((z,i)=>{const slat=new THREE.Mesh(new THREE.BoxGeometry(FINAL_CHARGE_CRADLE_HALF_X*1.62,.07,.16),i===3?finalCradleWhite:finalCradleCyan);slat.name='FinalChargeCradleSlatV115';slat.position.set(0,.075,z*(FINAL_CHARGE_CRADLE_Z_MAX-FINAL_CHARGE_CRADLE_Z_MIN)*.46);slat.castShadow=slat.receiveShadow=true;slat.material.emissive=new THREE.Color(i===3?0xffffff:0x0b8fb8);slat.material.emissiveIntensity=i===3?.92:.48;finalChargeCradlePad.add(slat)});[-1,1].forEach((side,i)=>{const rail=new THREE.Mesh(new THREE.CapsuleGeometry(.045,(FINAL_CHARGE_CRADLE_Z_MAX-FINAL_CHARGE_CRADLE_Z_MIN)*.78,4,8),finalCradleWhite);rail.name='FinalChargeCradleEdgeRailV115';rail.rotation.x=Math.PI/2;rail.position.set(side*FINAL_CHARGE_CRADLE_HALF_X*.83,.19,0);rail.castShadow=rail.receiveShadow=true;rail.material.emissive=new THREE.Color(i?0x49ff79:0x44e7ff);rail.material.emissiveIntensity=.74;finalChargeCradlePad.add(rail);const jaw=new THREE.Mesh(new THREE.TorusGeometry(.19,.045,6,12,Math.PI),finalCradleGold);jaw.name='FinalChargeCradleJawV115';jaw.rotation.set(Math.PI/2,0,side>0?Math.PI/2:-Math.PI/2);jaw.position.set(side*FINAL_CHARGE_CRADLE_HALF_X*.62,.24,0);jaw.castShadow=true;jaw.material.emissive=new THREE.Color(0xffc928);jaw.material.emissiveIntensity=1.02;finalChargeCradlePad.add(jaw)});[-.48,0,.48].forEach((x,i)=>{const ring=new THREE.Mesh(new THREE.TorusGeometry(.12,.03,6,10),i===1?finalCradleGold:finalCradleWhite);ring.name='FinalChargeCradleGuideRingV115';ring.rotation.x=Math.PI/2;ring.position.set(x*FINAL_CHARGE_CRADLE_HALF_X,.135,0);ring.castShadow=true;ring.material.emissive=new THREE.Color(i===1?0xffc928:0x44e7ff);ring.material.emissiveIntensity=i===1?1.12:.86;finalChargeCradlePad.add(ring)});[-1,1].forEach(side=>{const bumper=new THREE.Mesh(new THREE.CylinderGeometry(.10,.15,.36,8),finalCradleDark);bumper.name='FinalChargeCradleBumperV115';bumper.rotation.z=Math.PI/2;bumper.position.set(side*FINAL_CHARGE_CRADLE_HALF_X*.93,.10,0);bumper.castShadow=bumper.receiveShadow=true;finalChargeCradlePad.add(bumper)});"""
+          s=s[:m.end()]+addon+s[m.end():]
           p.write_text(s)
-      - name: Verify v114 modeled funnel and preserved finish physics
+      - name: Verify v115 modeled cradle and preserved finish physics
         shell: bash
         run: |
           set -euo pipefail
@@ -43,25 +47,21 @@ jobs:
           from pathlib import Path
           s=Path('index.html').read_text()
           required=[
-            "FINAL_FINISH_FUNNEL_PAD_MODEL_V114=true",
-            "FinalFinishFunnelCollisionPadV114",
-            "FinalFinishFunnelSlatV114",
-            "FinalFinishFunnelEdgeRailV114",
-            "FinalFinishFunnelGuideRingV114",
-            "FinalFinishFunnelBumperV114",
-            "FinalFinishFunnelChevronV114",
-            "finalFinishFunnelPad.material.opacity=.042",
-            "FINAL_FINISH_FUNNEL_Z_MIN=9.54",
-            "FINAL_FINISH_FUNNEL_Z_MAX=10.58",
-            "FINAL_FINISH_FUNNEL_HALF_X=2.42",
-            "FINAL_FINISH_FUNNEL_DAMP=10.5",
-            "FINAL_FINISH_FUNNEL_PULL=1.75"
+            "FINAL_CHARGE_CRADLE_PAD_MODEL_V115=true",
+            "FinalChargeCradleCollisionPadV115",
+            "FinalChargeCradleSlatV115",
+            "FinalChargeCradleEdgeRailV115",
+            "FinalChargeCradleJawV115",
+            "FinalChargeCradleGuideRingV115",
+            "FinalChargeCradleBumperV115",
+            "finalChargeCradlePad.material.opacity=.04",
+            "FINAL_CHARGE_CRADLE_Z_MIN=10.30",
+            "FINAL_CHARGE_CRADLE_Z_MAX=11.06"
           ]
           for token in required:
             assert token in s, token
-          assert s.count("FinalFinishFunnelSlatV114")==1
-          assert s.count("new THREE.BoxGeometry(.50,.068,.84)")==1
-          print('Final Finish Funnel Pad v114 contract: SUCCESS')
+          assert s.count('FINAL_CHARGE_CRADLE_PAD_MODEL_V115=true')==1
+          print('Final Charge Cradle v115 contract: SUCCESS')
           PY
           python - <<'PY'
           from pathlib import Path
@@ -84,5 +84,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
-          git commit -m "Level: model final finish funnel deck v114"
+          git commit -m "Level: model final charge cradle v115"
           git push origin HEAD:new-player-glb-overhaul
