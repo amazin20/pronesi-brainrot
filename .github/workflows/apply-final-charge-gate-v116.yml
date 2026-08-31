@@ -1,0 +1,87 @@
+name: Apply Final Charge Gate v116
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-final-charge-gate-v116.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+      - name: Model final delivery gate v116
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          if 'FINAL_CHARGE_GATE_VISUAL_MODEL_V116=true' in s:
+              raise SystemExit('v116 already present')
+          anchor="scene.add(finalChargeGate);"
+          if anchor not in s:
+              raise SystemExit('final charge gate anchor missing')
+          addon="""const FINAL_CHARGE_GATE_VISUAL_MODEL_V116=true;finalChargeGate.name='FinalChargeGateCollisionBarV116';finalChargeGate.material.transparent=true;finalChargeGate.material.opacity=.035;finalChargeGate.material.depthWrite=false;const finalGateGold=mat(0xffd23f),finalGateDark=mat(0x211b35),finalGateWhite=mat(0xfff7bd),finalGateCyan=mat(0x44e7ff);finalGateGold.metalness=.34;finalGateGold.roughness=.24;[-1.18,-.59,0,.59,1.18].forEach((x,i)=>{const panel=new THREE.Mesh(new THREE.BoxGeometry(.46,.17,.16),i===2?finalGateWhite:finalGateGold);panel.name='FinalDeliveryGatePanelV116';panel.position.set(x,0,0);panel.castShadow=panel.receiveShadow=true;panel.material.emissive=new THREE.Color(i===2?0xffffff:0xc99700);panel.material.emissiveIntensity=i===2?.96:.62;finalChargeGate.add(panel)});[-1.48,1.48].forEach((x,i)=>{const hinge=new THREE.Mesh(new THREE.CylinderGeometry(.11,.15,.28,8),finalGateDark);hinge.name='FinalDeliveryGateHingeV116';hinge.rotation.z=Math.PI/2;hinge.position.set(x,0,0);hinge.castShadow=hinge.receiveShadow=true;finalChargeGate.add(hinge);const halo=new THREE.Mesh(new THREE.TorusGeometry(.16,.035,6,12),i?finalGateCyan:finalGateGold);halo.name='FinalDeliveryGateHingeHaloV116';halo.rotation.y=Math.PI/2;halo.position.set(x,0,0);halo.castShadow=true;halo.material.emissive=new THREE.Color(i?0x44e7ff:0xffd23f);halo.material.emissiveIntensity=1.05;finalChargeGate.add(halo)});[-.88,.88].forEach((x,i)=>{const brace=new THREE.Mesh(new THREE.CapsuleGeometry(.035,.38,4,8),finalGateDark);brace.name='FinalDeliveryGateBraceV116';brace.rotation.z=Math.PI/2;brace.position.set(x,.13,0);brace.castShadow=brace.receiveShadow=true;finalChargeGate.add(brace)});const lockCore=new THREE.Mesh(new THREE.OctahedronGeometry(.14,0),finalGateCyan);lockCore.name='FinalDeliveryGateLockCoreV116';lockCore.position.set(0,.16,0);lockCore.castShadow=true;lockCore.material.emissive=new THREE.Color(0x44e7ff);lockCore.material.emissiveIntensity=1.25;finalChargeGate.add(lockCore);"""
+          s=s.replace(anchor,anchor+addon,1)
+          p.write_text(s)
+      - name: Verify v116 modeled gate and preserved finish physics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=[
+            "FINAL_CHARGE_GATE_VISUAL_MODEL_V116=true",
+            "FinalChargeGateCollisionBarV116",
+            "FinalDeliveryGatePanelV116",
+            "FinalDeliveryGateHingeV116",
+            "FinalDeliveryGateHingeHaloV116",
+            "FinalDeliveryGateBraceV116",
+            "FinalDeliveryGateLockCoreV116",
+            "finalChargeGate.material.opacity=.035",
+            "FINAL_CHARGE_GATE_Z=10.88",
+            "FINAL_CHARGE_GATE_CLOSED_Y=.62",
+            "FINAL_CHARGE_GATE_OPEN_Y=2.55"
+          ]
+          for token in required:
+            assert token in s, token
+          assert s.count('FINAL_CHARGE_GATE_VISUAL_MODEL_V116=true')==1
+          print('Final Delivery Gate v116 contract: SUCCESS')
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          m=re.search(r'<script type="module">(.*?)</script>',s,re.S)
+          assert m, 'module script not found'
+          Path('/tmp/brainrot-module.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/brainrot-module.mjs
+          node scripts/final-puncher-physics-contract-v65.mjs
+          node scripts/final-finish-residual-momentum-check.mjs
+          node scripts/final-finish-soft-hold-check.mjs
+          node scripts/final-finish-charge-check.mjs
+      - name: Commit real level change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-level-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
+          git commit -m "Level: model final delivery gate v116"
+          git push origin HEAD:new-player-glb-overhaul
