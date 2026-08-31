@@ -1,0 +1,91 @@
+name: Apply Finish Receptacle Feedback v118
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-finish-receptacle-feedback-v118.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+      - name: Animate finish receptacle feedback v118
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          if 'FINISH_RECEPTACLE_FEEDBACK_V118=true' in s:
+              raise SystemExit('v118 already present')
+          anchor="const FINISH_STRUCTURE_MODEL_V79=true;"
+          if anchor not in s:
+              raise SystemExit('finish structure anchor missing')
+          refs="""const FINISH_RECEPTACLE_FEEDBACK_V118=true;const finishDeliveryRing=finish.getObjectByName('FinishDeliveryReceptacleRingV117'),finishDeliveryCore=finish.getObjectByName('FinishDeliveryReceptacleCoreV117'),finishDeliveryJaws=finish.children.filter(o=>o.name==='FinishDeliveryClampJawV117'),finishDeliveryBeacons=finish.children.filter(o=>o.name==='FinishDeliveryBeaconV117');"""
+          s=s.replace(anchor,refs+anchor,1)
+          tick_anchor="const finishProgress=finishCharge/FINAL_FINISH_CHARGE,finishCharging=bothInFinish&&finishProgress<1;"
+          if tick_anchor not in s:
+              raise SystemExit('finish progress anchor missing')
+          runtime="""const finishDeliveryPulse=.5+.5*Math.sin(t*(9+finishProgress*9));if(finishDeliveryRing){const ringScale=1+finishProgress*.16+(finishCharging?.035*finishDeliveryPulse:0);finishDeliveryRing.scale.setScalar(ringScale);finishDeliveryRing.material.color.setHex(finishProgress>=1?0x49ff79:(finishCharging?0xfff36a:0x44e7ff));finishDeliveryRing.material.emissive.setHex(finishProgress>=1?0x19b24e:(finishCharging?0xffa928:0x44e7ff));finishDeliveryRing.material.emissiveIntensity=1.05+finishProgress*1.35+(finishCharging?.55*finishDeliveryPulse:0)}if(finishDeliveryCore){finishDeliveryCore.rotation.y+=dt*(1.4+finishProgress*7.2);finishDeliveryCore.rotation.z+=dt*(.8+finishProgress*3.6);const coreScale=1+finishProgress*.42+(finishCharging?.08*finishDeliveryPulse:0);finishDeliveryCore.scale.setScalar(coreScale);finishDeliveryCore.material.color.setHex(finishProgress>=1?0x49ff79:0xffdf63);finishDeliveryCore.material.emissive.setHex(finishProgress>=1?0x19b24e:0xffc928);finishDeliveryCore.material.emissiveIntensity=1.15+finishProgress*1.75}finishDeliveryJaws.forEach((jaw,i)=>{const side=i?1:-1,clamp=finishProgress*.20;jaw.position.x=side*(.54-clamp);jaw.rotation.z=(side>0?Math.PI/2:-Math.PI/2)+side*finishProgress*.24;jaw.material.emissiveIntensity=.92+finishProgress*1.15+(finishCharging?.28*finishDeliveryPulse:0);jaw.material.color.setHex(finishProgress>=1?0x49ff79:0xffdf63)});finishDeliveryBeacons.forEach((beacon,i)=>{const threshold=i/(Math.max(1,finishDeliveryBeacons.length-1)),lit=finishProgress>=threshold-.04,active=finishCharging&&Math.abs(finishProgress-threshold)<.28;beacon.material.color.setHex(finishProgress>=1?0x49ff79:(lit?0xfff36a:0xf1fff6));beacon.material.emissive.setHex(finishProgress>=1?0x19b24e:(lit?0xffa928:0x49ff79));beacon.material.emissiveIntensity=lit?1.05+finishProgress*.75+(active?.45*finishDeliveryPulse:0):.42;beacon.scale.setScalar(lit?1.06:1)});"""
+          s=s.replace(tick_anchor,tick_anchor+runtime,1)
+          p.write_text(s)
+      - name: Verify v118 animated receptacle and preserved finish physics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=[
+            "FINISH_RECEPTACLE_FEEDBACK_V118=true",
+            "finishDeliveryRing=finish.getObjectByName('FinishDeliveryReceptacleRingV117')",
+            "finishDeliveryCore=finish.getObjectByName('FinishDeliveryReceptacleCoreV117')",
+            "finishDeliveryJaws=finish.children.filter",
+            "finishDeliveryBeacons=finish.children.filter",
+            "finishDeliveryCore.rotation.y+=dt",
+            "jaw.position.x=side*(.54-clamp)",
+            "finishProgress>=1?0x49ff79",
+            "FINAL_FINISH_CHARGE=.55",
+            "finishCharge=bothInFinish?Math.min(FINAL_FINISH_CHARGE,finishCharge+dt)"
+          ]
+          for token in required:
+            assert token in s, token
+          assert s.count('FINISH_RECEPTACLE_FEEDBACK_V118=true')==1
+          print('Finish Receptacle Feedback v118 contract: SUCCESS')
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          m=re.search(r'<script type="module">(.*?)</script>',s,re.S)
+          assert m, 'module script not found'
+          Path('/tmp/brainrot-module.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/brainrot-module.mjs
+          node scripts/final-puncher-physics-contract-v65.mjs
+          node scripts/final-finish-residual-momentum-check.mjs
+          node scripts/final-finish-soft-hold-check.mjs
+          node scripts/final-finish-charge-check.mjs
+      - name: Commit real level change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-level-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
+          git commit -m "Level: animate finish receptacle feedback v118"
+          git push origin HEAD:new-player-glb-overhaul
