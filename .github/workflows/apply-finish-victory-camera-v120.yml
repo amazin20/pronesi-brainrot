@@ -44,11 +44,12 @@ jobs:
           if reset_anchor not in s:
               raise SystemExit('v119 reset anchor missing')
           s=s.replace(reset_anchor,"finalGauntletCleared=false;finalRecoveryTimer=0;finishCharge=0;finishBrainrotDock=0;finishVictoryTime=0;if(br){br.scale.setScalar(1);br.rotation.x=0;br.rotation.z=0}",1)
-          dock_end="if(finishBrainrotDock>=1){bp.copy(finishBrainrotDockTarget);br.position.copy(bp);br.rotation.x=0;br.rotation.z=0;br.scale.setScalar(.88)}}"
+          dock_inner="if(finishBrainrotDock>=1){bp.copy(finishBrainrotDockTarget);br.position.copy(bp);br.rotation.x=0;br.rotation.z=0;br.scale.setScalar(.88)}"
+          dock_end=dock_inner+"}"
           if dock_end not in s:
               raise SystemExit('v119 docking runtime anchor missing')
           victory_runtime="""finishVictoryTime+=dt;const victoryPulse=.5+.5*Math.sin(t*8.5),victoryDone=finishBrainrotDock>=1;finishDeliveryBeacons.forEach((beacon,i)=>{const wave=.5+.5*Math.sin(t*7.5-i*.75);beacon.material.color.setHex(0x49ff79);beacon.material.emissive.setHex(0x19b24e);beacon.material.emissiveIntensity=1.15+(victoryDone?.75:.35)*wave;beacon.scale.setScalar(1.02+(victoryDone?.12:.05)*wave)});[finishArchTop,finishArchL,finishArchR].forEach(o=>setEmissiveIntensityDeep(o,1.0+.75*victoryPulse));[finishRailL,finishRailR].forEach(o=>setEmissiveIntensityDeep(o,.82+.45*victoryPulse));[playerLamp,brainLamp].forEach(o=>{o.scale.y=1.02+.08*victoryPulse;setEmissiveIntensityDeep(o,1.1+.65*victoryPulse)});finalChargeGate.children.forEach(o=>{if(o.name==='FinalDeliveryGatePanelV116'||o.name==='FinalDeliveryGateHingeHaloV116'||o.name==='FinalDeliveryGateLockCoreV116')setEmissiveIntensityDeep(o,1.15+.8*victoryPulse)});done.textContent=victoryDone?'ДОСТАВЛЕНО! 🧠✨':'ФИКСИРУЕМ БРЕЙНРОТ…';state.textContent=victoryDone?'МАРШРУТ ЗАВЕРШЁН · БРЕЙНРОТ ЗАФИКСИРОВАН':'ФИНИШ · ФИКСАЦИЯ ДОСТАВКИ';"""
-          s=s.replace(dock_end,dock_end+victory_runtime,1)
+          s=s.replace(dock_end,dock_inner+victory_runtime+"}",1)
           camera_anchor="let f=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));cg.set(p.x,p.y+4,p.z).addScaledVector(f,-6.2);cam.position.lerp(cg,1-Math.exp(-5.5*dt));lg.set(p.x,p.y+1,p.z).addScaledVector(f,1.2);cam.lookAt(lg);ren.render(scene,cam)"
           if camera_anchor not in s:
               raise SystemExit('camera anchor missing')
