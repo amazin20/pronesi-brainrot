@@ -1,0 +1,99 @@
+name: Apply Finish Brainrot Dock v119
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-finish-brainrot-dock-v119.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+      - name: Dock delivered brainrot model into receptacle v119
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          if 'FINISH_BRAINROT_DOCK_V119=true' in s:
+              raise SystemExit('v119 already present')
+          refs_anchor="const FINISH_RECEPTACLE_FEEDBACK_V118=true;"
+          if refs_anchor not in s:
+              raise SystemExit('v118 finish feedback anchor missing')
+          refs="const FINISH_BRAINROT_DOCK_V119=true,FINISH_BRAINROT_DOCK_TIME=.72;const finishBrainrotDockTarget=new THREE.Vector3(0,.34,10.20);"
+          s=s.replace(refs_anchor,refs_anchor+refs,1)
+          state_anchor="finalGauntletCleared=false,finalRecoveryTimer=0,finishCharge=0;"
+          if state_anchor not in s:
+              raise SystemExit('finish state anchor missing')
+          s=s.replace(state_anchor,"finalGauntletCleared=false,finalRecoveryTimer=0,finishCharge=0,finishBrainrotDock=0;",1)
+          reset_anchor="finalGauntletCleared=false;finalRecoveryTimer=0;finishCharge=0;"
+          if reset_anchor not in s:
+              raise SystemExit('reset anchor missing')
+          s=s.replace(reset_anchor,"finalGauntletCleared=false;finalRecoveryTimer=0;finishCharge=0;finishBrainrotDock=0;if(br){br.scale.setScalar(1);br.rotation.x=0;br.rotation.z=0}",1)
+          win_anchor="if(!win&&finishProgress>=1){win=true;carry=false;done.classList.add('on');state.textContent='ДОСТАВЛЕН'}"
+          if win_anchor not in s:
+              raise SystemExit('win anchor missing')
+          dock_runtime="""if(win){finishBrainrotDock=Math.min(1,finishBrainrotDock+dt/FINISH_BRAINROT_DOCK_TIME);const dockEase=1-Math.pow(1-finishBrainrotDock,3),dockAlpha=1-Math.exp(-8.5*dt);bv.set(0,0,0);carry=false;bp.lerp(finishBrainrotDockTarget,dockAlpha);br.position.copy(bp);br.rotation.y+=dt*(1-finishBrainrotDock)*4.2;br.rotation.x=Math.sin(finishBrainrotDock*Math.PI)*.055;br.rotation.z=Math.sin(finishBrainrotDock*Math.PI*2)*.025;br.scale.setScalar(1-.12*dockEase);if(finishBrainrotDock>=1){bp.copy(finishBrainrotDockTarget);br.position.copy(bp);br.rotation.x=0;br.rotation.z=0;br.scale.setScalar(.88)}}"""
+          s=s.replace(win_anchor,win_anchor+dock_runtime,1)
+          p.write_text(s)
+      - name: Verify v119 real model docking and preserved finish physics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=[
+            "FINISH_BRAINROT_DOCK_V119=true",
+            "FINISH_BRAINROT_DOCK_TIME=.72",
+            "finishBrainrotDockTarget=new THREE.Vector3(0,.34,10.20)",
+            "finishBrainrotDock=0",
+            "finishBrainrotDock=Math.min(1,finishBrainrotDock+dt/FINISH_BRAINROT_DOCK_TIME)",
+            "bv.set(0,0,0);carry=false;bp.lerp(finishBrainrotDockTarget,dockAlpha)",
+            "br.scale.setScalar(1-.12*dockEase)",
+            "if(finishBrainrotDock>=1){bp.copy(finishBrainrotDockTarget)",
+            "FINAL_FINISH_CHARGE=.55",
+            "finishCharge=bothInFinish?Math.min(FINAL_FINISH_CHARGE,finishCharge+dt)"
+          ]
+          for token in required:
+            assert token in s, token
+          assert s.count('FINISH_BRAINROT_DOCK_V119=true')==1
+          print('Finish Brainrot Dock v119 contract: SUCCESS')
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          m=re.search(r'<script type="module">(.*?)</script>',s,re.S)
+          assert m, 'module script not found'
+          Path('/tmp/brainrot-module.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/brainrot-module.mjs
+          node scripts/final-puncher-physics-contract-v65.mjs
+          node scripts/final-finish-residual-momentum-check.mjs
+          node scripts/final-finish-soft-hold-check.mjs
+          node scripts/final-finish-charge-check.mjs
+      - name: Commit real level change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-level-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
+          git commit -m "Level: dock delivered brainrot model v119"
+          git push origin HEAD:new-player-glb-overhaul
