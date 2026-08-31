@@ -1,0 +1,90 @@
+name: Apply Finish Delivery Deck v117
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-finish-delivery-deck-v117.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+      - name: Model finish delivery deck v117
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          if 'FINISH_DELIVERY_DECK_MODEL_V117=true' in s:
+              raise SystemExit('v117 already present')
+          anchor="const finish=makeFinishDeck();"
+          if anchor not in s:
+              raise SystemExit('finish deck anchor missing')
+          addon="""const FINISH_DELIVERY_DECK_MODEL_V117=true;finish.name='FinishDeckCarrierV117';finish.children.forEach(o=>{if(o.name&&o.name.includes('FinishDeck')){o.material.transparent=true;o.material.opacity=.055;o.material.depthWrite=false}});const finishDeckGreen=mat(0x49ff79),finishDeckDark=mat(0x142c28),finishDeckWhite=mat(0xf1fff6),finishDeckCyan=mat(0x44e7ff),finishDeckGold=mat(0xffdf63);finishDeckGreen.metalness=.30;finishDeckGreen.roughness=.26;[-3.0,-2.25,-1.5,-.75,0,.75,1.5,2.25,3.0].forEach((x,i)=>{const slat=new THREE.Mesh(new THREE.BoxGeometry(.56,.075,1.18),i===4?finishDeckWhite:finishDeckGreen);slat.name='FinishDeliverySlatV117';slat.position.set(x,.075,0);slat.castShadow=slat.receiveShadow=true;slat.material.emissive=new THREE.Color(i===4?0xffffff:0x159b43);slat.material.emissiveIntensity=i===4?.82:.42;finish.add(slat)});[-.58,.58].forEach((z,i)=>{const rail=new THREE.Mesh(new THREE.CapsuleGeometry(.042,6.25,4,8),finishDeckWhite);rail.name='FinishDeliveryEdgeRailV117';rail.rotation.z=Math.PI/2;rail.position.set(0,.19,z);rail.castShadow=rail.receiveShadow=true;rail.material.emissive=new THREE.Color(i?0x44e7ff:0x49ff79);rail.material.emissiveIntensity=.68;finish.add(rail)});const receptacleBase=new THREE.Mesh(new THREE.CylinderGeometry(.58,.72,.16,12),finishDeckDark);receptacleBase.name='FinishDeliveryReceptacleBaseV117';receptacleBase.position.set(0,.14,.20);receptacleBase.castShadow=receptacleBase.receiveShadow=true;finish.add(receptacleBase);const receptacleRing=new THREE.Mesh(new THREE.TorusGeometry(.46,.075,8,16),finishDeckCyan);receptacleRing.name='FinishDeliveryReceptacleRingV117';receptacleRing.rotation.x=Math.PI/2;receptacleRing.position.set(0,.24,.20);receptacleRing.castShadow=true;receptacleRing.material.emissive=new THREE.Color(0x44e7ff);receptacleRing.material.emissiveIntensity=1.05;finish.add(receptacleRing);const receptacleCore=new THREE.Mesh(new THREE.OctahedronGeometry(.18,0),finishDeckGold);receptacleCore.name='FinishDeliveryReceptacleCoreV117';receptacleCore.position.set(0,.29,.20);receptacleCore.castShadow=true;receptacleCore.material.emissive=new THREE.Color(0xffc928);receptacleCore.material.emissiveIntensity=1.15;finish.add(receptacleCore);[-1,1].forEach((side,i)=>{const jaw=new THREE.Mesh(new THREE.TorusGeometry(.23,.05,6,12,Math.PI),finishDeckGold);jaw.name='FinishDeliveryClampJawV117';jaw.rotation.set(Math.PI/2,0,side>0?Math.PI/2:-Math.PI/2);jaw.position.set(side*.54,.27,.20);jaw.castShadow=true;jaw.material.emissive=new THREE.Color(0xffc928);jaw.material.emissiveIntensity=.92;finish.add(jaw);const bumper=new THREE.Mesh(new THREE.CylinderGeometry(.11,.15,.34,8),finishDeckDark);bumper.name='FinishDeliveryDockBumperV117';bumper.rotation.z=Math.PI/2;bumper.position.set(side*3.28,.12,0);bumper.castShadow=bumper.receiveShadow=true;finish.add(bumper)});[-2.3,-1.15,0,1.15,2.3].forEach((x,i)=>{const beacon=new THREE.Mesh(new THREE.TorusGeometry(.11,.028,6,10),i===2?finishDeckGold:finishDeckWhite);beacon.name='FinishDeliveryBeaconV117';beacon.rotation.x=Math.PI/2;beacon.position.set(x,.14,-.24);beacon.castShadow=true;beacon.material.emissive=new THREE.Color(i===2?0xffc928:0x49ff79);beacon.material.emissiveIntensity=i===2?1.08:.72;finish.add(beacon)});"""
+          s=s.replace(anchor,anchor+addon,1)
+          p.write_text(s)
+      - name: Verify v117 modeled finish deck and preserved finish physics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=[
+            "FINISH_DELIVERY_DECK_MODEL_V117=true",
+            "FinishDeckCarrierV117",
+            "FinishDeliverySlatV117",
+            "FinishDeliveryEdgeRailV117",
+            "FinishDeliveryReceptacleBaseV117",
+            "FinishDeliveryReceptacleRingV117",
+            "FinishDeliveryReceptacleCoreV117",
+            "FinishDeliveryClampJawV117",
+            "FinishDeliveryDockBumperV117",
+            "FinishDeliveryBeaconV117",
+            "FINAL_FINISH_CHARGE=.55",
+            "FINAL_CHARGE_GATE_Z=10.88",
+            "FINAL_CHARGE_CRADLE_Z_MIN=10.30",
+            "FINAL_CHARGE_CRADLE_Z_MAX=11.06"
+          ]
+          for token in required:
+            assert token in s, token
+          assert s.count('FINISH_DELIVERY_DECK_MODEL_V117=true')==1
+          print('Finish Delivery Deck v117 contract: SUCCESS')
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          m=re.search(r'<script type="module">(.*?)</script>',s,re.S)
+          assert m, 'module script not found'
+          Path('/tmp/brainrot-module.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/brainrot-module.mjs
+          node scripts/final-puncher-physics-contract-v65.mjs
+          node scripts/final-finish-residual-momentum-check.mjs
+          node scripts/final-finish-soft-hold-check.mjs
+          node scripts/final-finish-charge-check.mjs
+      - name: Commit real level change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-level-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
+          git commit -m "Level: model finish delivery deck v117"
+          git push origin HEAD:new-player-glb-overhaul
