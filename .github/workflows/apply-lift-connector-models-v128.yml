@@ -73,9 +73,9 @@ jobs:
           for token in required:
               assert token in s, token
           assert s.count('LIFT_CONNECTOR_MODELS_V128=true') == 1
-          assert s.count("name='LiftApproachLegacyCollisionCarrierV128'") == 1
-          assert s.count("name='LiftExitLegacyCollisionCarrierV128'") == 1
-          assert s.count("name='LiftAssistLegacyCollisionCarrierV128'") == 1
+          assert s.count("'LiftApproachLegacyCollisionCarrierV128'") == 1
+          assert s.count("'LiftExitLegacyCollisionCarrierV128'") == 1
+          assert s.count("'LiftAssistLegacyCollisionCarrierV128'") == 1
           print('Lift connector models v128 contract: SUCCESS')
           PY
           python - <<'PY'
