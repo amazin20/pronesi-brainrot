@@ -1,0 +1,58 @@
+name: Apply Second Pit Boarding Bridge v107
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths: ['.github/workflows/apply-second-pit-board-bridge-v107.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  patch-level:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Patch real second-pit boarding bridge assembly
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old="const secondPitBoardBridge=box(0,.02,SECOND_PIT_BOARD_BRIDGE_Z,SECOND_PIT_BOARD_BRIDGE_HALF_X*2,.08,SECOND_PIT_BOARD_BRIDGE_HALF_Z*2,0x49ff79);secondPitBoardBridge.material.emissive=new THREE.Color(0x19b24e);secondPitBoardBridge.material.emissiveIntensity=1.35;secondPitBoardBridge.visible=false;"
+          new="const SECOND_PIT_BOARD_BRIDGE_MODEL_V107=true;const secondPitBoardBridge=box(0,.02,SECOND_PIT_BOARD_BRIDGE_Z,SECOND_PIT_BOARD_BRIDGE_HALF_X*2,.08,SECOND_PIT_BOARD_BRIDGE_HALF_Z*2,0x49ff79);secondPitBoardBridge.name='SecondPitBoardBridgeCollisionDeckV107';secondPitBoardBridge.material.emissive=new THREE.Color(0x19b24e);secondPitBoardBridge.material.emissiveIntensity=.22;secondPitBoardBridge.material.transparent=true;secondPitBoardBridge.material.opacity=.08;secondPitBoardBridge.material.depthWrite=false;const boardBridgeGreen=mat(0x49ff79),boardBridgeDark=mat(0x153b35),boardBridgeWhite=mat(0xd9ffe4);boardBridgeGreen.metalness=.26;boardBridgeGreen.roughness=.30;[-1.12,-.56,0,.56,1.12].forEach((x,i)=>{const slat=new THREE.Mesh(new THREE.BoxGeometry(.38,.055,.29),i===2?boardBridgeWhite:boardBridgeGreen);slat.name='SecondPitBoardBridgeSlatV107';slat.position.set(x,.075,0);slat.castShadow=slat.receiveShadow=true;slat.material.emissive=new THREE.Color(i===2?0xb7ffcf:0x19b24e);slat.material.emissiveIntensity=i===2?.78:.42;secondPitBoardBridge.add(slat)});[-.26,.26].forEach(z=>{const rail=new THREE.Mesh(new THREE.CapsuleGeometry(.035,2.45,4,8),boardBridgeWhite);rail.name='SecondPitBoardBridgeRailV107';rail.rotation.z=Math.PI/2;rail.position.set(0,.18,z);rail.castShadow=true;rail.material.emissive=new THREE.Color(0x49ff79);rail.material.emissiveIntensity=.52;secondPitBoardBridge.add(rail)});[-1.29,1.29].forEach((x,i)=>{const hinge=new THREE.Mesh(new THREE.CylinderGeometry(.11,.14,.22,8),boardBridgeDark);hinge.name='SecondPitBoardBridgeHingeV107';hinge.rotation.z=Math.PI/2;hinge.position.set(x,.02,0);hinge.castShadow=hinge.receiveShadow=true;secondPitBoardBridge.add(hinge);const ring=new THREE.Mesh(new THREE.TorusGeometry(.16,.032,6,10),boardBridgeGreen);ring.name='SecondPitBoardBridgeBeaconV107';ring.rotation.y=Math.PI/2;ring.position.set(x,.02,0);ring.material.emissive=new THREE.Color(i?0x44e7ff:0x49ff79);ring.material.emissiveIntensity=1.0;ring.castShadow=true;secondPitBoardBridge.add(ring)});secondPitBoardBridge.visible=false;"
+          if old not in s:
+              raise SystemExit('missing expected second-pit board bridge runtime fragment')
+          s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+      - name: Verify browser module syntax
+        run: |
+          node --input-type=module - <<'NODE'
+          import fs from 'node:fs';
+          const src=fs.readFileSync('index.html','utf8');
+          const m=src.match(/<script type="module">([\s\S]*?)<\/script>/);
+          if(!m) throw new Error('module script missing');
+          let body=m[1].replace(/^import .*$/gm,'');
+          new Function(body);
+          console.log('PASS browser module parse');
+          NODE
+      - name: Verify bridge model and second-pit route contracts
+        run: |
+          grep -q "SECOND_PIT_BOARD_BRIDGE_MODEL_V107=true" index.html
+          grep -q "SecondPitBoardBridgeSlatV107" index.html
+          grep -q "SecondPitBoardBridgeRailV107" index.html
+          grep -q "SecondPitBoardBridgeHingeV107" index.html
+          node scripts/second-pit-carry-window-check.mjs
+          node scripts/second-pit-platform-motion-v71-check.mjs
+          node scripts/second-pit-route-continuity-v70-check.mjs
+      - name: Commit gameplay level change
+        run: |
+          git config user.name 'amazin20'
+          git config user.email '138931938+amazin20@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Level: model second pit boarding bridge v107'
+          git push origin HEAD:new-player-glb-overhaul
