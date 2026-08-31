@@ -1,0 +1,85 @@
+name: Apply Final Mid Safe Pad v112
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-final-mid-safe-pad-v112.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+      - name: Model final mid safe pocket v112
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old="const FINAL_MID_SAFE_MODEL_V81=true;const finalMidSafePad=box(0,.032,(FINAL_MID_SAFE_Z_MIN+FINAL_MID_SAFE_Z_MAX)*.5,FINAL_MID_SAFE_HALF_X*2,.064,FINAL_MID_SAFE_Z_MAX-FINAL_MID_SAFE_Z_MIN,0x49ff79);finalMidSafePad.material.emissive=new THREE.Color(0x159b43);finalMidSafePad.material.emissiveIntensity=.62;function makeFinalMidSafeGuard(side)"
+          new="const FINAL_MID_SAFE_MODEL_V81=true,FINAL_MID_SAFE_PAD_MODEL_V112=true;const finalMidSafePad=box(0,.032,(FINAL_MID_SAFE_Z_MIN+FINAL_MID_SAFE_Z_MAX)*.5,FINAL_MID_SAFE_HALF_X*2,.064,FINAL_MID_SAFE_Z_MAX-FINAL_MID_SAFE_Z_MIN,0x49ff79);finalMidSafePad.name='FinalMidSafeCollisionPadV112';finalMidSafePad.material.emissive=new THREE.Color(0x159b43);finalMidSafePad.material.emissiveIntensity=.16;finalMidSafePad.material.transparent=true;finalMidSafePad.material.opacity=.045;finalMidSafePad.material.depthWrite=false;const finalMidGreen=mat(0x49ff79),finalMidDark=mat(0x14352d),finalMidWhite=mat(0xeaffef),finalMidAmber=mat(0xffd84d);finalMidGreen.metalness=.28;finalMidGreen.roughness=.28;[-1.16,-.58,0,.58,1.16].forEach((x,i)=>{const slat=new THREE.Mesh(new THREE.BoxGeometry(.44,.068,.245),i===2?finalMidWhite:finalMidGreen);slat.name='FinalMidSafeSlatV112';slat.position.set(x,.072,0);slat.castShadow=slat.receiveShadow=true;slat.material.emissive=new THREE.Color(i===2?0xffffff:0x159b43);slat.material.emissiveIntensity=i===2?.92:.56;finalMidSafePad.add(slat)});[-.12,.12].forEach((z,i)=>{const rail=new THREE.Mesh(new THREE.CapsuleGeometry(.035,2.62,4,8),finalMidWhite);rail.name='FinalMidSafeEdgeRailV112';rail.rotation.z=Math.PI/2;rail.position.set(0,.16,z);rail.castShadow=rail.receiveShadow=true;rail.material.emissive=new THREE.Color(i?0x49ff79:0xb4ffd5);rail.material.emissiveIntensity=.72;finalMidSafePad.add(rail)});[-.76,0,.76].forEach((x,i)=>{const ring=new THREE.Mesh(new THREE.TorusGeometry(.10,.025,6,10),i===1?finalMidAmber:finalMidWhite);ring.name='FinalMidSafeTimingRingV112';ring.rotation.x=Math.PI/2;ring.position.set(x,.115,0);ring.castShadow=true;ring.material.emissive=new THREE.Color(i===1?0xffb12b:0x49ff79);ring.material.emissiveIntensity=i===1?1.05:.82;finalMidSafePad.add(ring)});[-1.34,1.34].forEach(x=>{const bumper=new THREE.Mesh(new THREE.CylinderGeometry(.085,.12,.28,8),finalMidDark);bumper.name='FinalMidSafeBumperV112';bumper.rotation.z=Math.PI/2;bumper.position.set(x,.09,0);bumper.castShadow=bumper.receiveShadow=true;finalMidSafePad.add(bumper)});function makeFinalMidSafeGuard(side)"
+          if old not in s:
+              raise SystemExit('v112 final mid safe anchor missing or already changed')
+          s=s.replace(old,new,1)
+          p.write_text(s)
+      - name: Verify v112 modeled safe pocket and preserved physics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=[
+            "FINAL_MID_SAFE_PAD_MODEL_V112=true",
+            "FinalMidSafeCollisionPadV112",
+            "FinalMidSafeSlatV112",
+            "FinalMidSafeEdgeRailV112",
+            "FinalMidSafeTimingRingV112",
+            "FinalMidSafeBumperV112",
+            "finalMidSafePad.material.opacity=.045",
+            "FINAL_MID_SAFE_Z_MIN=7.88",
+            "FINAL_MID_SAFE_Z_MAX=8.18",
+            "FINAL_MID_SAFE_HALF_X=1.52",
+            "FINAL_MID_SAFE_DAMP=14.0",
+            "if(i===1&&midSafe)return false"
+          ]
+          for token in required:
+            assert token in s, token
+          assert s.count("FinalMidSafeSlatV112")==1
+          assert s.count("new THREE.BoxGeometry(.44,.068,.245)")==1
+          print('Final Mid Safe Pad v112 contract: SUCCESS')
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          m=re.search(r'<script type="module">(.*?)</script>',s,re.S)
+          assert m, 'module script not found'
+          Path('/tmp/brainrot-module.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/brainrot-module.mjs
+          node scripts/final-mid-pocket-v67-check.mjs
+          node scripts/final-puncher-physics-contract-v65.mjs
+      - name: Commit real level change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-level-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
+          git commit -m "Level: model final mid safe pocket v112"
+          git push origin HEAD:new-player-glb-overhaul
