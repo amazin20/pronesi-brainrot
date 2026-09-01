@@ -1,0 +1,79 @@
+name: Apply Mechanical Finish Funnel Model v146
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-finish-funnel-mechanical-model-v146.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+          test "$(git rev-parse HEAD^)" = "7598cf967425145ab78ad509717f71bbbdb98578"
+          git merge-base --is-ancestor 7598cf967425145ab78ad509717f71bbbdb98578 HEAD
+      - name: Model finish funnel mechanical assembly v146
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          if 'FINAL_FINISH_FUNNEL_MECHANICAL_MODEL_V146=true' in s:
+              raise SystemExit('v146 already present')
+          anchor='const FINAL_FINISH_FUNNEL_MODEL_V78=true,FINAL_FINISH_FUNNEL_PAD_MODEL_V114=true;'
+          if s.count(anchor) != 1:
+              raise SystemExit(f'v146 funnel anchor count={s.count(anchor)}')
+          model="""const FINAL_FINISH_FUNNEL_MECHANICAL_MODEL_V146=true,FINAL_FINISH_FUNNEL_MECH_Z=(FINAL_FINISH_FUNNEL_Z_MIN+FINAL_FINISH_FUNNEL_Z_MAX)*.5;const finalFinishFunnelMechanicalV146=new THREE.Group();finalFinishFunnelMechanicalV146.name='FinalFinishFunnelMechanicalAssemblyV146';finalFinishFunnelMechanicalV146.position.set(0,0,FINAL_FINISH_FUNNEL_MECH_Z);scene.add(finalFinishFunnelMechanicalV146);const finishFunnelSteelV146=mat(0xeaf7ff),finishFunnelDarkV146=mat(0x142136),finishFunnelCyanV146=mat(0x45e8ff),finishFunnelGreenV146=mat(0x50ff80),finishFunnelGoldV146=mat(0xffd84a);finishFunnelSteelV146.metalness=.52;finishFunnelSteelV146.roughness=.2;finishFunnelDarkV146.metalness=.66;finishFunnelDarkV146.roughness=.26;finishFunnelCyanV146.metalness=.38;finishFunnelCyanV146.roughness=.22;finishFunnelGreenV146.metalness=.38;finishFunnelGreenV146.roughness=.22;const finishFunnelSpineV146=new THREE.Mesh(new THREE.BoxGeometry(4.56,.10,1.02),finishFunnelDarkV146);finishFunnelSpineV146.name='FinalFinishFunnelSpineV146';finishFunnelSpineV146.position.y=.045;finishFunnelSpineV146.castShadow=finishFunnelSpineV146.receiveShadow=true;finalFinishFunnelMechanicalV146.add(finishFunnelSpineV146);[-.43,-.22,0,.22,.43].forEach((z,i)=>{const rib=new THREE.Mesh(new THREE.BoxGeometry(4.28-i*.10,.075,.12),i===2?finishFunnelSteelV146:(i<2?finishFunnelGreenV146:finishFunnelCyanV146));rib.name='FinalFinishFunnelDeckRibV146';rib.position.set(0,.12,z);rib.castShadow=rib.receiveShadow=true;rib.material.emissive=new THREE.Color(i===2?0xffffff:(i<2?0x159b43:0x087fa8));rib.material.emissiveIntensity=i===2?.68:.42;finalFinishFunnelMechanicalV146.add(rib)});const finalFinishFunnelJawsV146=[],finalFinishFunnelRollersV146=[],finalFinishFunnelLampsV146=[];[-1,1].forEach((side,si)=>{const rail=new THREE.Mesh(new THREE.BoxGeometry(.12,.32,.98),finishFunnelDarkV146);rail.name='FinalFinishFunnelOuterRailV146';rail.position.set(side*2.15,.24,0);rail.rotation.z=side*.06;rail.castShadow=rail.receiveShadow=true;finalFinishFunnelMechanicalV146.add(rail);[-.38,-.13,.13,.38].forEach((z,k)=>{const tower=new THREE.Mesh(new THREE.CylinderGeometry(.085,.12,.72,10),finishFunnelDarkV146);tower.name='FinalFinishFunnelActuatorTowerV146';tower.position.set(side*(2.02-k*.07),.42,z);tower.castShadow=tower.receiveShadow=true;finalFinishFunnelMechanicalV146.add(tower);const collar=new THREE.Mesh(new THREE.TorusGeometry(.115,.028,7,12),k%2?finishFunnelCyanV146:finishFunnelGreenV146);collar.name='FinalFinishFunnelActuatorCollarV146';collar.rotation.x=Math.PI/2;collar.position.set(tower.position.x,.44,z);collar.castShadow=true;collar.material.emissive=new THREE.Color(k%2?0x087fa8:0x159b43);collar.material.emissiveIntensity=.72;finalFinishFunnelMechanicalV146.add(collar)});const jawPivot=new THREE.Group();jawPivot.name='FinalFinishFunnelGuideJawPivotV146';jawPivot.position.set(side*1.93,.38,0);jawPivot.userData.side=side;const jaw=new THREE.Mesh(new THREE.BoxGeometry(.76,.16,.74),finishFunnelSteelV146);jaw.name='FinalFinishFunnelGuideJawV146';jaw.position.x=-side*.35;jaw.rotation.y=side*.08;jaw.castShadow=jaw.receiveShadow=true;jaw.material.emissive=new THREE.Color(si?0x087fa8:0x159b43);jaw.material.emissiveIntensity=.50;jawPivot.add(jaw);[-.24,0,.24].forEach((z,k)=>{const roller=new THREE.Mesh(new THREE.CylinderGeometry(.105,.105,.18,10),k===1?finishFunnelGoldV146:(si?finishFunnelCyanV146:finishFunnelGreenV146));roller.name='FinalFinishFunnelGuideRollerV146';roller.rotation.z=Math.PI/2;roller.position.set(-side*.75,.02,z);roller.castShadow=roller.receiveShadow=true;roller.material.emissive=new THREE.Color(k===1?0xd59f00:(si?0x087fa8:0x159b43));roller.material.emissiveIntensity=.88;jawPivot.add(roller);finalFinishFunnelRollersV146.push(roller)});finalFinishFunnelMechanicalV146.add(jawPivot);finalFinishFunnelJawsV146.push(jawPivot);const beacon=new THREE.Mesh(new THREE.OctahedronGeometry(.11,0),si?finishFunnelCyanV146:finishFunnelGreenV146);beacon.name='FinalFinishFunnelSideBeaconV146';beacon.position.set(side*2.14,.93,.02);beacon.castShadow=true;beacon.material.emissive=new THREE.Color(si?0x087fa8:0x159b43);beacon.material.emissiveIntensity=1.0;finalFinishFunnelMechanicalV146.add(beacon);finalFinishFunnelLampsV146.push(beacon)});const finishFunnelArchV146=new THREE.Mesh(new THREE.BoxGeometry(4.28,.16,.16),finishFunnelDarkV146);finishFunnelArchV146.name='FinalFinishFunnelTimingArchV146';finishFunnelArchV146.position.set(0,1.22,.18);finishFunnelArchV146.castShadow=finishFunnelArchV146.receiveShadow=true;finalFinishFunnelMechanicalV146.add(finishFunnelArchV146);[-1.48,-.74,0,.74,1.48].forEach((x,i)=>{const lamp=new THREE.Mesh(new THREE.OctahedronGeometry(.09,0),i===2?finishFunnelGoldV146:finishFunnelSteelV146);lamp.name='FinalFinishFunnelArchLampV146';lamp.position.set(x,1.22,.29);lamp.castShadow=true;lamp.material.emissive=new THREE.Color(i===2?0xd59f00:(i<2?0x159b43:0x087fa8));lamp.material.emissiveIntensity=.9;finalFinishFunnelMechanicalV146.add(lamp);finalFinishFunnelLampsV146.push(lamp)});const finishFunnelCenterRingV146=new THREE.Mesh(new THREE.TorusGeometry(.34,.055,8,18),finishFunnelGoldV146);finishFunnelCenterRingV146.name='FinalFinishFunnelCenterGuideRingV146';finishFunnelCenterRingV146.rotation.x=Math.PI/2;finishFunnelCenterRingV146.position.set(0,.18,.20);finishFunnelCenterRingV146.castShadow=true;finishFunnelCenterRingV146.material.emissive=new THREE.Color(0xd59f00);finishFunnelCenterRingV146.material.emissiveIntensity=.92;finalFinishFunnelMechanicalV146.add(finishFunnelCenterRingV146);"""
+          s=s.replace(anchor,model+anchor,1)
+          tick_anchor='const finalFinishFunnelActive='
+          if s.count(tick_anchor) != 1:
+              raise SystemExit(f'v146 tick anchor count={s.count(tick_anchor)}')
+          tick="""const finalFinishFunnelMechanicalActiveV146=finalGauntletCleared&&p.z>FINAL_FINISH_FUNNEL_Z_MIN-.10&&p.z<FINAL_FINISH_FUNNEL_Z_MAX+.10&&!win&&failTimer<=0,finalFinishFunnelMechanicalProgressV146=Math.max(0,Math.min(1,(p.z-FINAL_FINISH_FUNNEL_Z_MIN)/(FINAL_FINISH_FUNNEL_Z_MAX-FINAL_FINISH_FUNNEL_Z_MIN))),finalFinishFunnelMechanicalPulseV146=.5+.5*Math.sin(t*12.5);finalFinishFunnelJawsV146.forEach((n,i)=>{const side=n.userData.side,close=.22+.46*finalFinishFunnelMechanicalProgressV146;n.rotation.z=side*(.34-close*.30);n.position.x=side*(1.93-.13*finalFinishFunnelMechanicalProgressV146);n.children.forEach(c=>{if(c.isMesh&&c.material?.emissive)c.material.emissiveIntensity=finalFinishFunnelMechanicalActiveV146?.68+.50*finalFinishFunnelMechanicalPulseV146:.48})});finalFinishFunnelRollersV146.forEach((n,i)=>{n.rotation.x+=dt*(finalFinishFunnelMechanicalActiveV146?7.2:1.1)*(i%2?-1:1);n.material.emissiveIntensity=finalFinishFunnelMechanicalActiveV146?.82+.42*finalFinishFunnelMechanicalPulseV146:.62});finalFinishFunnelLampsV146.forEach((n,i)=>{const guided=finalFinishFunnelMechanicalProgressV146>=i/Math.max(1,finalFinishFunnelLampsV146.length-1);n.material.color.setHex(guided?0x50ff80:(i%2?0x45e8ff:0xffd84a));n.material.emissive.setHex(guided?0x159b43:(i%2?0x087fa8:0xd59f00));n.material.emissiveIntensity=finalFinishFunnelMechanicalActiveV146?(guided?1.18+.55*finalFinishFunnelMechanicalPulseV146:.72+.24*finalFinishFunnelMechanicalPulseV146):.72});finishFunnelSpineV146.material.emissive=finishFunnelSpineV146.material.emissive||new THREE.Color(0x159b43);finishFunnelSpineV146.material.emissiveIntensity=finalFinishFunnelMechanicalActiveV146?.20+.52*finalFinishFunnelMechanicalProgressV146:.08;finishFunnelArchV146.material.emissive=finishFunnelArchV146.material.emissive||new THREE.Color(0x087fa8);finishFunnelArchV146.material.emissiveIntensity=finalFinishFunnelMechanicalActiveV146?.28+.62*finalFinishFunnelMechanicalPulseV146:.10;finishFunnelCenterRingV146.rotation.z+=dt*(finalFinishFunnelMechanicalActiveV146?1.8:.25);finishFunnelCenterRingV146.material.emissiveIntensity=finalFinishFunnelMechanicalActiveV146?.95+.55*finalFinishFunnelMechanicalPulseV146:.72;"""
+          s=s.replace(tick_anchor,tick+tick_anchor,1)
+          p.write_text(s)
+      - name: Verify v146 model and preserved funnel physics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=['FINAL_FINISH_FUNNEL_MECHANICAL_MODEL_V146=true','FinalFinishFunnelMechanicalAssemblyV146','FinalFinishFunnelSpineV146','FinalFinishFunnelDeckRibV146','FinalFinishFunnelOuterRailV146','FinalFinishFunnelActuatorTowerV146','FinalFinishFunnelGuideJawV146','FinalFinishFunnelGuideRollerV146','FinalFinishFunnelTimingArchV146','FinalFinishFunnelCenterGuideRingV146','FINAL_FINISH_FUNNEL_Z_MIN=9.54','FINAL_FINISH_FUNNEL_Z_MAX=10.58','FINAL_FINISH_FUNNEL_DAMP=10.5','FINAL_FINISH_FUNNEL_PULL=1.75','FINAL_CHARGE_CRADLE_DAMP=15.5','FINAL_RECOVERY_FUNNEL_HANDOFF_MODEL_V145=true']
+          for token in required: assert token in s, token
+          assert s.count('FINAL_FINISH_FUNNEL_MECHANICAL_MODEL_V146=true') == 1
+          assert s.count('const finalFinishFunnelMechanicalActiveV146=') == 1
+          print('Mechanical finish funnel v146 contract: SUCCESS')
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text();m=re.search(r'<script type="module">(.*?)</script>',s,re.S);assert m
+          Path('/tmp/brainrot-module.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/brainrot-module.mjs
+          for f in scripts/final-puncher-physics-contract-v65.mjs scripts/final-finish-residual-momentum-check.mjs scripts/final-finish-soft-hold-check.mjs scripts/final-finish-charge-check.mjs scripts/second-pit-route-continuity-v70-check.mjs; do
+            if [ -f "$f" ]; then node "$f"; else echo "SKIP missing $f"; fi
+          done
+      - name: Commit real level change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-level-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
+          git commit -m "Level: mechanical finish funnel model v146"
+          git push origin HEAD:new-player-glb-overhaul
