@@ -1,0 +1,96 @@
+name: Apply First Pit Exit Landing v133
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-first-pit-exit-landing-v133.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+      - name: Model first pit exit landing v133
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          if 'FIRST_PIT_EXIT_LANDING_MODEL_V133=true' in s:
+              raise SystemExit('v133 already present')
+          old="firstSweeperToPitCarrierV132.add(firstPitLipV132);const SECOND_SWEEPER_STAGING_PAD_MODEL_V129=true;"
+          if old not in s:
+              raise SystemExit('v133 anchor missing')
+          new="""firstSweeperToPitCarrierV132.add(firstPitLipV132);const FIRST_PIT_EXIT_LANDING_MODEL_V133=true,FIRST_PIT_EXIT_Z_MIN=-3.50,FIRST_PIT_EXIT_Z_MAX=-1.86,FIRST_PIT_EXIT_HALF_X=1.55;const firstPitExitLandingV133=box(0,.024,(FIRST_PIT_EXIT_Z_MIN+FIRST_PIT_EXIT_Z_MAX)*.5,FIRST_PIT_EXIT_HALF_X*2,.048,FIRST_PIT_EXIT_Z_MAX-FIRST_PIT_EXIT_Z_MIN,0x44e7ff);firstPitExitLandingV133.name='FirstPitExitLandingLegacyFloorCarrierV133';firstPitExitLandingV133.material.transparent=true;firstPitExitLandingV133.material.opacity=.028;firstPitExitLandingV133.material.depthWrite=false;firstPitExitLandingV133.material.emissive=new THREE.Color(0x087fa8);firstPitExitLandingV133.material.emissiveIntensity=.12;const firstPitExitCyanV133=mat(0x44e7ff),firstPitExitDarkV133=mat(0x17273f),firstPitExitWhiteV133=mat(0xf1fdff),firstPitExitGreenV133=mat(0x49ff79),firstPitExitAmberV133=mat(0xffd84d);firstPitExitCyanV133.metalness=.32;firstPitExitCyanV133.roughness=.25;firstPitExitDarkV133.metalness=.48;firstPitExitDarkV133.roughness=.30;const firstPitExitSlatGeoV133=new THREE.BoxGeometry(2.62,.065,.18),firstPitExitRailGeoV133=new THREE.CapsuleGeometry(.04,1.40,4,8),firstPitExitRingGeoV133=new THREE.TorusGeometry(.11,.027,6,10),firstPitExitBraceGeoV133=new THREE.CylinderGeometry(.045,.065,2.52,8),firstPitExitBumperGeoV133=new THREE.CylinderGeometry(.10,.15,.30,8);[-.68,-.45,-.23,0,.23,.45,.68].forEach((z,i)=>{const slat=new THREE.Mesh(firstPitExitSlatGeoV133,i===3?firstPitExitWhiteV133:firstPitExitCyanV133);slat.name='FirstPitExitLandingSlatV133';slat.position.set(0,.070,z);slat.castShadow=slat.receiveShadow=true;slat.material.emissive=new THREE.Color(i===3?0xffffff:0x087fa8);slat.material.emissiveIntensity=i===3?.90:.46;firstPitExitLandingV133.add(slat)});[-1.31,1.31].forEach((x,i)=>{const rail=new THREE.Mesh(firstPitExitRailGeoV133,firstPitExitWhiteV133);rail.name='FirstPitExitLandingEdgeRailV133';rail.rotation.x=Math.PI/2;rail.position.set(x,.17,0);rail.castShadow=rail.receiveShadow=true;rail.material.emissive=new THREE.Color(i?0x49ff79:0x44e7ff);rail.material.emissiveIntensity=.70;firstPitExitLandingV133.add(rail);[-.58,.58].forEach((z,k)=>{const bumper=new THREE.Mesh(firstPitExitBumperGeoV133,firstPitExitDarkV133);bumper.name='FirstPitExitLandingBumperV133';bumper.rotation.z=Math.PI/2;bumper.position.set(x,.09,z);bumper.castShadow=bumper.receiveShadow=true;firstPitExitLandingV133.add(bumper);const beacon=new THREE.Mesh(firstPitExitRingGeoV133,k?firstPitExitGreenV133:firstPitExitCyanV133);beacon.name='FirstPitExitLandingBeaconV133';beacon.rotation.y=Math.PI/2;beacon.position.set(x,.14,z);beacon.castShadow=true;beacon.material.emissive=new THREE.Color(k?0x49ff79:0x44e7ff);beacon.material.emissiveIntensity=1.02;firstPitExitLandingV133.add(beacon)})});[-.82,0,.82].forEach((x,i)=>{const brace=new THREE.Mesh(firstPitExitBraceGeoV133,firstPitExitDarkV133);brace.name='FirstPitExitLandingCrossBraceV133';brace.rotation.z=Math.PI/2;brace.position.set(x,.026,0);brace.scale.x=.58;brace.castShadow=brace.receiveShadow=true;firstPitExitLandingV133.add(brace);const ring=new THREE.Mesh(firstPitExitRingGeoV133,i===1?firstPitExitAmberV133:firstPitExitWhiteV133);ring.name='FirstPitExitLandingGuideRingV133';ring.rotation.x=Math.PI/2;ring.position.set(x,.12,0);ring.castShadow=true;ring.material.emissive=new THREE.Color(i===1?0xffb12b:0x44e7ff);ring.material.emissiveIntensity=i===1?1.10:.80;firstPitExitLandingV133.add(ring)});const firstPitExitLandingLipV133=new THREE.Mesh(new THREE.CapsuleGeometry(.055,2.62,4,8),firstPitExitGreenV133);firstPitExitLandingLipV133.name='FirstPitExitLandingSafeLipV133';firstPitExitLandingLipV133.rotation.z=Math.PI/2;firstPitExitLandingLipV133.position.set(0,.13,FIRST_PIT_EXIT_Z_MIN-(FIRST_PIT_EXIT_Z_MIN+FIRST_PIT_EXIT_Z_MAX)*.5);firstPitExitLandingLipV133.castShadow=firstPitExitLandingLipV133.receiveShadow=true;firstPitExitLandingLipV133.material.emissive=new THREE.Color(0x19b24e);firstPitExitLandingLipV133.material.emissiveIntensity=1.0;firstPitExitLandingV133.add(firstPitExitLandingLipV133);const firstPitExitTimingLipV133=new THREE.Mesh(new THREE.CapsuleGeometry(.045,2.42,4,8),firstPitExitAmberV133);firstPitExitTimingLipV133.name='FirstPitExitLandingTimingLipV133';firstPitExitTimingLipV133.rotation.z=Math.PI/2;firstPitExitTimingLipV133.position.set(0,.12,FIRST_PIT_EXIT_Z_MAX-(FIRST_PIT_EXIT_Z_MIN+FIRST_PIT_EXIT_Z_MAX)*.5);firstPitExitTimingLipV133.castShadow=firstPitExitTimingLipV133.receiveShadow=true;firstPitExitTimingLipV133.material.emissive=new THREE.Color(0xffb12b);firstPitExitTimingLipV133.material.emissiveIntensity=.92;firstPitExitLandingV133.add(firstPitExitTimingLipV133);const SECOND_SWEEPER_STAGING_PAD_MODEL_V129=true;"""
+          s=s.replace(old,new,1)
+          p.write_text(s)
+      - name: Verify first pit exit landing v133 and preserved route
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=[
+            'FIRST_PIT_EXIT_LANDING_MODEL_V133=true',
+            'FIRST_PIT_EXIT_Z_MIN=-3.50',
+            'FIRST_PIT_EXIT_Z_MAX=-1.86',
+            'FIRST_PIT_EXIT_HALF_X=1.55',
+            'FirstPitExitLandingLegacyFloorCarrierV133',
+            'FirstPitExitLandingSlatV133',
+            'FirstPitExitLandingEdgeRailV133',
+            'FirstPitExitLandingBumperV133',
+            'FirstPitExitLandingBeaconV133',
+            'FirstPitExitLandingCrossBraceV133',
+            'FirstPitExitLandingGuideRingV133',
+            'FirstPitExitLandingSafeLipV133',
+            'FirstPitExitLandingTimingLipV133',
+            "PITS=[[-15.2,-13.55],[-4.85,-3.55],[5.05,5.82]]",
+            'FIRST_SWEEPER_TO_PIT_Z_MAX=-4.92',
+            'SECOND_SWEEPER_STAGING_Z_MIN=-1.82',
+            "[-2,-3]"
+          ]
+          for token in required:
+              assert token in s, token
+          assert s.count('FIRST_PIT_EXIT_LANDING_MODEL_V133=true') == 1
+          assert s.count("'FirstPitExitLandingLegacyFloorCarrierV133'") == 1
+          assert -3.50 > -3.55, 'landing overlaps first pit'
+          assert -1.86 <= -1.82, 'landing overlaps second sweeper staging zone'
+          print('First pit exit landing v133 contract: SUCCESS')
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          m=re.search(r'<script type="module">(.*?)</script>',s,re.S)
+          assert m, 'module script not found'
+          Path('/tmp/brainrot-module.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/brainrot-module.mjs
+          node scripts/final-puncher-physics-contract-v65.mjs
+          node scripts/final-finish-residual-momentum-check.mjs
+          node scripts/final-finish-soft-hold-check.mjs
+          node scripts/final-finish-charge-check.mjs
+      - name: Commit real level change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-level-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
+          git commit -m "Level: model first pit exit landing v133"
+          git push origin HEAD:new-player-glb-overhaul
