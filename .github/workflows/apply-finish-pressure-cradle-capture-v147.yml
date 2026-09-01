@@ -1,0 +1,79 @@
+name: Apply Finish Pressure Cradle Capture v147
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-finish-pressure-cradle-capture-v147.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+          test "$(git rev-parse HEAD^)" = "34d13ea1b3dcbb78dc6b30b8b9320652479fd526"
+          git merge-base --is-ancestor 34d13ea1b3dcbb78dc6b30b8b9320652479fd526 HEAD
+      - name: Model finish funnel to pressure cradle capture v147
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          if 'FINAL_PRESSURE_CRADLE_CAPTURE_MODEL_V147=true' in s:
+              raise SystemExit('v147 already present')
+          anchor='const FINAL_CHARGE_GATE_Z=10.88'
+          if s.count(anchor) != 1:
+              raise SystemExit(f'v147 charge gate anchor count={s.count(anchor)}')
+          model="""const FINAL_PRESSURE_CRADLE_CAPTURE_MODEL_V147=true,FINAL_PRESSURE_CAPTURE_Z0=FINAL_FINISH_FUNNEL_Z_MAX,FINAL_PRESSURE_CAPTURE_Z1=FINAL_CHARGE_GATE_Z,FINAL_PRESSURE_CAPTURE_Z=(FINAL_PRESSURE_CAPTURE_Z0+FINAL_PRESSURE_CAPTURE_Z1)*.5;const finalPressureCaptureV147=new THREE.Group();finalPressureCaptureV147.name='FinalPressureCradleCaptureAssemblyV147';finalPressureCaptureV147.position.set(0,0,FINAL_PRESSURE_CAPTURE_Z);scene.add(finalPressureCaptureV147);const pressureCaptureDarkV147=mat(0x121b2d),pressureCaptureSteelV147=mat(0xdbeeff),pressureCaptureGoldV147=mat(0xffcf45),pressureCaptureGreenV147=mat(0x4cff86),pressureCaptureCyanV147=mat(0x49e6ff);pressureCaptureDarkV147.metalness=.68;pressureCaptureDarkV147.roughness=.24;pressureCaptureSteelV147.metalness=.55;pressureCaptureSteelV147.roughness=.18;const pressureCaptureDeckV147=new THREE.Mesh(new THREE.BoxGeometry(4.30,.10,FINAL_PRESSURE_CAPTURE_Z1-FINAL_PRESSURE_CAPTURE_Z0+.08),pressureCaptureDarkV147);pressureCaptureDeckV147.name='FinalPressureCaptureDeckV147';pressureCaptureDeckV147.position.y=.055;pressureCaptureDeckV147.castShadow=pressureCaptureDeckV147.receiveShadow=true;finalPressureCaptureV147.add(pressureCaptureDeckV147);[-.12,0,.12].forEach((z,i)=>{const rib=new THREE.Mesh(new THREE.BoxGeometry(4.04,.065,.055),i===1?pressureCaptureGoldV147:pressureCaptureSteelV147);rib.name='FinalPressureCaptureDeckRibV147';rib.position.set(0,.13,z);rib.castShadow=rib.receiveShadow=true;rib.material.emissive=new THREE.Color(i===1?0xc89700:0x175f78);rib.material.emissiveIntensity=i===1?.82:.34;finalPressureCaptureV147.add(rib)});const finalPressureCaptureArmsV147=[],finalPressureCaptureRollersV147=[],finalPressureCaptureLampsV147=[];[-1,1].forEach((side,si)=>{const tower=new THREE.Mesh(new THREE.BoxGeometry(.24,.92,.24),pressureCaptureDarkV147);tower.name='FinalPressureCaptureTowerV147';tower.position.set(side*1.88,.48,0);tower.castShadow=tower.receiveShadow=true;finalPressureCaptureV147.add(tower);const towerHalo=new THREE.Mesh(new THREE.TorusGeometry(.17,.035,7,14),si?pressureCaptureCyanV147:pressureCaptureGreenV147);towerHalo.name='FinalPressureCaptureTowerHaloV147';towerHalo.rotation.x=Math.PI/2;towerHalo.position.set(side*1.88,.70,0);towerHalo.castShadow=true;towerHalo.material.emissive=new THREE.Color(si?0x087ea8:0x149847);towerHalo.material.emissiveIntensity=.92;finalPressureCaptureV147.add(towerHalo);const armPivot=new THREE.Group();armPivot.name='FinalPressureCaptureArmPivotV147';armPivot.position.set(side*1.76,.42,.015);armPivot.userData.side=side;const arm=new THREE.Mesh(new THREE.BoxGeometry(.92,.15,.20),pressureCaptureSteelV147);arm.name='FinalPressureCaptureGuideArmV147';arm.position.x=-side*.43;arm.castShadow=arm.receiveShadow=true;arm.material.emissive=new THREE.Color(si?0x087ea8:0x149847);arm.material.emissiveIntensity=.42;armPivot.add(arm);[-.68,-.30].forEach((x,k)=>{const roller=new THREE.Mesh(new THREE.CylinderGeometry(.095,.095,.18,10),k?pressureCaptureGoldV147:(si?pressureCaptureCyanV147:pressureCaptureGreenV147));roller.name='FinalPressureCaptureRollerV147';roller.rotation.z=Math.PI/2;roller.position.set(side*x,0,.02);roller.castShadow=roller.receiveShadow=true;roller.material.emissive=new THREE.Color(k?0xc89700:(si?0x087ea8:0x149847));roller.material.emissiveIntensity=.78;armPivot.add(roller);finalPressureCaptureRollersV147.push(roller)});finalPressureCaptureV147.add(armPivot);finalPressureCaptureArmsV147.push(armPivot);const beacon=new THREE.Mesh(new THREE.OctahedronGeometry(.10,0),si?pressureCaptureCyanV147:pressureCaptureGreenV147);beacon.name='FinalPressureCaptureBeaconV147';beacon.position.set(side*1.88,1.03,.02);beacon.castShadow=true;beacon.material.emissive=new THREE.Color(si?0x087ea8:0x149847);beacon.material.emissiveIntensity=1.0;finalPressureCaptureV147.add(beacon);finalPressureCaptureLampsV147.push(beacon)});const pressureCaptureArchV147=new THREE.Mesh(new THREE.BoxGeometry(4.02,.16,.16),pressureCaptureDarkV147);pressureCaptureArchV147.name='FinalPressureCaptureTimingArchV147';pressureCaptureArchV147.position.set(0,1.18,.02);pressureCaptureArchV147.castShadow=pressureCaptureArchV147.receiveShadow=true;finalPressureCaptureV147.add(pressureCaptureArchV147);[-1.25,-.63,0,.63,1.25].forEach((x,i)=>{const lamp=new THREE.Mesh(new THREE.OctahedronGeometry(.085,0),i===2?pressureCaptureGoldV147:pressureCaptureSteelV147);lamp.name='FinalPressureCaptureArchLampV147';lamp.position.set(x,1.18,.12);lamp.castShadow=true;lamp.material.emissive=new THREE.Color(i===2?0xc89700:(i<2?0x149847:0x087ea8));lamp.material.emissiveIntensity=.88;finalPressureCaptureV147.add(lamp);finalPressureCaptureLampsV147.push(lamp)});const pressureCaptureRingV147=new THREE.Mesh(new THREE.TorusGeometry(.31,.05,8,18),pressureCaptureGoldV147);pressureCaptureRingV147.name='FinalPressureCaptureLockRingV147';pressureCaptureRingV147.rotation.x=Math.PI/2;pressureCaptureRingV147.position.set(0,.20,.02);pressureCaptureRingV147.castShadow=true;pressureCaptureRingV147.material.emissive=new THREE.Color(0xc89700);pressureCaptureRingV147.material.emissiveIntensity=.92;finalPressureCaptureV147.add(pressureCaptureRingV147);"""
+          s=s.replace(anchor,model+anchor,1)
+          tick_anchor='const finalFinishFunnelActive='
+          if s.count(tick_anchor) != 1:
+              raise SystemExit(f'v147 tick anchor count={s.count(tick_anchor)}')
+          tick="""const finalPressureCaptureActiveV147=finalGauntletCleared&&p.z>=FINAL_PRESSURE_CAPTURE_Z0-.08&&p.z<=FINAL_PRESSURE_CAPTURE_Z1+.08&&!win&&failTimer<=0,finalPressureCaptureProgressV147=Math.max(0,Math.min(1,(p.z-FINAL_PRESSURE_CAPTURE_Z0)/(FINAL_PRESSURE_CAPTURE_Z1-FINAL_PRESSURE_CAPTURE_Z0))),finalPressureCapturePulseV147=.5+.5*Math.sin(t*13.4);finalPressureCaptureArmsV147.forEach((n,i)=>{const side=n.userData.side,close=.18+.58*finalPressureCaptureProgressV147;n.rotation.z=side*(.28-close*.22);n.position.x=side*(1.76-.16*finalPressureCaptureProgressV147);n.children.forEach(c=>{if(c.isMesh&&c.material?.emissive)c.material.emissiveIntensity=finalPressureCaptureActiveV147?.62+.48*finalPressureCapturePulseV147:.40})});finalPressureCaptureRollersV147.forEach((n,i)=>{n.rotation.x+=dt*(finalPressureCaptureActiveV147?8.2:1.0)*(i%2?-1:1);n.material.emissiveIntensity=finalPressureCaptureActiveV147?.82+.42*finalPressureCapturePulseV147:.58});finalPressureCaptureLampsV147.forEach((n,i)=>{const latched=finalPressureCaptureProgressV147>=i/Math.max(1,finalPressureCaptureLampsV147.length-1);n.material.color.setHex(latched?0x4cff86:(i%2?0x49e6ff:0xffcf45));n.material.emissive.setHex(latched?0x149847:(i%2?0x087ea8:0xc89700));n.material.emissiveIntensity=finalPressureCaptureActiveV147?(latched?1.18+.48*finalPressureCapturePulseV147:.70+.20*finalPressureCapturePulseV147):.68});pressureCaptureDeckV147.material.emissive=pressureCaptureDeckV147.material.emissive||new THREE.Color(0x149847);pressureCaptureDeckV147.material.emissiveIntensity=finalPressureCaptureActiveV147?.16+.46*finalPressureCaptureProgressV147:.06;pressureCaptureArchV147.material.emissive=pressureCaptureArchV147.material.emissive||new THREE.Color(0x087ea8);pressureCaptureArchV147.material.emissiveIntensity=finalPressureCaptureActiveV147?.24+.56*finalPressureCapturePulseV147:.08;pressureCaptureRingV147.rotation.z+=dt*(finalPressureCaptureActiveV147?2.2:.22);pressureCaptureRingV147.material.emissiveIntensity=finalPressureCaptureActiveV147?.96+.50*finalPressureCapturePulseV147:.68;"""
+          s=s.replace(tick_anchor,tick+tick_anchor,1)
+          p.write_text(s)
+      - name: Verify v147 model and preserved finish physics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=['FINAL_PRESSURE_CRADLE_CAPTURE_MODEL_V147=true','FinalPressureCradleCaptureAssemblyV147','FinalPressureCaptureDeckV147','FinalPressureCaptureTowerV147','FinalPressureCaptureGuideArmV147','FinalPressureCaptureRollerV147','FinalPressureCaptureTimingArchV147','FinalPressureCaptureLockRingV147','FINAL_FINISH_FUNNEL_MECHANICAL_MODEL_V146=true','FINAL_FINISH_FUNNEL_DAMP=10.5','FINAL_FINISH_FUNNEL_PULL=1.75','FINAL_CHARGE_CRADLE_DAMP=15.5','FINAL_CHARGE_GATE_Z=10.88']
+          for token in required: assert token in s, token
+          assert s.count('FINAL_PRESSURE_CRADLE_CAPTURE_MODEL_V147=true') == 1
+          assert s.count('const finalPressureCaptureActiveV147=') == 1
+          print('Finish pressure cradle capture v147 contract: SUCCESS')
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text();m=re.search(r'<script type="module">(.*?)</script>',s,re.S);assert m
+          Path('/tmp/brainrot-module.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/brainrot-module.mjs
+          for f in scripts/final-puncher-physics-contract-v65.mjs scripts/final-finish-residual-momentum-check.mjs scripts/final-finish-soft-hold-check.mjs scripts/final-finish-charge-check.mjs scripts/second-pit-route-continuity-v70-check.mjs; do
+            if [ -f "$f" ]; then node "$f"; else echo "SKIP missing $f"; fi
+          done
+      - name: Commit real level change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-level-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
+          git commit -m "Level: mechanical finish pressure cradle capture v147"
+          git push origin HEAD:new-player-glb-overhaul
