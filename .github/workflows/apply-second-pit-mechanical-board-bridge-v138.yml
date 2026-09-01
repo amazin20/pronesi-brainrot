@@ -1,0 +1,101 @@
+name: Apply Second Pit Mechanical Board Bridge v138
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-second-pit-mechanical-board-bridge-v138.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+          test "$(git rev-parse HEAD^)" = "5117380b92eb8c1a52eb4eafdf8bc30f9b1d33d5"
+      - name: Model mechanical second pit board bridge v138
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          if 'SECOND_PIT_BOARD_BRIDGE_MECH_V138=true' in s:
+              raise SystemExit('v138 already present')
+          anchor='secondPitBoardBridge.visible=false;const SECOND_PIT_EXIT_MODEL_V94=true'
+          if s.count(anchor) != 1:
+              raise SystemExit(f'v138 model anchor count={s.count(anchor)}')
+          model="""secondPitBoardBridge.visible=false;const SECOND_PIT_BOARD_BRIDGE_MECH_V138=true;const secondPitBoardBridgeMechV138=new THREE.Group();secondPitBoardBridgeMechV138.name='SecondPitBoardBridgeMechanicalAssemblyV138';secondPitBoardBridgeMechV138.position.set(0,0,SECOND_PIT_BOARD_BRIDGE_Z);secondPitBoardBridgeMechV138.visible=false;scene.add(secondPitBoardBridgeMechV138);const boardBridgeGreenV138=mat(0x49ff79),boardBridgeCyanV138=mat(0x44e7ff),boardBridgeDarkV138=mat(0x102c2d),boardBridgeWhiteV138=mat(0xf2fff7),boardBridgeAmberV138=mat(0xffd84d);boardBridgeGreenV138.metalness=.34;boardBridgeGreenV138.roughness=.24;boardBridgeCyanV138.metalness=.36;boardBridgeCyanV138.roughness=.23;boardBridgeDarkV138.metalness=.58;boardBridgeDarkV138.roughness=.28;const boardBridgeFrameV138=new THREE.Mesh(new THREE.BoxGeometry(2.72,.10,.28),boardBridgeDarkV138);boardBridgeFrameV138.name='SecondPitBoardBridgeFrameV138';boardBridgeFrameV138.position.y=.045;boardBridgeFrameV138.castShadow=boardBridgeFrameV138.receiveShadow=true;secondPitBoardBridgeMechV138.add(boardBridgeFrameV138);[-1.12,-.75,-.38,0,.38,.75,1.12].forEach((x,i)=>{const rib=new THREE.Mesh(new THREE.BoxGeometry(.27,.07,.32),i===3?boardBridgeWhiteV138:(i<3?boardBridgeGreenV138:boardBridgeCyanV138));rib.name='SecondPitBoardBridgeRibV138';rib.position.set(x,.115,0);rib.castShadow=rib.receiveShadow=true;rib.material.emissive=new THREE.Color(i===3?0xffffff:(i<3?0x159b43:0x087fa8));rib.material.emissiveIntensity=i===3?.78:.44;secondPitBoardBridgeMechV138.add(rib)});[-.22,.22].forEach((z,i)=>{const rail=new THREE.Mesh(new THREE.CapsuleGeometry(.04,2.44,4,8),boardBridgeWhiteV138);rail.name='SecondPitBoardBridgeSideRailV138';rail.rotation.z=Math.PI/2;rail.position.set(0,.205,z);rail.castShadow=rail.receiveShadow=true;rail.material.emissive=new THREE.Color(i?0x44e7ff:0x49ff79);rail.material.emissiveIntensity=.64;secondPitBoardBridgeMechV138.add(rail)});[-.72,0,.72].forEach((x,i)=>{const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.04,.055,.38,8),boardBridgeDarkV138);shaft.name='SecondPitBoardBridgeDrivelineV138';shaft.rotation.x=Math.PI/2;shaft.position.set(x,.04,0);shaft.castShadow=shaft.receiveShadow=true;secondPitBoardBridgeMechV138.add(shaft);const guide=new THREE.Mesh(new THREE.TorusGeometry(.105,.026,6,10),i===1?boardBridgeAmberV138:boardBridgeWhiteV138);guide.name='SecondPitBoardBridgeGuideRingV138';guide.rotation.x=Math.PI/2;guide.position.set(x,.145,0);guide.castShadow=true;guide.material.emissive=new THREE.Color(i===1?0xffb12b:(x<0?0x49ff79:0x44e7ff));guide.material.emissiveIntensity=i===1?1.08:.78;secondPitBoardBridgeMechV138.add(guide)});const boardBridgePistonsV138=[],boardBridgeClampsV138=[],boardBridgeGuideLampsV138=[];[-1,1].forEach((side,i)=>{const gearbox=new THREE.Mesh(new THREE.CylinderGeometry(.13,.17,.24,10),boardBridgeDarkV138);gearbox.name='SecondPitBoardBridgeGearboxV138';gearbox.rotation.z=Math.PI/2;gearbox.position.set(side*1.28,.10,0);gearbox.castShadow=gearbox.receiveShadow=true;secondPitBoardBridgeMechV138.add(gearbox);const gearRing=new THREE.Mesh(new THREE.TorusGeometry(.17,.036,7,12),i?boardBridgeCyanV138:boardBridgeGreenV138);gearRing.name='SecondPitBoardBridgeGearRingV138';gearRing.rotation.y=Math.PI/2;gearRing.position.set(side*1.28,.10,0);gearRing.castShadow=true;gearRing.material.emissive=new THREE.Color(i?0x44e7ff:0x49ff79);gearRing.material.emissiveIntensity=.92;secondPitBoardBridgeMechV138.add(gearRing);const piston=new THREE.Mesh(new THREE.BoxGeometry(.54,.075,.095),i?boardBridgeCyanV138:boardBridgeGreenV138);piston.name='SecondPitBoardBridgeActuatorV138';piston.position.set(side*1.02,.055,0);piston.castShadow=piston.receiveShadow=true;piston.userData.side=side;secondPitBoardBridgeMechV138.add(piston);boardBridgePistonsV138.push(piston);const clamp=new THREE.Mesh(new THREE.BoxGeometry(.12,.40,.11),boardBridgeWhiteV138);clamp.name='SecondPitBoardBridgeDockClampV138';clamp.position.set(side*1.39,.21,0);clamp.rotation.z=side*.46;clamp.castShadow=clamp.receiveShadow=true;clamp.userData.side=side;clamp.material.emissive=new THREE.Color(i?0x44e7ff:0x49ff79);clamp.material.emissiveIntensity=.62;secondPitBoardBridgeMechV138.add(clamp);boardBridgeClampsV138.push(clamp);const lamp=new THREE.Mesh(new THREE.OctahedronGeometry(.085,0),boardBridgeWhiteV138);lamp.name='SecondPitBoardBridgeDockLampV138';lamp.position.set(side*1.34,.42,0);lamp.castShadow=true;lamp.material.emissive=new THREE.Color(i?0x44e7ff:0x49ff79);lamp.material.emissiveIntensity=.90;secondPitBoardBridgeMechV138.add(lamp);boardBridgeGuideLampsV138.push(lamp)});const SECOND_PIT_EXIT_MODEL_V94=true"""
+          s=s.replace(anchor,model,1)
+          tick_anchor='secondPitBoardBridge.material.emissiveIntensity=secondPitBoardBridgeActive?1.25+.55*(.5+.5*Math.sin(t*11)):0;'
+          if s.count(tick_anchor) != 1:
+              raise SystemExit(f'v138 tick anchor count={s.count(tick_anchor)}')
+          tick="""const boardBridgeDockPlatformV138=secondPitBoardingIndex>=0?secondPitPlatforms[secondPitBoardingIndex]:null,boardBridgeDockErrorV138=boardBridgeDockPlatformV138?Math.abs(boardBridgeDockPlatformV138.mesh.position.x-boardBridgeDockPlatformV138.side*SECOND_PIT_BOARD_X):SECOND_PLATFORM_BASE_X,boardBridgeDockProgressV138=holdActive?Math.max(0,Math.min(1,1-boardBridgeDockErrorV138/1.18)):0,boardBridgePulseV138=.5+.5*Math.sin(t*10.5);secondPitBoardBridgeMechV138.visible=holdActive||secondPitBoardBridgeActive;secondPitBoardBridgeMechV138.position.y=-.045+.065*boardBridgeDockProgressV138;boardBridgePistonsV138.forEach((n,i)=>{const side=n.userData.side;n.scale.x=.34+.66*boardBridgeDockProgressV138;n.position.x=side*(1.10-.22*boardBridgeDockProgressV138);n.material.emissive=n.material.emissive||new THREE.Color(i?0x44e7ff:0x49ff79);n.material.emissiveIntensity=.42+.72*boardBridgeDockProgressV138});boardBridgeClampsV138.forEach(n=>{const side=n.userData.side;n.rotation.z=side*(.46*(1-boardBridgeDockProgressV138));n.material.emissiveIntensity=.62+.72*boardBridgeDockProgressV138});boardBridgeGuideLampsV138.forEach((n,i)=>{const selected=boardBridgeDockPlatformV138&&boardBridgeDockPlatformV138.side===(i?1:-1);n.material.emissiveIntensity=selected?(1.05+.75*boardBridgePulseV138):.55});boardBridgeFrameV138.material.emissive=boardBridgeFrameV138.material.emissive||new THREE.Color(0x123f35);boardBridgeFrameV138.material.emissiveIntensity=.24+.58*boardBridgeDockProgressV138;"""
+          s=s.replace(tick_anchor,tick_anchor+tick,1)
+          p.write_text(s)
+      - name: Verify v138 bridge and preserved gameplay
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=[
+            'SECOND_PIT_BOARD_BRIDGE_MECH_V138=true',
+            'SecondPitBoardBridgeMechanicalAssemblyV138',
+            'SecondPitBoardBridgeFrameV138',
+            'SecondPitBoardBridgeRibV138',
+            'SecondPitBoardBridgeSideRailV138',
+            'SecondPitBoardBridgeDrivelineV138',
+            'SecondPitBoardBridgeGearboxV138',
+            'SecondPitBoardBridgeActuatorV138',
+            'SecondPitBoardBridgeDockClampV138',
+            'SecondPitBoardBridgeDockLampV138',
+            'boardBridgeDockProgressV138=holdActive?Math.max(0,Math.min(1,1-boardBridgeDockErrorV138/1.18)):0',
+            'SECOND_PIT_BOARD_BRIDGE_MODEL_V107=true',
+            'SecondPitBoardBridgeCollisionDeckV107',
+            'SECOND_PIT_BOARD_X=.16',
+            'SECOND_PIT_BOARD_SPEED=2.6',
+            'function onSecondPitBoardBridge',
+            'secondPitBoardBridge.visible=secondPitBoardBridgeActive'
+          ]
+          for token in required:
+              assert token in s, token
+          assert s.count('SECOND_PIT_BOARD_BRIDGE_MECH_V138=true') == 1
+          assert s.count("'SecondPitBoardBridgeMechanicalAssemblyV138'") == 1
+          assert s.count('SECOND_PIT_BOARD_X=.16') == 1
+          assert s.count('SECOND_PIT_BOARD_SPEED=2.6') == 1
+          print('Second pit mechanical board bridge v138 contract: SUCCESS')
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          m=re.search(r'<script type="module">(.*?)</script>',s,re.S)
+          assert m, 'module script not found'
+          Path('/tmp/brainrot-module.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/brainrot-module.mjs
+          for f in scripts/second-pit-carry-window-check.mjs scripts/second-pit-platform-motion-v71-check.mjs scripts/second-pit-route-continuity-v70-check.mjs scripts/final-puncher-physics-contract-v65.mjs scripts/final-finish-residual-momentum-check.mjs scripts/final-finish-soft-hold-check.mjs scripts/final-finish-charge-check.mjs; do
+            if [ -f "$f" ]; then node "$f"; else echo "SKIP missing $f"; fi
+          done
+      - name: Commit real level change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-level-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
+          git commit -m "Level: mechanical second pit board bridge v138"
+          git push origin HEAD:new-player-glb-overhaul
