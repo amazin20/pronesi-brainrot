@@ -1,0 +1,79 @@
+name: Apply Second Pit Mechanical Exit Bridge v139
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-second-pit-mechanical-exit-bridge-v139.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+          test "$(git rev-parse HEAD^)" = "38c72ab75ded1c35e9109d8ee493e7cbb24ddf88"
+      - name: Model mechanical second pit exit bridge v139
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          if 'SECOND_PIT_EXIT_BRIDGE_MECH_V139=true' in s:
+              raise SystemExit('v139 already present')
+          anchor="scene.add(secondPitExitCenterRail);const SECOND_PIT_FUNNEL_HALF_X="
+          if s.count(anchor) != 1:
+              raise SystemExit(f'v139 model anchor count={s.count(anchor)}')
+          model="""scene.add(secondPitExitCenterRail);const SECOND_PIT_EXIT_BRIDGE_MECH_V139=true;const secondPitExitBridgeMechV139=new THREE.Group();secondPitExitBridgeMechV139.name='SecondPitExitBridgeMechanicalAssemblyV139';secondPitExitBridgeMechV139.position.set(0,0,SECOND_PIT_EXIT_BRIDGE_Z);scene.add(secondPitExitBridgeMechV139);const exitBridgeGreenV139=mat(0x49ff79),exitBridgeCyanV139=mat(0x44e7ff),exitBridgeDarkV139=mat(0x102c2d),exitBridgeWhiteV139=mat(0xf2fff7),exitBridgeAmberV139=mat(0xffd84d);exitBridgeGreenV139.metalness=.34;exitBridgeGreenV139.roughness=.24;exitBridgeCyanV139.metalness=.36;exitBridgeCyanV139.roughness=.23;exitBridgeDarkV139.metalness=.58;exitBridgeDarkV139.roughness=.28;const exitBridgeFrameGeoV139=new THREE.BoxGeometry(3.28,.10,.44),exitBridgeRibGeoV139=new THREE.BoxGeometry(.36,.075,.48),exitBridgeRailGeoV139=new THREE.CapsuleGeometry(.04,3.02,4,8),exitBridgePostGeoV139=new THREE.CylinderGeometry(.075,.11,.76,8),exitBridgeRingGeoV139=new THREE.TorusGeometry(.115,.028,6,10),exitBridgeActuatorGeoV139=new THREE.BoxGeometry(.48,.08,.12);const exitBridgeFrameV139=new THREE.Mesh(exitBridgeFrameGeoV139,exitBridgeDarkV139);exitBridgeFrameV139.name='SecondPitExitBridgeFrameV139';exitBridgeFrameV139.position.y=.045;exitBridgeFrameV139.castShadow=exitBridgeFrameV139.receiveShadow=true;secondPitExitBridgeMechV139.add(exitBridgeFrameV139);[-1.42,-.95,-.48,0,.48,.95,1.42].forEach((x,i)=>{const rib=new THREE.Mesh(exitBridgeRibGeoV139,i===3?exitBridgeWhiteV139:(i<3?exitBridgeCyanV139:exitBridgeGreenV139));rib.name='SecondPitExitBridgeRibV139';rib.position.set(x,.115,0);rib.castShadow=rib.receiveShadow=true;rib.material.emissive=new THREE.Color(i===3?0xffffff:(i<3?0x087fa8:0x159b43));rib.material.emissiveIntensity=i===3?.82:.46;secondPitExitBridgeMechV139.add(rib)});[-.235,.235].forEach((z,i)=>{const rail=new THREE.Mesh(exitBridgeRailGeoV139,exitBridgeWhiteV139);rail.name='SecondPitExitBridgeEdgeRailV139';rail.rotation.z=Math.PI/2;rail.position.set(0,.205,z);rail.castShadow=rail.receiveShadow=true;rail.material.emissive=new THREE.Color(i?0x49ff79:0x44e7ff);rail.material.emissiveIntensity=.66;secondPitExitBridgeMechV139.add(rail)});const exitBridgeActuatorsV139=[],exitBridgeReleaseClampsV139=[],exitBridgeReleaseLampsV139=[];[-1,1].forEach((side,i)=>{const post=new THREE.Mesh(exitBridgePostGeoV139,exitBridgeDarkV139);post.name='SecondPitExitBridgeReleasePostV139';post.position.set(side*1.52,.38,.12);post.castShadow=post.receiveShadow=true;secondPitExitBridgeMechV139.add(post);const collar=new THREE.Mesh(exitBridgeRingGeoV139,i?exitBridgeGreenV139:exitBridgeCyanV139);collar.name='SecondPitExitBridgeReleaseCollarV139';collar.rotation.x=Math.PI/2;collar.position.set(side*1.52,.76,.12);collar.castShadow=true;collar.material.emissive=new THREE.Color(i?0x49ff79:0x44e7ff);collar.material.emissiveIntensity=.92;secondPitExitBridgeMechV139.add(collar);const actuator=new THREE.Mesh(exitBridgeActuatorGeoV139,i?exitBridgeGreenV139:exitBridgeCyanV139);actuator.name='SecondPitExitBridgeActuatorV139';actuator.position.set(side*1.24,.075,-.08);actuator.castShadow=actuator.receiveShadow=true;actuator.userData.side=side;secondPitExitBridgeMechV139.add(actuator);exitBridgeActuatorsV139.push(actuator);const clamp=new THREE.Mesh(new THREE.BoxGeometry(.11,.38,.12),exitBridgeWhiteV139);clamp.name='SecondPitExitBridgeReleaseClampV139';clamp.position.set(side*1.60,.23,-.05);clamp.rotation.z=side*.40;clamp.castShadow=clamp.receiveShadow=true;clamp.userData.side=side;clamp.material.emissive=new THREE.Color(i?0x49ff79:0x44e7ff);clamp.material.emissiveIntensity=.62;secondPitExitBridgeMechV139.add(clamp);exitBridgeReleaseClampsV139.push(clamp);const lamp=new THREE.Mesh(new THREE.OctahedronGeometry(.09,0),exitBridgeWhiteV139);lamp.name='SecondPitExitBridgeReleaseLampV139';lamp.position.set(side*1.46,.82,.12);lamp.castShadow=true;lamp.material.emissive=new THREE.Color(i?0x49ff79:0x44e7ff);lamp.material.emissiveIntensity=.88;secondPitExitBridgeMechV139.add(lamp);exitBridgeReleaseLampsV139.push(lamp)});[-.92,-.46,0,.46,.92].forEach((x,i)=>{const ring=new THREE.Mesh(exitBridgeRingGeoV139,i===2?exitBridgeAmberV139:exitBridgeWhiteV139);ring.name='SecondPitExitBridgeReleaseGuideV139';ring.rotation.x=Math.PI/2;ring.position.set(x,.16,.05);ring.castShadow=true;ring.material.emissive=new THREE.Color(i===2?0xffb12b:(i<2?0x44e7ff:0x49ff79));ring.material.emissiveIntensity=i===2?1.08:.76;secondPitExitBridgeMechV139.add(ring)});const exitBridgeReleaseBeamV139=new THREE.Mesh(new THREE.CapsuleGeometry(.06,2.88,4,8),exitBridgeDarkV139);exitBridgeReleaseBeamV139.name='SecondPitExitBridgeReleaseBeamV139';exitBridgeReleaseBeamV139.rotation.z=Math.PI/2;exitBridgeReleaseBeamV139.position.set(0,1.02,.12);exitBridgeReleaseBeamV139.castShadow=exitBridgeReleaseBeamV139.receiveShadow=true;secondPitExitBridgeMechV139.add(exitBridgeReleaseBeamV139);const SECOND_PIT_FUNNEL_HALF_X="""
+          s=s.replace(anchor,model,1)
+          tick_anchor="secondPitExitBridge.material.emissiveIntensity=crossing?1.45+.45*pulse:.9;secondPitExitPad.material.emissiveIntensity=crossing?1.4+.35*pulse:.58;"
+          if s.count(tick_anchor) != 1:
+              raise SystemExit(f'v139 tick anchor count={s.count(tick_anchor)}')
+          tick="""const exitBridgeEntryZV139=SECOND_PIT_EXIT_BRIDGE_Z-SECOND_PIT_EXIT_BRIDGE_HALF_Z,exitBridgeReleaseSpanV139=Math.max(.01,SECOND_PIT_EXIT_RELEASE_Z-exitBridgeEntryZV139),exitBridgeReleaseProgressV139=crossing?Math.max(0,Math.min(1,(p.z-exitBridgeEntryZV139)/exitBridgeReleaseSpanV139)):0,exitBridgeReleasePulseV139=.5+.5*Math.sin(t*11.5),exitBridgeCaptureV139=crossing&&p.z>exitBridgeEntryZV139-.12;exitBridgeActuatorsV139.forEach(n=>{const side=n.userData.side;n.scale.x=.42+.58*exitBridgeReleaseProgressV139;n.position.x=side*(1.30-.16*exitBridgeReleaseProgressV139);n.material.emissive=n.material.emissive||new THREE.Color(side>0?0x49ff79:0x44e7ff);n.material.emissiveIntensity=.44+.78*exitBridgeReleaseProgressV139});exitBridgeReleaseClampsV139.forEach(n=>{const side=n.userData.side;n.rotation.z=side*(.40*(1-exitBridgeReleaseProgressV139));n.position.y=.23+.08*exitBridgeReleaseProgressV139;n.material.emissiveIntensity=.62+.82*exitBridgeReleaseProgressV139});exitBridgeReleaseLampsV139.forEach((n,i)=>{n.material.color.setHex(exitBridgeCaptureV139?0x49ff79:(i?0x49ff79:0x44e7ff));n.material.emissive.setHex(exitBridgeCaptureV139?0x19b24e:(i?0x49ff79:0x44e7ff));n.material.emissiveIntensity=exitBridgeCaptureV139?1.15+.75*exitBridgeReleasePulseV139:.88});exitBridgeFrameV139.material.emissive=exitBridgeFrameV139.material.emissive||new THREE.Color(0x123f35);exitBridgeFrameV139.material.emissiveIntensity=.24+.72*exitBridgeReleaseProgressV139;exitBridgeReleaseBeamV139.material.emissive=exitBridgeReleaseBeamV139.material.emissive||new THREE.Color(0x159b43);exitBridgeReleaseBeamV139.material.emissiveIntensity=exitBridgeCaptureV139?.58+.70*exitBridgeReleasePulseV139:.22;secondPitExitBridgeMechV139.children.forEach(n=>{if(!n.isMesh||!n.material?.emissive)return;if(n.name==='SecondPitExitBridgeRibV139'||n.name==='SecondPitExitBridgeReleaseGuideV139')n.material.emissiveIntensity=exitBridgeCaptureV139?.72+.48*exitBridgeReleaseProgressV139+.22*exitBridgeReleasePulseV139:(n.name==='SecondPitExitBridgeReleaseGuideV139'?.76:.46)});"""
+          s=s.replace(tick_anchor,tick_anchor+tick,1)
+          p.write_text(s)
+      - name: Verify v139 exit bridge and preserved gameplay
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=['SECOND_PIT_EXIT_BRIDGE_MECH_V139=true','SecondPitExitBridgeMechanicalAssemblyV139','SecondPitExitBridgeFrameV139','SecondPitExitBridgeRibV139','SecondPitExitBridgeEdgeRailV139','SecondPitExitBridgeReleasePostV139','SecondPitExitBridgeActuatorV139','SecondPitExitBridgeReleaseClampV139','SecondPitExitBridgeReleaseLampV139','SecondPitExitBridgeReleaseGuideV139','SecondPitExitBridgeReleaseBeamV139','exitBridgeReleaseProgressV139=crossing?Math.max(0,Math.min(1,(p.z-exitBridgeEntryZV139)/exitBridgeReleaseSpanV139)):0','SECOND_PIT_EXIT_RELEASE_Z=6.02','SECOND_PIT_EXIT_MODEL_V94=true','SecondPitExitCollisionDeckV94','function onSecondPitExitBridge']
+          for token in required: assert token in s, token
+          assert s.count('SECOND_PIT_EXIT_BRIDGE_MECH_V139=true') == 1
+          assert s.count("'SecondPitExitBridgeMechanicalAssemblyV139'") == 1
+          assert s.count('SECOND_PIT_EXIT_RELEASE_Z=6.02') == 1
+          print('Second pit mechanical exit bridge v139 contract: SUCCESS')
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text(); m=re.search(r'<script type="module">(.*?)</script>',s,re.S); assert m
+          Path('/tmp/brainrot-module.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/brainrot-module.mjs
+          for f in scripts/second-pit-carry-window-check.mjs scripts/second-pit-platform-motion-v71-check.mjs scripts/second-pit-route-continuity-v70-check.mjs scripts/second-pit-boarding-hold-check.mjs scripts/final-puncher-physics-contract-v65.mjs scripts/final-finish-residual-momentum-check.mjs scripts/final-finish-soft-hold-check.mjs scripts/final-finish-charge-check.mjs; do
+            if [ -f "$f" ]; then node "$f"; else echo "SKIP missing $f"; fi
+          done
+      - name: Commit real level change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-level-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
+          git commit -m "Level: mechanical second pit exit bridge v139"
+          git push origin HEAD:new-player-glb-overhaul
