@@ -1,0 +1,80 @@
+name: Apply Second Final Puncher Model v143
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-final-second-puncher-model-v143.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+          test "$(git rev-parse HEAD^)" = "95fffc76e2bd00f9e39015a625a32505345808e0"
+      - name: Model second final puncher v143
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          if 'FINAL_SECOND_PUNCHER_MODEL_V143=true' in s:
+              raise SystemExit('v143 already present')
+          anchor='const FINAL_SIDE_TOWER_MODEL_V82=true;'
+          if s.count(anchor) != 1:
+              raise SystemExit(f'v143 model anchor count={s.count(anchor)}')
+          model="""const FINAL_SECOND_PUNCHER_MODEL_V143=true;function modelSecondFinalPuncherV143(h){[h.mesh,h.cap].forEach(root=>root.traverse(o=>{if(!o.isMesh||!o.material)return;o.name=o===h.mesh?'SecondFinalPuncherLegacyCollisionCarrierV143':'SecondFinalPuncherLegacyPartV143';o.material.transparent=true;o.material.opacity=.025;o.material.depthWrite=false}));const g=new THREE.Group();g.name='SecondFinalPuncherMechanicalAssemblyV143';g.position.set(h.mesh.position.x,.62,h.z);const pink=mat(0xff557c),dark=mat(0x1b203d),steel=mat(0xeef5ff),red=mat(0xff315d),cyan=mat(0x44e7ff),green=mat(0x49ff79);pink.metalness=.42;pink.roughness=.24;dark.metalness=.62;dark.roughness=.25;steel.metalness=.48;steel.roughness=.22;red.metalness=.34;red.roughness=.25;const shell=new THREE.Mesh(new THREE.BoxGeometry(1.08,.72,.66),dark);shell.name='SecondFinalPuncherArmoredHousingV143';shell.castShadow=shell.receiveShadow=true;g.add(shell);[-.35,.35].forEach((x,i)=>{const panel=new THREE.Mesh(new THREE.BoxGeometry(.29,.80,.72),i?pink:steel);panel.name='SecondFinalPuncherArmorPanelV143';panel.position.x=x;panel.rotation.x=(i?1:-1)*.025;panel.castShadow=panel.receiveShadow=true;panel.material.emissive=new THREE.Color(i?0xa20d63:0x5f7d96);panel.material.emissiveIntensity=i?.50:.18;g.add(panel)});const ram=new THREE.Mesh(new THREE.CylinderGeometry(.19,.23,1.50,12),steel);ram.name='SecondFinalPuncherHydraulicRamV143';ram.rotation.z=Math.PI/2;ram.position.x=-h.side*.10;ram.castShadow=ram.receiveShadow=true;g.add(ram);[-.45,.45].forEach((z,i)=>{const rail=new THREE.Mesh(new THREE.CapsuleGeometry(.055,1.18,4,8),dark);rail.name='SecondFinalPuncherGuideRailV143';rail.rotation.z=Math.PI/2;rail.position.set(0,i?.27:-.27,z*.58);rail.castShadow=rail.receiveShadow=true;g.add(rail)});[-.37,0,.37].forEach((x,i)=>{const collar=new THREE.Mesh(new THREE.TorusGeometry(.245,.056,7,14),i===1?cyan:pink);collar.name='SecondFinalPuncherHydraulicCollarV143';collar.rotation.y=Math.PI/2;collar.position.x=x;collar.castShadow=true;collar.material.emissive=new THREE.Color(i===1?0x087fa8:0xa20d63);collar.material.emissiveIntensity=i===1?.84:.60;g.add(collar)});const headX=-h.side*(FINAL_GAUNTLET_HALF_X+.12);const head=new THREE.Mesh(new THREE.CylinderGeometry(.51,.59,.30,12),dark);head.name='SecondFinalPuncherStrikeHeadV143';head.rotation.z=Math.PI/2;head.position.x=headX;head.castShadow=head.receiveShadow=true;g.add(head);const bumper=new THREE.Mesh(new THREE.TorusGeometry(.51,.108,8,18),red);bumper.name='SecondFinalPuncherImpactBumperV143';bumper.rotation.y=Math.PI/2;bumper.position.x=headX-h.side*.16;bumper.castShadow=true;bumper.material.emissive=new THREE.Color(0xa20d38);bumper.material.emissiveIntensity=1.0;g.add(bumper);const face=new THREE.Mesh(new THREE.CylinderGeometry(.38,.43,.11,12),pink);face.name='SecondFinalPuncherImpactFaceV143';face.rotation.z=Math.PI/2;face.position.x=headX-h.side*.19;face.castShadow=face.receiveShadow=true;face.material.emissive=new THREE.Color(0xa20d63);face.material.emissiveIntensity=.80;g.add(face);const lamps=[];[-.27,.27].forEach((z,i)=>{const lamp=new THREE.Mesh(new THREE.OctahedronGeometry(.105,0),i?green:cyan);lamp.name='SecondFinalPuncherWarningLampV143';lamp.position.set(-.02,.44,z);lamp.castShadow=true;lamp.material.emissive=new THREE.Color(i?0x159b43:0x087fa8);lamp.material.emissiveIntensity=1.0;g.add(lamp);lamps.push(lamp)});[-.36,.36].forEach((z,i)=>{const brace=new THREE.Mesh(new THREE.BoxGeometry(.84,.10,.10),i?pink:steel);brace.name='SecondFinalPuncherHousingBraceV143';brace.position.set(0,-.38,z);brace.rotation.z=-h.side*.08;brace.castShadow=brace.receiveShadow=true;g.add(brace)});const crown=new THREE.Mesh(new THREE.BoxGeometry(.54,.12,.46),cyan);crown.name='SecondFinalPuncherTimingCrownV143';crown.position.set(.02,.43,0);crown.castShadow=crown.receiveShadow=true;crown.material.emissive=new THREE.Color(0x087fa8);crown.material.emissiveIntensity=.62;g.add(crown);scene.add(g);h.puncherVisualV143=g;h.puncherLampsV143=lamps;h.puncherImpactBumperV143=bumper;h.puncherImpactFaceV143=face;h.puncherTimingCrownV143=crown;return g}modelSecondFinalPuncherV143(finalPunchers[1]);"""
+          s=s.replace(anchor,model+anchor,1)
+          tick_anchor='}const extended=Math.abs(newX)<1.65'
+          if s.count(tick_anchor) != 1:
+              raise SystemExit(f'v143 tick anchor count={s.count(tick_anchor)}')
+          tick="""if(h.puncherVisualV143){h.puncherVisualV143.position.x=newX;const puncherPulseV143=.5+.5*Math.sin(t*(warning?19:10.5));h.puncherLampsV143.forEach((lamp,k)=>{lamp.material.emissive.setHex(finalGauntletCleared?0x19b24e:(attack?0xa20d38:(warning?(k?0x19b24e:0x087fa8):(k?0x159b43:0x087fa8))));lamp.material.color.setHex(finalGauntletCleared?0x49ff79:(attack?0xff315d:(warning?(k?0x49ff79:0x44e7ff):(k?0x49ff79:0x44e7ff))));lamp.material.emissiveIntensity=finalGauntletCleared?1.15:(attack?1.45+.45*puncherPulseV143:(warning?1.15+.75*puncherPulseV143:1.0))});h.puncherImpactBumperV143.material.emissive.setHex(finalGauntletCleared?0x19b24e:(attack?0xa20d38:0xa20d63));h.puncherImpactBumperV143.material.color.setHex(finalGauntletCleared?0x49ff79:(attack?0xff315d:0xff557c));h.puncherImpactBumperV143.material.emissiveIntensity=finalGauntletCleared?1.10:(attack?1.35+.45*puncherPulseV143:.92);h.puncherImpactFaceV143.material.emissive.setHex(finalGauntletCleared?0x19b24e:(attack?0xa20d38:0xa20d63));h.puncherImpactFaceV143.material.color.setHex(finalGauntletCleared?0x49ff79:(attack?0xff6b8f:0xff557c));h.puncherImpactFaceV143.material.emissiveIntensity=finalGauntletCleared?1.0:(attack?1.18+.32*puncherPulseV143:.80);h.puncherTimingCrownV143.material.emissive.setHex(finalGauntletCleared?0x19b24e:(warning?0x087fa8:(attack?0xa20d38:0x087fa8)));h.puncherTimingCrownV143.material.color.setHex(finalGauntletCleared?0x49ff79:(attack?0xff315d:0x44e7ff));h.puncherTimingCrownV143.material.emissiveIntensity=finalGauntletCleared?1.0:(warning?1.15+.65*puncherPulseV143:(attack?1.10:.62));}"""
+          s=s.replace(tick_anchor,'}'+tick+'const extended=Math.abs(newX)<1.65',1)
+          p.write_text(s)
+      - name: Verify v143 puncher model and preserved physics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=['FINAL_SECOND_PUNCHER_MODEL_V143=true','SecondFinalPuncherMechanicalAssemblyV143','SecondFinalPuncherLegacyCollisionCarrierV143','SecondFinalPuncherArmoredHousingV143','SecondFinalPuncherHydraulicRamV143','SecondFinalPuncherHydraulicCollarV143','SecondFinalPuncherStrikeHeadV143','SecondFinalPuncherImpactBumperV143','SecondFinalPuncherImpactFaceV143','SecondFinalPuncherWarningLampV143','SecondFinalPuncherTimingCrownV143','FINAL_GAUNTLET_Z2=8.38','FINAL_GAUNTLET_IN_X=.92','FINAL_GAUNTLET_HALF_X=.68','FINAL_GAUNTLET_SPEED=2.35']
+          for token in required: assert token in s, token
+          assert s.count('FINAL_SECOND_PUNCHER_MODEL_V143=true') == 1
+          assert s.count("modelSecondFinalPuncherV143(finalPunchers[1])") == 1
+          assert 'modelSecondFinalPuncherV143(finalPunchers[0])' not in s
+          assert 'FINAL_FIRST_PUNCHER_MODEL_V142=true' in s
+          print('Second final puncher mechanical model v143 contract: SUCCESS')
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text();m=re.search(r'<script type="module">(.*?)</script>',s,re.S);assert m
+          Path('/tmp/brainrot-module.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/brainrot-module.mjs
+          for f in scripts/final-puncher-physics-contract-v65.mjs scripts/final-finish-residual-momentum-check.mjs scripts/final-finish-soft-hold-check.mjs scripts/final-finish-charge-check.mjs scripts/second-pit-route-continuity-v70-check.mjs; do
+            if [ -f "$f" ]; then node "$f"; else echo "SKIP missing $f"; fi
+          done
+      - name: Commit real level change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-level-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
+          git commit -m "Level: model second final puncher v143"
+          git push origin HEAD:new-player-glb-overhaul
