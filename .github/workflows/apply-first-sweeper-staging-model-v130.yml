@@ -1,0 +1,96 @@
+name: Apply First Sweeper Staging Model v130
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-first-sweeper-staging-model-v130.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+      - name: Model first sweeper staging pad v130
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          if 'FIRST_SWEEPER_STAGING_PAD_MODEL_V130=true' in s:
+              raise SystemExit('v130 already present')
+          old="const sweeperEntryPad=box(0,.035,-11.72,3.7,.07,2.62,0xffd84d);sweeperEntryPad.material.emissive=new THREE.Color(0xa95a00);sweeperEntryPad.material.emissiveIntensity=.7;const FIRST_SWEEPER_ENTRY_MODEL_V87=true;"
+          if old not in s:
+              raise SystemExit('first sweeper entry pad anchor missing')
+          new="""const FIRST_SWEEPER_STAGING_PAD_MODEL_V130=true;const sweeperEntryPad=box(0,.035,-11.72,3.7,.07,2.62,0xffd84d);sweeperEntryPad.name='FirstSweeperStageLegacyCollisionCarrierV130';sweeperEntryPad.material.transparent=true;sweeperEntryPad.material.opacity=.04;sweeperEntryPad.material.depthWrite=false;sweeperEntryPad.material.emissive=new THREE.Color(0xa95a00);sweeperEntryPad.material.emissiveIntensity=.22;const firstStageAmberV130=mat(0xffd84d),firstStageDarkV130=mat(0x302913),firstStageWhiteV130=mat(0xfff7cf),firstStageRedV130=mat(0xff315d),firstStageGreenV130=mat(0x49ff79);firstStageAmberV130.metalness=.30;firstStageAmberV130.roughness=.27;firstStageDarkV130.metalness=.46;firstStageDarkV130.roughness=.31;const firstStageSlatGeoV130=new THREE.BoxGeometry(.44,.07,2.28),firstStageRailGeoV130=new THREE.CapsuleGeometry(.045,2.18,4,8),firstStageBumperGeoV130=new THREE.CylinderGeometry(.11,.16,.34,8),firstStageRingGeoV130=new THREE.TorusGeometry(.12,.03,6,10),firstStageBraceGeoV130=new THREE.CylinderGeometry(.045,.065,2.12,8);[-1.48,-.99,-.50,0,.50,.99,1.48].forEach((x,i)=>{const slat=new THREE.Mesh(firstStageSlatGeoV130,i===3?firstStageWhiteV130:firstStageAmberV130);slat.name='FirstSweeperStageSlatV130';slat.position.set(x,.075,0);slat.castShadow=slat.receiveShadow=true;slat.material.emissive=new THREE.Color(i===3?0xffffff:0xa95a00);slat.material.emissiveIntensity=i===3?.86:.46;sweeperEntryPad.add(slat)});[-1.08,1.08].forEach((z,i)=>{const rail=new THREE.Mesh(firstStageRailGeoV130,firstStageWhiteV130);rail.name='FirstSweeperStageEdgeRailV130';rail.rotation.z=Math.PI/2;rail.scale.y=6.0;rail.position.set(0,.18,z);rail.castShadow=rail.receiveShadow=true;rail.material.emissive=new THREE.Color(i?0xff315d:0xffb12b);rail.material.emissiveIntensity=.68;sweeperEntryPad.add(rail)});[-1.72,1.72].forEach((x,i)=>{const bumper=new THREE.Mesh(firstStageBumperGeoV130,firstStageDarkV130);bumper.name='FirstSweeperStageBumperV130';bumper.rotation.z=Math.PI/2;bumper.position.set(x,.10,0);bumper.castShadow=bumper.receiveShadow=true;sweeperEntryPad.add(bumper);const beacon=new THREE.Mesh(firstStageRingGeoV130,i?firstStageGreenV130:firstStageRedV130);beacon.name='FirstSweeperStageBeaconV130';beacon.rotation.y=Math.PI/2;beacon.position.set(x,.15,0);beacon.castShadow=true;beacon.material.emissive=new THREE.Color(i?0x19b24e:0xa20d38);beacon.material.emissiveIntensity=1.02;sweeperEntryPad.add(beacon)});[-1.05,0,1.05].forEach((x,i)=>{const brace=new THREE.Mesh(firstStageBraceGeoV130,firstStageDarkV130);brace.name='FirstSweeperStageCrossBraceV130';brace.rotation.x=Math.PI/2;brace.position.set(x,.025,0);brace.castShadow=brace.receiveShadow=true;sweeperEntryPad.add(brace);const ring=new THREE.Mesh(firstStageRingGeoV130,i===1?firstStageGreenV130:firstStageWhiteV130);ring.name='FirstSweeperStageTimingRingV130';ring.rotation.x=Math.PI/2;ring.position.set(x,.125,0);ring.castShadow=true;ring.material.emissive=new THREE.Color(i===1?0x19b24e:0xffb12b);ring.material.emissiveIntensity=i===1?1.08:.78;sweeperEntryPad.add(ring)});const FIRST_SWEEPER_ENTRY_MODEL_V87=true;"""
+          s=s.replace(old,new,1)
+          old2="sweeperEntryPad.material.emissiveIntensity=warning?1.5+1.25*pulse:(burst?1.7:((recover||cleared)?1.25:.7));[sweeperEntryL,sweeperEntryR,sweeperEntryTop].forEach"
+          if old2 not in s:
+              raise SystemExit('first sweeper staging runtime anchor missing')
+          new2="""sweeperEntryPad.material.emissiveIntensity=warning?1.5+1.25*pulse:(burst?1.7:((recover||cleared)?1.25:.7));sweeperEntryPad.children.forEach(n=>{if(!n.isMesh||!n.material?.emissive)return;const timing=n.name==='FirstSweeperStageTimingRingV130',beacon=n.name==='FirstSweeperStageBeaconV130';n.material.emissive.setHex(e);n.material.color.setHex(timing||beacon?(recover||cleared?0x49ff79:(burst?0xff315d:(warning?0xffd84d:0xfff7cf))):c);n.material.emissiveIntensity=warning?(timing?1.2+1.0*pulse:(beacon?1.1+.75*pulse:.82+.45*pulse)):(burst?(timing?1.25:(beacon?1.3:.92)):((recover||cleared)?(timing?1.05:(beacon?1.15:.72)):(timing?.78:(beacon?1.02:.52))))});[sweeperEntryL,sweeperEntryR,sweeperEntryTop].forEach"""
+          s=s.replace(old2,new2,1)
+          p.write_text(s)
+      - name: Verify first sweeper staging v130 and preserved gameplay
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=[
+            'FIRST_SWEEPER_STAGING_PAD_MODEL_V130=true',
+            'FirstSweeperStageLegacyCollisionCarrierV130',
+            'FirstSweeperStageSlatV130',
+            'FirstSweeperStageEdgeRailV130',
+            'FirstSweeperStageBumperV130',
+            'FirstSweeperStageBeaconV130',
+            'FirstSweeperStageCrossBraceV130',
+            'FirstSweeperStageTimingRingV130',
+            'FIRST_SWEEPER_TRIGGER_Z=-12.45',
+            'FIRST_SWEEPER_GATE_Z=-10.62',
+            'FIRST_SWEEPER_STAGING_Z_MIN=-12.42',
+            'FIRST_SWEEPER_STAGING_HALF_X=1.74',
+            "firstSweeperStagingSafe=carry&&!firstSweeperCleared"
+          ]
+          for token in required:
+              assert token in s, token
+          assert s.count('FIRST_SWEEPER_STAGING_PAD_MODEL_V130=true') == 1
+          assert s.count("'FirstSweeperStageLegacyCollisionCarrierV130'") == 1
+          assert 'sweeperEntryPad=box(0,.035,-11.72,3.7,.07,2.62,0xffd84d)' in s
+          print('First sweeper staging pad v130 contract: SUCCESS')
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          m=re.search(r'<script type="module">(.*?)</script>',s,re.S)
+          assert m, 'module script not found'
+          Path('/tmp/brainrot-module.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/brainrot-module.mjs
+          node scripts/final-puncher-physics-contract-v65.mjs
+          node scripts/final-finish-residual-momentum-check.mjs
+          node scripts/final-finish-soft-hold-check.mjs
+          node scripts/final-finish-charge-check.mjs
+      - name: Commit real level change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-level-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
+          git commit -m "Level: model first sweeper staging pad v130"
+          git push origin HEAD:new-player-glb-overhaul
