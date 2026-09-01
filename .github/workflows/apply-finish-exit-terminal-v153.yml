@@ -1,0 +1,79 @@
+name: Apply Finish Exit Terminal v153
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-finish-exit-terminal-v153.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+          test "$(git rev-parse HEAD^)" = "801200890235d7a44e821c92c3efe3f68261d088"
+          git merge-base --is-ancestor 801200890235d7a44e821c92c3efe3f68261d088 HEAD
+      - name: Build mechanical post-finish terminal runway v153
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          if 'FINISH_EXIT_TERMINAL_MODEL_V153=true' in s:
+              raise SystemExit('v153 already present')
+          anchor='const FINISH_EXIT_RUNWAY_MODEL_V123=true'
+          if s.count(anchor) != 1:
+              raise SystemExit(f'v153 runway anchor count={s.count(anchor)}')
+          model="""const FINISH_EXIT_TERMINAL_MODEL_V153=true,FINISH_EXIT_TERMINAL_Z_MIN=12.88,FINISH_EXIT_TERMINAL_Z_MAX=15.18,FINISH_EXIT_TERMINAL_HALF_X=1.32;const finishExitTerminalV153=box(-1.15,.015,(FINISH_EXIT_TERMINAL_Z_MIN+FINISH_EXIT_TERMINAL_Z_MAX)*.5,FINISH_EXIT_TERMINAL_HALF_X*2,.10,FINISH_EXIT_TERMINAL_Z_MAX-FINISH_EXIT_TERMINAL_Z_MIN,0x17273f);finishExitTerminalV153.name='FinishExitTerminalCollisionDeckV153';finishExitTerminalV153.material.transparent=true;finishExitTerminalV153.material.opacity=.08;finishExitTerminalV153.material.depthWrite=false;finishExitTerminalV153.material.emissive=new THREE.Color(0x0b4861);finishExitTerminalV153.material.emissiveIntensity=.18;const exitTermDarkV153=mat(0x11192c),exitTermSteelV153=mat(0xeaf9ff),exitTermCyanV153=mat(0x45dcff),exitTermGreenV153=mat(0x49ff8b),exitTermGoldV153=mat(0xffca36);exitTermDarkV153.metalness=.68;exitTermDarkV153.roughness=.26;exitTermSteelV153.metalness=.52;exitTermSteelV153.roughness=.20;const finishExitTerminalLampsV153=[],finishExitTerminalRollersV153=[],finishExitTerminalGatesV153=[];[-.98,-.66,-.33,0,.33,.66,.98].forEach((x,i)=>{[-.82,-.42,0,.42,.82].forEach((z,j)=>{const panel=new THREE.Mesh(new THREE.BoxGeometry(.22,.065,.30),i===3?exitTermSteelV153:(j%2?exitTermDarkV153:exitTermCyanV153));panel.name='FinishExitTerminalDeckPanelV153';panel.position.set(x,.09,z);panel.castShadow=panel.receiveShadow=true;if(panel.material.emissive){panel.material.emissive=new THREE.Color(i===3?0x33546a:(j%2?0x10243a:0x087fa9));panel.material.emissiveIntensity=i===3?.42:(j%2?.20:.48)}finishExitTerminalV153.add(panel)})});[-1,1].forEach((side,si)=>{const rail=new THREE.Mesh(new THREE.BoxGeometry(.12,.24,2.10),exitTermDarkV153);rail.name='FinishExitTerminalSideRailV153';rail.position.set(side*1.20,.26,0);rail.castShadow=rail.receiveShadow=true;finishExitTerminalV153.add(rail);[-.72,-.24,.24,.72].forEach((z,k)=>{const roller=new THREE.Mesh(new THREE.CylinderGeometry(.10,.10,.18,10),k%2?exitTermGreenV153:exitTermCyanV153);roller.name='FinishExitTerminalGuideRollerV153';roller.rotation.z=Math.PI/2;roller.position.set(side*1.20,.32,z);roller.castShadow=roller.receiveShadow=true;roller.material.emissive=new THREE.Color(k%2?0x139849:0x087fa9);roller.material.emissiveIntensity=.68;finishExitTerminalV153.add(roller);finishExitTerminalRollersV153.push(roller)});[-.70,.0,.70].forEach((z,k)=>{const post=new THREE.Mesh(new THREE.BoxGeometry(.22,1.16,.24),exitTermDarkV153);post.name='FinishExitTerminalPortalPostV153';post.position.set(side*1.10,.63,z);post.castShadow=post.receiveShadow=true;finishExitTerminalV153.add(post);if(si===0){const header=new THREE.Mesh(new THREE.BoxGeometry(2.30,.18,.24),exitTermDarkV153);header.name='FinishExitTerminalPortalHeaderV153';header.position.set(1.10,.56,0);post.add(header);[-.72,-.36,0,.36,.72].forEach((x,li)=>{const lamp=new THREE.Mesh(new THREE.OctahedronGeometry(.065,0),li===2?exitTermGoldV153:exitTermSteelV153);lamp.name='FinishExitTerminalStatusLampV153';lamp.position.set(x,.02,.14);lamp.castShadow=true;lamp.material.emissive=new THREE.Color(li===2?0xc69200:(li<2?0x139849:0x087fa9));lamp.material.emissiveIntensity=.72;lamp.userData.stage=(k*.34)+(li*.035);header.add(lamp);finishExitTerminalLampsV153.push(lamp)})}})});[-.48,.48].forEach((z,gi)=>{const gate=new THREE.Group();gate.name='FinishExitTerminalGateV153';gate.position.set(0,.82,z);gate.userData.baseZ=z;[-1,1].forEach(side=>{const arm=new THREE.Mesh(new THREE.BoxGeometry(.88,.10,.14),exitTermSteelV153);arm.name='FinishExitTerminalGateArmV153';arm.position.set(side*.47,0,0);arm.rotation.z=side*(gi?-.05:.05);arm.castShadow=arm.receiveShadow=true;arm.material.emissive=new THREE.Color(gi?0x139849:0x087fa9);arm.material.emissiveIntensity=.40;gate.add(arm)});const crown=new THREE.Mesh(new THREE.TorusGeometry(.20,.04,8,16),gi?exitTermGreenV153:exitTermGoldV153);crown.name='FinishExitTerminalGateCrownV153';crown.rotation.x=Math.PI/2;crown.position.y=.20;crown.castShadow=true;crown.material.emissive=new THREE.Color(gi?0x139849:0xc69200);crown.material.emissiveIntensity=.82;gate.add(crown);finishExitTerminalV153.add(gate);finishExitTerminalGatesV153.push(gate)});const terminalStopV153=new THREE.Mesh(new THREE.BoxGeometry(2.44,.34,.20),exitTermDarkV153);terminalStopV153.name='FinishExitTerminalStopBeamV153';terminalStopV153.position.set(0,.24,1.03);terminalStopV153.castShadow=terminalStopV153.receiveShadow=true;finishExitTerminalV153.add(terminalStopV153);const terminalSealV153=new THREE.Mesh(new THREE.TorusGeometry(.32,.055,8,20),exitTermGreenV153);terminalSealV153.name='FinishExitTerminalSealRingV153';terminalSealV153.rotation.x=Math.PI/2;terminalSealV153.position.set(0,.30,.91);terminalSealV153.castShadow=true;terminalSealV153.material.emissive=new THREE.Color(0x139849);terminalSealV153.material.emissiveIntensity=.86;finishExitTerminalV153.add(terminalSealV153);"""
+          s=s.replace(anchor,model+anchor,1)
+          tick_anchor='const postFinishEvacActiveV152='
+          if s.count(tick_anchor) != 1:
+              raise SystemExit(f'v153 runtime anchor count={s.count(tick_anchor)}')
+          tick="""const finishExitTerminalActiveV153=win&&finishPlayerRelease>=.72,finishExitTerminalProgressV153=Math.max(0,Math.min(1,(finishPlayerRelease-.70)/.30)),finishExitTerminalPulseV153=.5+.5*Math.sin(t*10.8);finishExitTerminalRollersV153.forEach((n,i)=>{n.rotation.x+=dt*(finishExitTerminalActiveV153?(3.4+i*.09):.18);n.material.emissiveIntensity=finishExitTerminalActiveV153?.68+.34*finishExitTerminalPulseV153:.42});finishExitTerminalGatesV153.forEach((g,i)=>{const open=finishExitTerminalActiveV153?Math.min(1,Math.max(0,(finishExitTerminalProgressV153-i*.18)*1.7)):0;g.children.forEach((n,k)=>{if(n.name==='FinishExitTerminalGateArmV153')n.rotation.z=(n.position.x>0?1:-1)*(.07+.48*open);if(n.material?.emissive)n.material.emissiveIntensity=.48+.42*finishExitTerminalPulseV153});g.position.y=.82+.035*Math.sin(t*7.4+i)});finishExitTerminalLampsV153.forEach((n,i)=>{const reached=finishExitTerminalProgressV153>=Math.min(.98,n.userData.stage);n.material.color.setHex(finishExitTerminalProgressV153>=.98?0x49ff8b:(reached?0xffca36:(i%2?0x45dcff:0xeaf9ff)));n.material.emissive.setHex(finishExitTerminalProgressV153>=.98?0x139849:(reached?0xc69200:(i%2?0x087fa9:0x33546a)));n.material.emissiveIntensity=finishExitTerminalActiveV153?.72+.46*finishExitTerminalPulseV153:.44});terminalSealV153.rotation.z+=dt*(finishExitTerminalActiveV153?1.9:.18);terminalSealV153.scale.setScalar(.94+.10*finishExitTerminalProgressV153);terminalSealV153.material.emissiveIntensity=finishExitTerminalActiveV153?.84+.45*finishExitTerminalPulseV153:.55;"""
+          s=s.replace(tick_anchor,tick+tick_anchor,1)
+          p.write_text(s)
+      - name: Verify v153 model and preserved finish physics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=['FINISH_EXIT_TERMINAL_MODEL_V153=true','FINISH_EXIT_TERMINAL_Z_MIN=12.88','FINISH_EXIT_TERMINAL_Z_MAX=15.18','FinishExitTerminalCollisionDeckV153','FinishExitTerminalDeckPanelV153','FinishExitTerminalSideRailV153','FinishExitTerminalGuideRollerV153','FinishExitTerminalPortalPostV153','FinishExitTerminalPortalHeaderV153','FinishExitTerminalGateV153','FinishExitTerminalGateArmV153','FinishExitTerminalStatusLampV153','FinishExitTerminalStopBeamV153','FinishExitTerminalSealRingV153','POST_FINISH_EVACUATION_MODEL_V152=true','FINISH_EXIT_RUNWAY_MODEL_V123=true','FINISH_PLAYER_RELEASE_TIME=.95','finishPlayerReleaseTarget=new THREE.Vector3(-1.15,0,11.62)','FINAL_CHARGE_GATE_Z=10.88']
+          for token in required: assert token in s, token
+          assert s.count('FINISH_EXIT_TERMINAL_MODEL_V153=true') == 1
+          assert s.count('const finishExitTerminalActiveV153=') == 1
+          print('Finish exit terminal runway v153 contract: SUCCESS')
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text();m=re.search(r'<script type="module">(.*?)</script>',s,re.S);assert m
+          Path('/tmp/brainrot-module.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/brainrot-module.mjs
+          for f in scripts/final-puncher-physics-contract-v65.mjs scripts/final-finish-residual-momentum-check.mjs scripts/final-finish-soft-hold-check.mjs scripts/final-finish-charge-check.mjs scripts/second-pit-route-continuity-v70-check.mjs; do
+            if [ -f "$f" ]; then node "$f"; else echo "SKIP missing $f"; fi
+          done
+      - name: Commit real level change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-level-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
+          git commit -m "Level: mechanical finish exit terminal v153"
+          git push origin HEAD:new-player-glb-overhaul
