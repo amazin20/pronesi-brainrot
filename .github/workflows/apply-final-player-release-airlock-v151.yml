@@ -1,0 +1,79 @@
+name: Apply Final Player Release Airlock v151
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-final-player-release-airlock-v151.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+          test "$(git rev-parse HEAD^)" = "1a0801c5c5259b19ddd90ffe31f3d50c25e5f3d1"
+          git merge-base --is-ancestor 1a0801c5c5259b19ddd90ffe31f3d50c25e5f3d1 HEAD
+      - name: Model final player release airlock v151
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          if 'FINAL_PLAYER_RELEASE_AIRLOCK_MODEL_V151=true' in s:
+              raise SystemExit('v151 already present')
+          anchor='const FINISH_SAFE_BAY_MODEL_V122=true'
+          if s.count(anchor) != 1:
+              raise SystemExit(f'v151 safe-bay anchor count={s.count(anchor)}')
+          model="""const FINAL_PLAYER_RELEASE_AIRLOCK_MODEL_V151=true,FINAL_PLAYER_RELEASE_AIRLOCK_CX=-.575,FINAL_PLAYER_RELEASE_AIRLOCK_CZ=11.25,FINAL_PLAYER_RELEASE_AIRLOCK_YAW=Math.atan2(-1.15,.74);const finalPlayerReleaseAirlockV151=new THREE.Group();finalPlayerReleaseAirlockV151.name='FinalPlayerReleaseAirlockAssemblyV151';finalPlayerReleaseAirlockV151.position.set(FINAL_PLAYER_RELEASE_AIRLOCK_CX,0,FINAL_PLAYER_RELEASE_AIRLOCK_CZ);finalPlayerReleaseAirlockV151.rotation.y=FINAL_PLAYER_RELEASE_AIRLOCK_YAW;scene.add(finalPlayerReleaseAirlockV151);const releaseAirlockDarkV151=mat(0x101827),releaseAirlockSteelV151=mat(0xe5f4ff),releaseAirlockCyanV151=mat(0x45dcff),releaseAirlockGreenV151=mat(0x49ff8b),releaseAirlockGoldV151=mat(0xffca36),releaseAirlockRedV151=mat(0xff5268);releaseAirlockDarkV151.metalness=.72;releaseAirlockDarkV151.roughness=.22;releaseAirlockSteelV151.metalness=.56;releaseAirlockSteelV151.roughness=.18;const releaseAirlockDeckV151=new THREE.Mesh(new THREE.BoxGeometry(2.06,.10,1.58),releaseAirlockDarkV151);releaseAirlockDeckV151.name='FinalReleaseAirlockDeckV151';releaseAirlockDeckV151.position.y=.055;releaseAirlockDeckV151.castShadow=releaseAirlockDeckV151.receiveShadow=true;finalPlayerReleaseAirlockV151.add(releaseAirlockDeckV151);[-.60,-.30,0,.30,.60].forEach((z,i)=>{const slat=new THREE.Mesh(new THREE.BoxGeometry(1.82,.07,.18),i===2?releaseAirlockSteelV151:(i<2?releaseAirlockGoldV151:releaseAirlockGreenV151));slat.name='FinalReleaseAirlockDeckSlatV151';slat.position.set(0,.13,z);slat.castShadow=slat.receiveShadow=true;slat.material.emissive=new THREE.Color(i===2?0x33546a:(i<2?0xc69200:0x139849));slat.material.emissiveIntensity=i===2?.32:.56;finalPlayerReleaseAirlockV151.add(slat)});[-.90,.90].forEach((x,si)=>{const rail=new THREE.Mesh(new THREE.BoxGeometry(.11,.18,1.52),releaseAirlockDarkV151);rail.name='FinalReleaseAirlockGuideRailV151';rail.position.set(x,.25,0);rail.castShadow=rail.receiveShadow=true;finalPlayerReleaseAirlockV151.add(rail);[-.55,0,.55].forEach((z,k)=>{const roller=new THREE.Mesh(new THREE.CylinderGeometry(.105,.105,.18,10),k===1?releaseAirlockGoldV151:(si?releaseAirlockCyanV151:releaseAirlockGreenV151));roller.name='FinalReleaseAirlockGuideRollerV151';roller.rotation.z=Math.PI/2;roller.position.set(x,.30,z);roller.castShadow=roller.receiveShadow=true;roller.material.emissive=new THREE.Color(k===1?0xc69200:(si?0x087fa9:0x139849));roller.material.emissiveIntensity=.74;finalPlayerReleaseAirlockV151.add(roller)})});const finalReleaseAirlockInnerDoorsV151=[],finalReleaseAirlockOuterArmsV151=[],finalReleaseAirlockLampsV151=[];[-1,1].forEach((side,si)=>{[-.68,.68].forEach((z,pi)=>{const post=new THREE.Mesh(new THREE.BoxGeometry(.24,1.42,.24),releaseAirlockDarkV151);post.name=pi?'FinalReleaseAirlockOuterPostV151':'FinalReleaseAirlockInnerPostV151';post.position.set(side*.98,.72,z);post.castShadow=post.receiveShadow=true;finalPlayerReleaseAirlockV151.add(post);[.30,.72,1.12].forEach((y,k)=>{const halo=new THREE.Mesh(new THREE.TorusGeometry(.145,.032,7,12),k===1?releaseAirlockSteelV151:(si?releaseAirlockCyanV151:releaseAirlockGreenV151));halo.name='FinalReleaseAirlockPostHaloV151';halo.rotation.x=Math.PI/2;halo.position.set(side*.98,y,z);halo.castShadow=true;halo.material.emissive=new THREE.Color(k===1?0x33546a:(si?0x087fa9:0x139849));halo.material.emissiveIntensity=k===1?.52:.82;finalPlayerReleaseAirlockV151.add(halo)})});const door=new THREE.Mesh(new THREE.BoxGeometry(.46,1.04,.12),si?releaseAirlockCyanV151:releaseAirlockGreenV151);door.name='FinalReleaseAirlockInnerDoorV151';door.position.set(side*.50,.66,-.64);door.castShadow=door.receiveShadow=true;door.material.emissive=new THREE.Color(si?0x087fa9:0x139849);door.material.emissiveIntensity=.54;door.userData.side=side;finalPlayerReleaseAirlockV151.add(door);finalReleaseAirlockInnerDoorsV151.push(door);const pivot=new THREE.Group();pivot.name='FinalReleaseAirlockOuterGuidePivotV151';pivot.position.set(side*.88,.52,.62);pivot.userData.side=side;const arm=new THREE.Mesh(new THREE.BoxGeometry(.68,.13,.18),releaseAirlockSteelV151);arm.name='FinalReleaseAirlockOuterGuideArmV151';arm.position.set(-side*.31,0,0);arm.castShadow=arm.receiveShadow=true;arm.material.emissive=new THREE.Color(si?0x087fa9:0x139849);arm.material.emissiveIntensity=.38;pivot.add(arm);const tip=new THREE.Mesh(new THREE.TorusGeometry(.13,.034,7,12,Math.PI),releaseAirlockGoldV151);tip.name='FinalReleaseAirlockOuterGuideTipV151';tip.rotation.set(Math.PI/2,0,side>0?Math.PI/2:-Math.PI/2);tip.position.set(-side*.65,0,0);tip.castShadow=true;tip.material.emissive=new THREE.Color(0xc69200);tip.material.emissiveIntensity=.90;pivot.add(tip);finalPlayerReleaseAirlockV151.add(pivot);finalReleaseAirlockOuterArmsV151.push(pivot)});[-.68,.68].forEach((z,pi)=>{const header=new THREE.Mesh(new THREE.BoxGeometry(2.08,.18,.20),releaseAirlockDarkV151);header.name=pi?'FinalReleaseAirlockOuterHeaderV151':'FinalReleaseAirlockInnerHeaderV151';header.position.set(0,1.48,z);header.castShadow=header.receiveShadow=true;finalPlayerReleaseAirlockV151.add(header);[-.66,-.33,0,.33,.66].forEach((x,i)=>{const lamp=new THREE.Mesh(new THREE.OctahedronGeometry(.075,0),i===2?releaseAirlockGoldV151:releaseAirlockSteelV151);lamp.name='FinalReleaseAirlockStatusLampV151';lamp.position.set(x,1.49,z+(pi?.11:-.11));lamp.castShadow=true;lamp.material.emissive=new THREE.Color(i===2?0xc69200:(i<2?0x139849:0x087fa9));lamp.material.emissiveIntensity=.76;lamp.userData.stage=pi*.50+i*.125;finalPlayerReleaseAirlockV151.add(lamp);finalReleaseAirlockLampsV151.push(lamp)})});const releaseAirlockCenterRingV151=new THREE.Mesh(new THREE.TorusGeometry(.28,.05,8,18),releaseAirlockGoldV151);releaseAirlockCenterRingV151.name='FinalReleaseAirlockCenterGuideRingV151';releaseAirlockCenterRingV151.rotation.x=Math.PI/2;releaseAirlockCenterRingV151.position.set(0,.18,0);releaseAirlockCenterRingV151.castShadow=true;releaseAirlockCenterRingV151.material.emissive=new THREE.Color(0xc69200);releaseAirlockCenterRingV151.material.emissiveIntensity=.88;finalPlayerReleaseAirlockV151.add(releaseAirlockCenterRingV151);"""
+          s=s.replace(anchor,model+anchor,1)
+          tick_anchor='const finalTransferActiveV150='
+          if s.count(tick_anchor) != 1:
+              raise SystemExit(f'v151 runtime anchor count={s.count(tick_anchor)}')
+          tick="""const finalReleaseAirlockActiveV151=win&&finishBrainrotDock>=1,finalReleaseAirlockProgressV151=Math.max(0,Math.min(1,finishPlayerRelease||0)),finalReleaseAirlockPulseV151=.5+.5*Math.sin(t*13.8),finalReleaseAirlockInnerOpenV151=finalReleaseAirlockActiveV151?Math.min(1,finalReleaseAirlockProgressV151*3.6)*Math.max(0,1-Math.max(0,(finalReleaseAirlockProgressV151-.76)/.24)):0,finalReleaseAirlockOuterOpenV151=finalReleaseAirlockActiveV151?Math.min(1,Math.max(0,(finalReleaseAirlockProgressV151-.18)*2.15)):0;finalReleaseAirlockInnerDoorsV151.forEach(n=>{const side=n.userData.side;n.position.x=side*(.50+.43*finalReleaseAirlockInnerOpenV151);n.material.color.setHex(finalReleaseAirlockInnerOpenV151>.55?0x49ff8b:0xff5268);n.material.emissive.setHex(finalReleaseAirlockInnerOpenV151>.55?0x139849:0x9c1728);n.material.emissiveIntensity=finalReleaseAirlockActiveV151?.72+.42*finalReleaseAirlockPulseV151:.42});finalReleaseAirlockOuterArmsV151.forEach(n=>{const side=n.userData.side;n.rotation.z=side*(.34-.48*finalReleaseAirlockOuterOpenV151);n.position.x=side*(.88+.06*finalReleaseAirlockOuterOpenV151);n.children.forEach(c=>{if(c.isMesh&&c.material?.emissive)c.material.emissiveIntensity=finalReleaseAirlockActiveV151?.66+.40*finalReleaseAirlockPulseV151:.40})});finalReleaseAirlockLampsV151.forEach((n,i)=>{const reached=finalReleaseAirlockProgressV151>=n.userData.stage-.03,complete=finalReleaseAirlockProgressV151>=.99;n.material.color.setHex(complete?0x49ff8b:(reached?0xffca36:(i%2?0x45dcff:0xe5f4ff)));n.material.emissive.setHex(complete?0x139849:(reached?0xc69200:(i%2?0x087fa9:0x33546a)));n.material.emissiveIntensity=finalReleaseAirlockActiveV151?.78+.52*finalReleaseAirlockPulseV151:.54});releaseAirlockCenterRingV151.rotation.z+=dt*(finalReleaseAirlockActiveV151?2.4:.24);releaseAirlockCenterRingV151.scale.setScalar(.94+.12*finalReleaseAirlockProgressV151);releaseAirlockCenterRingV151.material.color.setHex(finalReleaseAirlockProgressV151>=.99?0x49ff8b:0xffca36);releaseAirlockCenterRingV151.material.emissive.setHex(finalReleaseAirlockProgressV151>=.99?0x139849:0xc69200);releaseAirlockCenterRingV151.material.emissiveIntensity=finalReleaseAirlockActiveV151?.90+.55*finalReleaseAirlockPulseV151:.64;releaseAirlockDeckV151.material.emissive=releaseAirlockDeckV151.material.emissive||new THREE.Color(0x139849);releaseAirlockDeckV151.material.emissiveIntensity=finalReleaseAirlockActiveV151?.12+.34*finalReleaseAirlockProgressV151:.04;"""
+          s=s.replace(tick_anchor,tick+tick_anchor,1)
+          p.write_text(s)
+      - name: Verify v151 model and preserved victory release physics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=['FINAL_PLAYER_RELEASE_AIRLOCK_MODEL_V151=true','FinalPlayerReleaseAirlockAssemblyV151','FinalReleaseAirlockDeckV151','FinalReleaseAirlockInnerDoorV151','FinalReleaseAirlockOuterGuidePivotV151','FinalReleaseAirlockStatusLampV151','FinalReleaseAirlockCenterGuideRingV151','FINISH_PLAYER_RELEASE_V121=true','FINISH_PLAYER_RELEASE_TIME=.95','finishPlayerReleaseTarget=new THREE.Vector3(-1.15,0,11.62)','FINISH_SAFE_BAY_MODEL_V122=true','FINISH_EXIT_RUNWAY_MODEL_V123=true','FINISH_BRAINROT_DOCK_TIME=.72','FINAL_CHARGE_GATE_Z=10.88','FINAL_RECEIVING_DOCK_MODEL_V149=true','FINAL_TRANSFER_HANDOFF_MODEL_V150=true']
+          for token in required: assert token in s, token
+          assert s.count('FINAL_PLAYER_RELEASE_AIRLOCK_MODEL_V151=true') == 1
+          assert s.count('const finalReleaseAirlockActiveV151=') == 1
+          print('Final player release airlock v151 contract: SUCCESS')
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text();m=re.search(r'<script type="module">(.*?)</script>',s,re.S);assert m
+          Path('/tmp/brainrot-module.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/brainrot-module.mjs
+          for f in scripts/final-puncher-physics-contract-v65.mjs scripts/final-finish-residual-momentum-check.mjs scripts/final-finish-soft-hold-check.mjs scripts/final-finish-charge-check.mjs scripts/second-pit-route-continuity-v70-check.mjs; do
+            if [ -f "$f" ]; then node "$f"; else echo "SKIP missing $f"; fi
+          done
+      - name: Commit real level change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-level-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
+          git commit -m "Level: mechanical final player release airlock v151"
+          git push origin HEAD:new-player-glb-overhaul
