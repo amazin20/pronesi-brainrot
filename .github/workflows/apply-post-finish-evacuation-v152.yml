@@ -1,0 +1,79 @@
+name: Apply Post Finish Evacuation v152
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-post-finish-evacuation-v152.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+          test "$(git rev-parse HEAD^)" = "2313af2d8fb579a6bdbc235549169351be08d1f0"
+          git merge-base --is-ancestor 2313af2d8fb579a6bdbc235549169351be08d1f0 HEAD
+      - name: Model post-finish evacuation corridor v152
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          if 'POST_FINISH_EVACUATION_MODEL_V152=true' in s:
+              raise SystemExit('v152 already present')
+          anchor='const FINISH_EXIT_RUNWAY_MODEL_V123=true'
+          if s.count(anchor) != 1:
+              raise SystemExit(f'v152 runway anchor count={s.count(anchor)}')
+          model="""const POST_FINISH_EVACUATION_MODEL_V152=true,POST_FINISH_EVAC_CX=-1.15,POST_FINISH_EVAC_CZ=12.03;const postFinishEvacV152=new THREE.Group();postFinishEvacV152.name='PostFinishEvacuationAssemblyV152';postFinishEvacV152.position.set(POST_FINISH_EVAC_CX,0,POST_FINISH_EVAC_CZ);scene.add(postFinishEvacV152);const evacDarkV152=mat(0x101827),evacSteelV152=mat(0xe7f6ff),evacCyanV152=mat(0x45dcff),evacGreenV152=mat(0x49ff8b),evacGoldV152=mat(0xffca36);evacDarkV152.metalness=.72;evacDarkV152.roughness=.24;evacSteelV152.metalness=.58;evacSteelV152.roughness=.18;const evacDeckV152=new THREE.Mesh(new THREE.BoxGeometry(2.46,.09,.92),evacDarkV152);evacDeckV152.name='PostFinishEvacDeckV152';evacDeckV152.position.y=.055;evacDeckV152.castShadow=evacDeckV152.receiveShadow=true;postFinishEvacV152.add(evacDeckV152);[-.36,-.18,0,.18,.36].forEach((z,i)=>{const rib=new THREE.Mesh(new THREE.BoxGeometry(2.18,.065,.12),i===2?evacSteelV152:(i<2?evacGreenV152:evacCyanV152));rib.name='PostFinishEvacDeckRibV152';rib.position.set(0,.12,z);rib.castShadow=rib.receiveShadow=true;rib.material.emissive=new THREE.Color(i===2?0x33546a:(i<2?0x139849:0x087fa9));rib.material.emissiveIntensity=i===2?.30:.56;postFinishEvacV152.add(rib)});const postFinishEvacGuideArmsV152=[],postFinishEvacRollersV152=[],postFinishEvacLampsV152=[];[-1,1].forEach((side,si)=>{const rail=new THREE.Mesh(new THREE.BoxGeometry(.12,.20,.88),evacDarkV152);rail.name='PostFinishEvacSideRailV152';rail.position.set(side*1.10,.24,0);rail.castShadow=rail.receiveShadow=true;postFinishEvacV152.add(rail);[-.30,0,.30].forEach((z,k)=>{const roller=new THREE.Mesh(new THREE.CylinderGeometry(.105,.105,.18,10),k===1?evacGoldV152:(si?evacCyanV152:evacGreenV152));roller.name='PostFinishEvacGuideRollerV152';roller.rotation.z=Math.PI/2;roller.position.set(side*1.10,.31,z);roller.castShadow=roller.receiveShadow=true;roller.material.emissive=new THREE.Color(k===1?0xc69200:(si?0x087fa9:0x139849));roller.material.emissiveIntensity=.72;postFinishEvacV152.add(roller);postFinishEvacRollersV152.push(roller)});const tower=new THREE.Mesh(new THREE.BoxGeometry(.24,1.25,.28),evacDarkV152);tower.name='PostFinishEvacServoTowerV152';tower.position.set(side*1.06,.68,.04);tower.castShadow=tower.receiveShadow=true;postFinishEvacV152.add(tower);const pivot=new THREE.Group();pivot.name='PostFinishEvacGuideArmPivotV152';pivot.position.set(side*.98,.62,-.06);pivot.userData.side=side;const arm=new THREE.Mesh(new THREE.BoxGeometry(.74,.12,.16),evacSteelV152);arm.name='PostFinishEvacGuideArmV152';arm.position.set(-side*.34,0,0);arm.castShadow=arm.receiveShadow=true;arm.material.emissive=new THREE.Color(si?0x087fa9:0x139849);arm.material.emissiveIntensity=.38;pivot.add(arm);const tip=new THREE.Mesh(new THREE.TorusGeometry(.12,.032,7,12,Math.PI),evacGoldV152);tip.name='PostFinishEvacGuideTipV152';tip.rotation.set(Math.PI/2,0,side>0?Math.PI/2:-Math.PI/2);tip.position.set(-side*.69,0,0);tip.castShadow=true;tip.material.emissive=new THREE.Color(0xc69200);tip.material.emissiveIntensity=.88;pivot.add(tip);postFinishEvacV152.add(pivot);postFinishEvacGuideArmsV152.push(pivot)});[-.42,.42].forEach((z,pi)=>{const header=new THREE.Mesh(new THREE.BoxGeometry(2.28,.16,.18),evacDarkV152);header.name=pi?'PostFinishEvacOuterHeaderV152':'PostFinishEvacInnerHeaderV152';header.position.set(0,1.35,z);header.castShadow=header.receiveShadow=true;postFinishEvacV152.add(header);[-.72,-.36,0,.36,.72].forEach((x,i)=>{const lamp=new THREE.Mesh(new THREE.OctahedronGeometry(.07,0),i===2?evacGoldV152:evacSteelV152);lamp.name='PostFinishEvacStatusLampV152';lamp.position.set(x,1.36,z+(pi?.10:-.10));lamp.castShadow=true;lamp.material.emissive=new THREE.Color(i===2?0xc69200:(i<2?0x139849:0x087fa9));lamp.material.emissiveIntensity=.72;lamp.userData.stage=pi*.45+i*.11;postFinishEvacV152.add(lamp);postFinishEvacLampsV152.push(lamp)})});const evacGateRingV152=new THREE.Mesh(new THREE.TorusGeometry(.25,.045,8,18),evacGoldV152);evacGateRingV152.name='PostFinishEvacGateRingV152';evacGateRingV152.rotation.x=Math.PI/2;evacGateRingV152.position.set(0,.18,.16);evacGateRingV152.castShadow=true;evacGateRingV152.material.emissive=new THREE.Color(0xc69200);evacGateRingV152.material.emissiveIntensity=.84;postFinishEvacV152.add(evacGateRingV152);"""
+          s=s.replace(anchor,model+anchor,1)
+          tick_anchor='const finalReleaseAirlockActiveV151='
+          if s.count(tick_anchor) != 1:
+              raise SystemExit(f'v152 runtime anchor count={s.count(tick_anchor)}')
+          tick="""const postFinishEvacActiveV152=win&&finishBrainrotDock>=1,postFinishEvacProgressV152=Math.max(0,Math.min(1,finishPlayerRelease||0)),postFinishEvacPulseV152=.5+.5*Math.sin(t*11.7);postFinishEvacGuideArmsV152.forEach(n=>{const side=n.userData.side,open=postFinishEvacActiveV152?Math.min(1,Math.max(0,(postFinishEvacProgressV152-.38)*2.1)):0;n.rotation.z=side*(.30-.42*open);n.children.forEach(c=>{if(c.isMesh&&c.material?.emissive)c.material.emissiveIntensity=postFinishEvacActiveV152?.56+.42*postFinishEvacPulseV152:.34})});postFinishEvacRollersV152.forEach((n,i)=>{n.rotation.x+=dt*(postFinishEvacActiveV152?(3.0+i*.16):.22);n.material.emissiveIntensity=postFinishEvacActiveV152?.66+.34*postFinishEvacPulseV152:.46});postFinishEvacLampsV152.forEach((n,i)=>{const reached=postFinishEvacProgressV152>=n.userData.stage-.02,done=postFinishEvacProgressV152>=.99;n.material.color.setHex(done?0x49ff8b:(reached?0xffca36:(i%2?0x45dcff:0xe7f6ff)));n.material.emissive.setHex(done?0x139849:(reached?0xc69200:(i%2?0x087fa9:0x33546a)));n.material.emissiveIntensity=postFinishEvacActiveV152?.74+.46*postFinishEvacPulseV152:.50});evacGateRingV152.rotation.z+=dt*(postFinishEvacActiveV152?2.0:.20);evacGateRingV152.scale.setScalar(.94+.10*postFinishEvacProgressV152);evacGateRingV152.material.color.setHex(postFinishEvacProgressV152>=.99?0x49ff8b:0xffca36);evacGateRingV152.material.emissive.setHex(postFinishEvacProgressV152>=.99?0x139849:0xc69200);evacGateRingV152.material.emissiveIntensity=postFinishEvacActiveV152?.84+.48*postFinishEvacPulseV152:.60;"""
+          s=s.replace(tick_anchor,tick+tick_anchor,1)
+          p.write_text(s)
+      - name: Verify v152 model and preserved victory release physics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=['POST_FINISH_EVACUATION_MODEL_V152=true','PostFinishEvacuationAssemblyV152','PostFinishEvacDeckV152','PostFinishEvacDeckRibV152','PostFinishEvacSideRailV152','PostFinishEvacGuideRollerV152','PostFinishEvacServoTowerV152','PostFinishEvacGuideArmPivotV152','PostFinishEvacStatusLampV152','PostFinishEvacGateRingV152','FINISH_PLAYER_RELEASE_V121=true','FINISH_PLAYER_RELEASE_TIME=.95','finishPlayerReleaseTarget=new THREE.Vector3(-1.15,0,11.62)','FINISH_SAFE_BAY_MODEL_V122=true','FINISH_EXIT_RUNWAY_MODEL_V123=true','FINAL_PLAYER_RELEASE_AIRLOCK_MODEL_V151=true','FINISH_BRAINROT_DOCK_TIME=.72','FINAL_CHARGE_GATE_Z=10.88']
+          for token in required: assert token in s, token
+          assert s.count('POST_FINISH_EVACUATION_MODEL_V152=true') == 1
+          assert s.count('const postFinishEvacActiveV152=') == 1
+          print('Post-finish evacuation corridor v152 contract: SUCCESS')
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text();m=re.search(r'<script type="module">(.*?)</script>',s,re.S);assert m
+          Path('/tmp/brainrot-module.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/brainrot-module.mjs
+          for f in scripts/final-puncher-physics-contract-v65.mjs scripts/final-finish-residual-momentum-check.mjs scripts/final-finish-soft-hold-check.mjs scripts/final-finish-charge-check.mjs scripts/second-pit-route-continuity-v70-check.mjs; do
+            if [ -f "$f" ]; then node "$f"; else echo "SKIP missing $f"; fi
+          done
+      - name: Commit real level change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-level-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
+          git commit -m "Level: mechanical post-finish evacuation v152"
+          git push origin HEAD:new-player-glb-overhaul
