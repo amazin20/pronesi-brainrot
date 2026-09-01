@@ -1,0 +1,79 @@
+name: Apply Final Transfer Handoff v150
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-final-transfer-handoff-v150.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+          test "$(git rev-parse HEAD^)" = "e16946635c7a21a0aec5477f6593e6885d33b5c2"
+          git merge-base --is-ancestor e16946635c7a21a0aec5477f6593e6885d33b5c2 HEAD
+      - name: Model pressure cradle to receiving dock handoff v150
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          if 'FINAL_TRANSFER_HANDOFF_MODEL_V150=true' in s:
+              raise SystemExit('v150 already present')
+          anchor='const FINAL_RECEIVING_DOCK_MODEL_V149=true'
+          if s.count(anchor) != 1:
+              raise SystemExit(f'v150 receiving dock anchor count={s.count(anchor)}')
+          model="""const FINAL_TRANSFER_HANDOFF_MODEL_V150=true,FINAL_TRANSFER_HANDOFF_Z0=10.20,FINAL_TRANSFER_HANDOFF_Z1=10.88,FINAL_TRANSFER_HANDOFF_Z=(FINAL_TRANSFER_HANDOFF_Z0+FINAL_TRANSFER_HANDOFF_Z1)*.5;const finalTransferHandoffV150=new THREE.Group();finalTransferHandoffV150.name='FinalTransferHandoffAssemblyV150';finalTransferHandoffV150.position.set(0,0,FINAL_TRANSFER_HANDOFF_Z);scene.add(finalTransferHandoffV150);const transferDarkV150=mat(0x101827),transferSteelV150=mat(0xddebf5),transferGoldV150=mat(0xffca36),transferCyanV150=mat(0x45dcff),transferGreenV150=mat(0x49ff8b);transferDarkV150.metalness=.72;transferDarkV150.roughness=.22;transferSteelV150.metalness=.56;transferSteelV150.roughness=.18;const transferRailGeoV150=new THREE.BoxGeometry(.12,.16,FINAL_TRANSFER_HANDOFF_Z1-FINAL_TRANSFER_HANDOFF_Z0+.18),transferCrossGeoV150=new THREE.BoxGeometry(3.12,.08,.10);[-1.48,1.48].forEach((x,si)=>{const rail=new THREE.Mesh(transferRailGeoV150,transferDarkV150);rail.name='FinalTransferGuideRailV150';rail.position.set(x,.24,0);rail.castShadow=rail.receiveShadow=true;finalTransferHandoffV150.add(rail);[-.28,0,.28].forEach((z,k)=>{const collar=new THREE.Mesh(new THREE.TorusGeometry(.13,.028,7,12),k===1?transferGoldV150:(si?transferCyanV150:transferGreenV150));collar.name='FinalTransferRailCollarV150';collar.rotation.x=Math.PI/2;collar.position.set(x,.27,z);collar.castShadow=true;collar.material.emissive=new THREE.Color(k===1?0xc69200:(si?0x087fa9:0x139849));collar.material.emissiveIntensity=.72;finalTransferHandoffV150.add(collar)})});[-.28,0,.28].forEach((z,i)=>{const cross=new THREE.Mesh(transferCrossGeoV150,i===1?transferSteelV150:transferDarkV150);cross.name='FinalTransferCrossMemberV150';cross.position.set(0,.13,z);cross.castShadow=cross.receiveShadow=true;cross.material.emissive=new THREE.Color(i===1?0x223448:0x0b101b);cross.material.emissiveIntensity=i===1?.25:.08;finalTransferHandoffV150.add(cross)});const finalTransferShuttleV150=new THREE.Group();finalTransferShuttleV150.name='FinalTransferShuttleV150';finalTransferShuttleV150.position.set(0,.26,.26);finalTransferHandoffV150.add(finalTransferShuttleV150);const transferTrayV150=new THREE.Mesh(new THREE.BoxGeometry(2.54,.10,.34),transferSteelV150);transferTrayV150.name='FinalTransferShuttleTrayV150';transferTrayV150.castShadow=transferTrayV150.receiveShadow=true;transferTrayV150.material.emissive=new THREE.Color(0x223448);transferTrayV150.material.emissiveIntensity=.24;finalTransferShuttleV150.add(transferTrayV150);[-1.02,-.51,0,.51,1.02].forEach((x,i)=>{const rib=new THREE.Mesh(new THREE.BoxGeometry(.22,.08,.42),i===2?transferGoldV150:transferDarkV150);rib.name='FinalTransferShuttleRibV150';rib.position.set(x,.08,0);rib.castShadow=rib.receiveShadow=true;rib.material.emissive=new THREE.Color(i===2?0xc69200:0x0b101b);rib.material.emissiveIntensity=i===2?.72:.10;finalTransferShuttleV150.add(rib)});const finalTransferRollersV150=[];[-1,1].forEach((side,si)=>[-.18,.18].forEach((z,k)=>{const roller=new THREE.Mesh(new THREE.CylinderGeometry(.10,.10,.18,10),k?transferGoldV150:(si?transferCyanV150:transferGreenV150));roller.name='FinalTransferShuttleRollerV150';roller.rotation.z=Math.PI/2;roller.position.set(side*1.22,-.02,z);roller.castShadow=roller.receiveShadow=true;roller.material.emissive=new THREE.Color(k?0xc69200:(si?0x087fa9:0x139849));roller.material.emissiveIntensity=.70;finalTransferShuttleV150.add(roller);finalTransferRollersV150.push(roller)}));const finalTransferClampPivotsV150=[];[-1,1].forEach((side,si)=>{const pivot=new THREE.Group();pivot.name='FinalTransferClampPivotV150';pivot.position.set(side*1.10,.18,0);pivot.userData.side=side;const jaw=new THREE.Mesh(new THREE.BoxGeometry(.52,.12,.26),transferSteelV150);jaw.name='FinalTransferClampJawV150';jaw.position.set(-side*.24,0,0);jaw.castShadow=jaw.receiveShadow=true;jaw.material.emissive=new THREE.Color(si?0x087fa9:0x139849);jaw.material.emissiveIntensity=.30;pivot.add(jaw);const tip=new THREE.Mesh(new THREE.TorusGeometry(.11,.03,7,12,Math.PI),transferGoldV150);tip.name='FinalTransferClampTipV150';tip.rotation.set(Math.PI/2,0,side>0?Math.PI/2:-Math.PI/2);tip.position.set(-side*.50,0,0);tip.castShadow=true;tip.material.emissive=new THREE.Color(0xc69200);tip.material.emissiveIntensity=.80;pivot.add(tip);finalTransferShuttleV150.add(pivot);finalTransferClampPivotsV150.push(pivot)});const finalTransferLampsV150=[];[-1.22,-.61,0,.61,1.22].forEach((x,i)=>{const lamp=new THREE.Mesh(new THREE.OctahedronGeometry(.075,0),i===2?transferGoldV150:transferSteelV150);lamp.name='FinalTransferStatusLampV150';lamp.position.set(x,.48,.16);lamp.castShadow=true;lamp.material.emissive=new THREE.Color(i===2?0xc69200:(i<2?0x139849:0x087fa9));lamp.material.emissiveIntensity=.72;finalTransferHandoffV150.add(lamp);finalTransferLampsV150.push(lamp)});"""
+          s=s.replace(anchor,model+anchor,1)
+          tick_anchor='const finalReceivingDockActiveV149='
+          if s.count(tick_anchor) != 1:
+              raise SystemExit(f'v150 dock tick anchor count={s.count(tick_anchor)}')
+          tick="""const finalTransferActiveV150=win||finishBrainrotDock>0,finalTransferProgressV150=Math.max(0,Math.min(1,finishBrainrotDock||0)),finalTransferPulseV150=.5+.5*Math.sin(t*14.2);finalTransferShuttleV150.position.z=.26-.52*finalTransferProgressV150;finalTransferShuttleV150.position.y=.26+.035*Math.sin(finalTransferProgressV150*Math.PI);finalTransferClampPivotsV150.forEach((n,i)=>{const side=n.userData.side;n.rotation.z=side*(.20-.28*finalTransferProgressV150);n.position.x=side*(1.10-.12*finalTransferProgressV150);n.children.forEach(c=>{if(c.isMesh&&c.material?.emissive)c.material.emissiveIntensity=finalTransferActiveV150?.48+.44*finalTransferPulseV150:.28})});finalTransferRollersV150.forEach((n,i)=>{n.rotation.x+=dt*(finalTransferActiveV150?9.6:1.0)*(i%2?-1:1);n.material.emissiveIntensity=finalTransferActiveV150?.78+.40*finalTransferPulseV150:.54});finalTransferLampsV150.forEach((n,i)=>{const handed=finalTransferProgressV150>=i/Math.max(1,finalTransferLampsV150.length-1);n.material.color.setHex(finalTransferProgressV150>=.99?0x49ff8b:(handed?0xffca36:(i%2?0x45dcff:0xddebf5)));n.material.emissive.setHex(finalTransferProgressV150>=.99?0x139849:(handed?0xc69200:(i%2?0x087fa9:0x223448)));n.material.emissiveIntensity=finalTransferActiveV150?.78+.50*finalTransferPulseV150:.56});transferTrayV150.material.emissiveIntensity=finalTransferActiveV150?.24+.42*finalTransferProgressV150:.18;"""
+          s=s.replace(tick_anchor,tick+tick_anchor,1)
+          p.write_text(s)
+      - name: Verify v150 model and preserved finish physics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=['FINAL_TRANSFER_HANDOFF_MODEL_V150=true','FINAL_TRANSFER_HANDOFF_Z0=10.20','FINAL_TRANSFER_HANDOFF_Z1=10.88','FinalTransferHandoffAssemblyV150','FinalTransferGuideRailV150','FinalTransferShuttleV150','FinalTransferShuttleTrayV150','FinalTransferShuttleRollerV150','FinalTransferClampPivotV150','FinalTransferClampJawV150','FinalTransferStatusLampV150','FINAL_RECEIVING_DOCK_MODEL_V149=true','FINAL_PRESSURE_CRADLE_CHARGE_MACHINE_V148=true','FINISH_BRAINROT_DOCK_TIME=.72','finishBrainrotDockTarget=new THREE.Vector3(0,.34,10.20)','FINAL_CHARGE_GATE_Z=10.88','FINAL_CHARGE_CRADLE_DAMP=15.5','FINAL_FINISH_FUNNEL_DAMP=10.5','FINAL_FINISH_FUNNEL_PULL=1.75']
+          for token in required: assert token in s, token
+          assert s.count('FINAL_TRANSFER_HANDOFF_MODEL_V150=true') == 1
+          assert s.count('const finalTransferActiveV150=') == 1
+          print('Final transfer handoff model v150 contract: SUCCESS')
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text();m=re.search(r'<script type="module">(.*?)</script>',s,re.S);assert m
+          Path('/tmp/brainrot-module.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/brainrot-module.mjs
+          for f in scripts/final-puncher-physics-contract-v65.mjs scripts/final-finish-residual-momentum-check.mjs scripts/final-finish-soft-hold-check.mjs scripts/final-finish-charge-check.mjs scripts/second-pit-route-continuity-v70-check.mjs; do
+            if [ -f "$f" ]; then node "$f"; else echo "SKIP missing $f"; fi
+          done
+      - name: Commit real level change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-level-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
+          git commit -m "Level: mechanical final transfer handoff v150"
+          git push origin HEAD:new-player-glb-overhaul
