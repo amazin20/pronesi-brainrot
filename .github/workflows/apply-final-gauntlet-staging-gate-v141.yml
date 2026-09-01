@@ -1,0 +1,78 @@
+name: Apply Final Gauntlet Staging Gate v141
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-final-gauntlet-staging-gate-v141.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+          test "$(git rev-parse HEAD^)" = "4bc6fb3c69d4d3bfc7eedb82ed78c234f791c117"
+      - name: Model final gauntlet staging gate v141
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          if 'FINAL_GAUNTLET_STAGING_GATE_MODEL_V141=true' in s:
+              raise SystemExit('v141 already present')
+          anchor='const FINAL_GAUNTLET_APPROACH_Z_MIN=6.72'
+          if s.count(anchor) != 1:
+              raise SystemExit(f'v141 anchor count={s.count(anchor)}')
+          model="""const FINAL_GAUNTLET_STAGING_GATE_MODEL_V141=true,FINAL_GAUNTLET_STAGING_GATE_Z=7.06;const finalGauntletStagingGateV141=new THREE.Group();finalGauntletStagingGateV141.name='FinalGauntletStagingGateAssemblyV141';finalGauntletStagingGateV141.position.set(0,0,FINAL_GAUNTLET_STAGING_GATE_Z);scene.add(finalGauntletStagingGateV141);const finalStageAmberV141=mat(0xffd84d),finalStagePinkV141=mat(0xff557c),finalStageDarkV141=mat(0x241c32),finalStageWhiteV141=mat(0xfff7df),finalStageGreenV141=mat(0x49ff79);finalStageAmberV141.metalness=.32;finalStageAmberV141.roughness=.25;finalStagePinkV141.metalness=.30;finalStagePinkV141.roughness=.26;finalStageDarkV141.metalness=.56;finalStageDarkV141.roughness=.29;const finalStagePostGeoV141=new THREE.CylinderGeometry(.105,.16,1.62,10),finalStageFootGeoV141=new THREE.CylinderGeometry(.23,.31,.20,10),finalStageRingGeoV141=new THREE.TorusGeometry(.155,.036,7,12),finalStageBeamGeoV141=new THREE.BoxGeometry(3.02,.18,.22),finalStageChevronGeoV141=new THREE.BoxGeometry(.50,.055,.18);[-1.52,1.52].forEach((x,i)=>{const foot=new THREE.Mesh(finalStageFootGeoV141,finalStageDarkV141);foot.name='FinalGauntletStagingFootV141';foot.position.set(x,.10,0);foot.castShadow=foot.receiveShadow=true;finalGauntletStagingGateV141.add(foot);const post=new THREE.Mesh(finalStagePostGeoV141,i?finalStagePinkV141:finalStageAmberV141);post.name='FinalGauntletStagingPostV141';post.position.set(x,.86,0);post.castShadow=post.receiveShadow=true;post.material.emissive=new THREE.Color(i?0xa20d38:0xa95a00);post.material.emissiveIntensity=.48;finalGauntletStagingGateV141.add(post);[.34,.78,1.24].forEach((y,k)=>{const ring=new THREE.Mesh(finalStageRingGeoV141,k===1?finalStageWhiteV141:(i?finalStagePinkV141:finalStageAmberV141));ring.name='FinalGauntletStagingPostRingV141';ring.rotation.x=Math.PI/2;ring.position.set(x,y,0);ring.castShadow=true;ring.material.emissive=new THREE.Color(k===1?0xffffff:(i?0xff557c:0xffb12b));ring.material.emissiveIntensity=k===1?.96:.74;finalGauntletStagingGateV141.add(ring)})});const finalStageBeamV141=new THREE.Mesh(finalStageBeamGeoV141,finalStageDarkV141);finalStageBeamV141.name='FinalGauntletStagingTimingBeamV141';finalStageBeamV141.position.set(0,1.64,0);finalStageBeamV141.castShadow=finalStageBeamV141.receiveShadow=true;finalGauntletStagingGateV141.add(finalStageBeamV141);const finalStageTimingLampsV141=[];[-1.02,-.51,0,.51,1.02].forEach((x,i)=>{const lamp=new THREE.Mesh(new THREE.OctahedronGeometry(.09,0),i===2?finalStageGreenV141:finalStageWhiteV141);lamp.name='FinalGauntletStagingTimingLampV141';lamp.position.set(x,1.66,.14);lamp.castShadow=true;lamp.material.emissive=new THREE.Color(i===2?0x49ff79:(i<2?0xffb12b:0xff557c));lamp.material.emissiveIntensity=i===2?1.18:.94;finalGauntletStagingGateV141.add(lamp);finalStageTimingLampsV141.push(lamp)});[-.58,-.20,.20,.58].forEach((z,i)=>{const chevron=new THREE.Mesh(finalStageChevronGeoV141,i<2?finalStageAmberV141:finalStagePinkV141);chevron.name='FinalGauntletStagingChevronV141';chevron.position.set(i%2?-.34:.34,.09,z);chevron.rotation.y=(i%2?-1:1)*.52;chevron.castShadow=chevron.receiveShadow=true;chevron.material.emissive=new THREE.Color(i<2?0xffb12b:0xff557c);chevron.material.emissiveIntensity=.72;finalGauntletStagingGateV141.add(chevron)});[-.86,0,.86].forEach((x,i)=>{const ring=new THREE.Mesh(new THREE.TorusGeometry(.115,.028,6,10),i===1?finalStageGreenV141:finalStageWhiteV141);ring.name='FinalGauntletStagingFloorGuideV141';ring.rotation.x=Math.PI/2;ring.position.set(x,.14,.16);ring.castShadow=true;ring.material.emissive=new THREE.Color(i===1?0x49ff79:(i===0?0xffb12b:0xff557c));ring.material.emissiveIntensity=i===1?1.10:.82;finalGauntletStagingGateV141.add(ring)});"""
+          s=s.replace(anchor,model+anchor,1)
+          tick_anchor="handoffBeamV140.material.emissiveIntensity=handoffActiveV140?.34+.62*handoffProgressV140:.12;"
+          if s.count(tick_anchor) != 1:
+              raise SystemExit(f'v141 tick anchor count={s.count(tick_anchor)}')
+          tick="""const finalStageActiveV141=p.z>6.72&&p.z<7.48,finalStageProgressV141=Math.max(0,Math.min(1,(p.z-6.72)/.76)),finalStagePulseV141=.5+.5*Math.sin(t*12.0);finalGauntletStagingGateV141.children.forEach(n=>{if(!n.isMesh||!n.material?.emissive)return;if(n.name==='FinalGauntletStagingPostRingV141'||n.name==='FinalGauntletStagingFloorGuideV141'||n.name==='FinalGauntletStagingChevronV141')n.material.emissiveIntensity=finalStageActiveV141?.72+.52*finalStageProgressV141+.22*finalStagePulseV141:(n.name==='FinalGauntletStagingChevronV141'?.72:.80)});finalStageTimingLampsV141.forEach((lamp,i)=>{const armed=finalStageProgressV141>i/(finalStageTimingLampsV141.length-1);lamp.material.emissiveIntensity=finalStageActiveV141?(armed?1.25+.55*finalStagePulseV141:.54):.82;});finalStageBeamV141.material.emissive=finalStageBeamV141.material.emissive||new THREE.Color(0xa95a00);finalStageBeamV141.material.emissiveIntensity=finalStageActiveV141?.30+.58*finalStageProgressV141:.10;"""
+          s=s.replace(tick_anchor,tick_anchor+tick,1)
+          p.write_text(s)
+      - name: Verify v141 staging gate and preserved gameplay
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=['FINAL_GAUNTLET_STAGING_GATE_MODEL_V141=true','FINAL_GAUNTLET_STAGING_GATE_Z=7.06','FinalGauntletStagingGateAssemblyV141','FinalGauntletStagingFootV141','FinalGauntletStagingPostV141','FinalGauntletStagingPostRingV141','FinalGauntletStagingTimingBeamV141','FinalGauntletStagingTimingLampV141','FinalGauntletStagingChevronV141','FinalGauntletStagingFloorGuideV141','SECOND_PIT_FINAL_HANDOFF_MODEL_V140=true','FINAL_GAUNTLET_APPROACH_Z_MIN=6.72','FINAL_GAUNTLET_Z1=7.55','FINAL_GAUNTLET_APPROACH_PAD_MODEL_V111=true']
+          for token in required: assert token in s, token
+          assert s.count('FINAL_GAUNTLET_STAGING_GATE_MODEL_V141=true') == 1
+          assert s.count("'FinalGauntletStagingGateAssemblyV141'") == 1
+          print('Final gauntlet staging gate v141 contract: SUCCESS')
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text();m=re.search(r'<script type="module">(.*?)</script>',s,re.S);assert m
+          Path('/tmp/brainrot-module.mjs').write_text(m.group(1))
+          PY
+          node --check /tmp/brainrot-module.mjs
+          for f in scripts/second-pit-carry-window-check.mjs scripts/second-pit-platform-motion-v71-check.mjs scripts/second-pit-route-continuity-v70-check.mjs scripts/second-pit-boarding-hold-check.mjs scripts/final-puncher-physics-contract-v65.mjs scripts/final-finish-residual-momentum-check.mjs scripts/final-finish-soft-hold-check.mjs scripts/final-finish-charge-check.mjs; do
+            if [ -f "$f" ]; then node "$f"; else echo "SKIP missing $f"; fi
+          done
+      - name: Commit real level change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-level-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
+          git commit -m "Level: model final gauntlet staging gate v141"
+          git push origin HEAD:new-player-glb-overhaul
