@@ -1,0 +1,98 @@
+name: Apply First Sweeper Timing Lock v155
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-first-sweeper-timing-lock-v155.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+      - name: Build mechanical first sweeper timing lock v155
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          if 'FIRST_SWEEPER_TIMING_LOCK_MODEL_V155=true' in s:
+              raise SystemExit('v155 already present')
+          anchor="scene.add(firstSweeperGate);const FIRST_SWEEPER_RECOVERY_MODEL_V83=true"
+          if anchor not in s:
+              raise SystemExit('first sweeper gate anchor missing')
+          model="""scene.add(firstSweeperGate);const FIRST_SWEEPER_TIMING_LOCK_MODEL_V155=true;firstSweeperGate.name='FirstSweeperTimingLockCollisionBarV155';firstSweeperGate.material.transparent=true;firstSweeperGate.material.opacity=.035;firstSweeperGate.material.depthWrite=false;[firstSweeperGateL,firstSweeperGateR,sweeperEntryL,sweeperEntryR,sweeperEntryTop].forEach(o=>o.traverse(n=>{if(!n.isMesh||!n.material)return;n.name=n.name||'FirstSweeperLegacyTimingCarrierV155';n.material.transparent=true;n.material.opacity=Math.min(n.material.opacity??1,.055);n.material.depthWrite=false}));const firstSweeperTimingLockV155=new THREE.Group();firstSweeperTimingLockV155.name='FirstSweeperTimingLockAssemblyV155';firstSweeperTimingLockV155.position.set(0,0,FIRST_SWEEPER_GATE_Z);scene.add(firstSweeperTimingLockV155);const fstLockDarkV155=mat(0x171b2d),fstLockSteelV155=mat(0xeaf4ff),fstLockAmberV155=mat(0xffb12b),fstLockGreenV155=mat(0x49ff79),fstLockRedV155=mat(0xff315d),fstLockCyanV155=mat(0x45e8ff);fstLockDarkV155.metalness=.64;fstLockDarkV155.roughness=.26;fstLockSteelV155.metalness=.50;fstLockSteelV155.roughness=.20;const fstLockBaseV155=new THREE.Mesh(new THREE.BoxGeometry(4.18,.12,.74),fstLockDarkV155);fstLockBaseV155.name='FirstSweeperTimingLockBaseV155';fstLockBaseV155.position.y=.06;fstLockBaseV155.castShadow=fstLockBaseV155.receiveShadow=true;firstSweeperTimingLockV155.add(fstLockBaseV155);[-1.62,-1.08,-.54,0,.54,1.08,1.62].forEach((x,i)=>{const plate=new THREE.Mesh(new THREE.BoxGeometry(.44,.07,.58),i===3?fstLockSteelV155:fstLockAmberV155);plate.name='FirstSweeperTimingLockDeckPlateV155';plate.position.set(x,.135,0);plate.castShadow=plate.receiveShadow=true;plate.material.emissive=new THREE.Color(i===3?0x4b6d83:0xa95a00);plate.material.emissiveIntensity=i===3?.34:.42;firstSweeperTimingLockV155.add(plate)});const firstSweeperTimingLockDoorPivotsV155=[],firstSweeperTimingLockPistonsV155=[],firstSweeperTimingLockRollersV155=[],firstSweeperTimingLockLampsV155=[];[-1,1].forEach((side,si)=>{const tower=new THREE.Mesh(new THREE.BoxGeometry(.34,2.02,.42),fstLockDarkV155);tower.name='FirstSweeperTimingLockServoTowerV155';tower.position.set(side*1.94,1.04,.02);tower.castShadow=tower.receiveShadow=true;firstSweeperTimingLockV155.add(tower);[.34,.84,1.34,1.82].forEach((y,k)=>{const collar=new THREE.Mesh(new THREE.TorusGeometry(.19,.042,7,14),k===1?fstLockSteelV155:(si?fstLockCyanV155:fstLockAmberV155));collar.name='FirstSweeperTimingLockTowerCollarV155';collar.rotation.x=Math.PI/2;collar.position.set(side*1.94,y,.02);collar.castShadow=true;collar.material.emissive=new THREE.Color(k===1?0x4b6d83:(si?0x087fa8:0xa95a00));collar.material.emissiveIntensity=.72;firstSweeperTimingLockV155.add(collar)});const piston=new THREE.Mesh(new THREE.CylinderGeometry(.075,.095,.78,10),fstLockSteelV155);piston.name='FirstSweeperTimingLockHydraulicPistonV155';piston.rotation.z=Math.PI/2;piston.position.set(side*1.55,.76,.02);piston.castShadow=piston.receiveShadow=true;piston.userData.side=side;firstSweeperTimingLockV155.add(piston);firstSweeperTimingLockPistonsV155.push(piston);const pivot=new THREE.Group();pivot.name='FirstSweeperTimingLockDoorPivotV155';pivot.position.set(side*1.74,.76,.02);pivot.userData.side=side;const door=new THREE.Mesh(new THREE.BoxGeometry(1.62,.22,.34),si?fstLockCyanV155:fstLockAmberV155);door.name='FirstSweeperTimingLockDoorV155';door.position.set(-side*.76,0,0);door.castShadow=door.receiveShadow=true;door.material.emissive=new THREE.Color(si?0x087fa8:0xa95a00);door.material.emissiveIntensity=.52;pivot.add(door);[-1.24,-.78,-.32].forEach((lx,k)=>{const rib=new THREE.Mesh(new THREE.BoxGeometry(.22,.31,.40),k===1?fstLockSteelV155:fstLockDarkV155);rib.name='FirstSweeperTimingLockDoorRibV155';rib.position.set(side*lx,0,0);rib.castShadow=rib.receiveShadow=true;pivot.add(rib);const roller=new THREE.Mesh(new THREE.CylinderGeometry(.105,.105,.20,10),k===1?fstLockGreenV155:(si?fstLockCyanV155:fstLockAmberV155));roller.name='FirstSweeperTimingLockDoorRollerV155';roller.rotation.z=Math.PI/2;roller.position.set(side*lx,-.20,0);roller.castShadow=roller.receiveShadow=true;roller.material.emissive=new THREE.Color(k===1?0x159b43:(si?0x087fa8:0xa95a00));roller.material.emissiveIntensity=.76;pivot.add(roller);firstSweeperTimingLockRollersV155.push(roller)});firstSweeperTimingLockV155.add(pivot);firstSweeperTimingLockDoorPivotsV155.push(pivot);const lamp=new THREE.Mesh(new THREE.OctahedronGeometry(.12,0),si?fstLockCyanV155:fstLockAmberV155);lamp.name='FirstSweeperTimingLockStatusLampV155';lamp.position.set(side*1.94,2.16,.02);lamp.castShadow=true;lamp.material.emissive=new THREE.Color(si?0x087fa8:0xa95a00);lamp.material.emissiveIntensity=1.0;firstSweeperTimingLockV155.add(lamp);firstSweeperTimingLockLampsV155.push(lamp)});const fstLockHeaderV155=new THREE.Mesh(new THREE.BoxGeometry(4.06,.22,.38),fstLockDarkV155);fstLockHeaderV155.name='FirstSweeperTimingLockHeaderV155';fstLockHeaderV155.position.set(0,2.26,.02);fstLockHeaderV155.castShadow=fstLockHeaderV155.receiveShadow=true;firstSweeperTimingLockV155.add(fstLockHeaderV155);[-1.28,-.64,0,.64,1.28].forEach((x,i)=>{const lamp=new THREE.Mesh(new THREE.OctahedronGeometry(.09,0),i===2?fstLockGreenV155:fstLockSteelV155);lamp.name='FirstSweeperTimingLockHeaderLampV155';lamp.position.set(x,2.27,.24);lamp.castShadow=true;lamp.material.emissive=new THREE.Color(i===2?0x159b43:(i<2?0xa95a00:0x087fa8));lamp.material.emissiveIntensity=.82;firstSweeperTimingLockV155.add(lamp);firstSweeperTimingLockLampsV155.push(lamp)});const fstLockTimingRingV155=new THREE.Mesh(new THREE.TorusGeometry(.30,.055,8,18),fstLockGreenV155);fstLockTimingRingV155.name='FirstSweeperTimingLockRingV155';fstLockTimingRingV155.rotation.x=Math.PI/2;fstLockTimingRingV155.position.set(0,.22,.18);fstLockTimingRingV155.castShadow=true;fstLockTimingRingV155.material.emissive=new THREE.Color(0x159b43);fstLockTimingRingV155.material.emissiveIntensity=.84;firstSweeperTimingLockV155.add(fstLockTimingRingV155);const FIRST_SWEEPER_RECOVERY_MODEL_V83=true"""
+          s=s.replace(anchor,model,1)
+          anim_anchor="[firstSweeperGateL,firstSweeperGateR].forEach(o=>{o.material.color.setHex(gateColor);o.material.emissive.setHex(gateOpen?0x149343:0xb86a00);o.material.emissiveIntensity=gateOpen?1.05:.72+.55*gatePulse});"
+          if anim_anchor not in s:
+              raise SystemExit('first sweeper gate runtime anchor missing')
+          anim="""[firstSweeperGateL,firstSweeperGateR].forEach(o=>{o.material.color.setHex(gateColor);o.material.emissive.setHex(gateOpen?0x149343:0xb86a00);o.material.emissiveIntensity=gateOpen?1.05:.72+.55*gatePulse});const fstLockOpenV155=Math.max(0,Math.min(1,(firstSweeperGate.position.y-FIRST_SWEEPER_GATE_CLOSED_Y)/(FIRST_SWEEPER_GATE_OPEN_Y-FIRST_SWEEPER_GATE_CLOSED_Y))),fstLockPulseV155=.5+.5*Math.sin(t*14.6);firstSweeperTimingLockDoorPivotsV155.forEach(n=>{const side=n.userData.side;n.rotation.z=side*(-.05+.80*fstLockOpenV155);n.position.y=.76+.18*fstLockOpenV155;n.children.forEach(c=>{if(c.isMesh&&c.material?.emissive)c.material.emissiveIntensity=gateOpen?.72+.45*fstLockPulseV155:.42})});firstSweeperTimingLockPistonsV155.forEach(n=>{const side=n.userData.side;n.scale.y=.42+.58*fstLockOpenV155;n.position.x=side*(1.55+.16*fstLockOpenV155);n.material.emissive=n.material.emissive||new THREE.Color(0x4b6d83);n.material.emissiveIntensity=.38+.62*fstLockOpenV155});firstSweeperTimingLockRollersV155.forEach((n,i)=>{n.rotation.x+=dt*(gateOpen?7.2:(burst?2.4:.7))*(i%2?-1:1);n.material.emissiveIntensity=gateOpen?.80+.38*fstLockPulseV155:(burst?.82+.38*fstLockPulseV155:.52)});firstSweeperTimingLockLampsV155.forEach((n,i)=>{const c=gateOpen?0x49ff79:(burst?0xff315d:(warning?0xffb12b:(i%2?0x45e8ff:0xffb12b)));n.material.color.setHex(c);n.material.emissive.setHex(gateOpen?0x159b43:(burst?0xa20d38:(warning?0xa95a00:(i%2?0x087fa8:0xa95a00))));n.material.emissiveIntensity=gateOpen?1.10+.55*fstLockPulseV155:(warning||burst?1.0+.55*fstLockPulseV155:.72)});fstLockTimingRingV155.rotation.z+=dt*(gateOpen?2.5:(warning?1.1:.20));fstLockTimingRingV155.scale.setScalar(.94+.12*fstLockOpenV155);fstLockTimingRingV155.material.color.setHex(gateOpen?0x49ff79:(burst?0xff315d:0xffb12b));fstLockTimingRingV155.material.emissive.setHex(gateOpen?0x159b43:(burst?0xa20d38:0xa95a00));fstLockTimingRingV155.material.emissiveIntensity=gateOpen?.92+.52*fstLockPulseV155:(warning?1.0+.55*fstLockPulseV155:.62);fstLockHeaderV155.material.emissive=fstLockHeaderV155.material.emissive||new THREE.Color(0xa95a00);fstLockHeaderV155.material.emissive.setHex(gateOpen?0x159b43:(burst?0xa20d38:0xa95a00));fstLockHeaderV155.material.emissiveIntensity=gateOpen?.22+.42*fstLockOpenV155:(warning||burst?.22+.34*fstLockPulseV155:.08);"""
+          s=s.replace(anim_anchor,anim,1)
+          p.write_text(s)
+      - name: Verify first sweeper timing lock v155 and preserved physics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          required=[
+            'FIRST_SWEEPER_TIMING_LOCK_MODEL_V155=true',
+            'FirstSweeperTimingLockCollisionBarV155',
+            'FirstSweeperTimingLockAssemblyV155',
+            'FirstSweeperTimingLockServoTowerV155',
+            'FirstSweeperTimingLockHydraulicPistonV155',
+            'FirstSweeperTimingLockDoorPivotV155',
+            'FirstSweeperTimingLockDoorV155',
+            'FirstSweeperTimingLockDoorRollerV155',
+            'FirstSweeperTimingLockHeaderV155',
+            'FirstSweeperTimingLockRingV155',
+            'FIRST_SWEEPER_GATE_Z=-10.62',
+            'FIRST_SWEEPER_GATE_HALF_X=1.74',
+            'FIRST_SWEEPER_GATE_CLOSED_Y=.62',
+            'FIRST_SWEEPER_GATE_OPEN_Y=2.82',
+            'FIRST_SWEEPER_GATE_HALF_Y=.11',
+            'function firstSweeperTimingGateBlocks(x,z,r=.4,top=LIFT_GATE_PLAYER_TOP)',
+            'barBottom=firstSweeperGate.position.y-FIRST_SWEEPER_GATE_HALF_Y',
+            'firstSweeperGate.position.y+=Math.max(-gateStep,Math.min(gateStep,gateTarget-firstSweeperGate.position.y))'
+          ]
+          for token in required:
+              assert token in s, token
+          assert s.count('FIRST_SWEEPER_TIMING_LOCK_MODEL_V155=true') == 1
+          assert s.count("name='FirstSweeperTimingLockCollisionBarV155'") == 1
+          assert 'firstSweeperTimingGateBlocks(x,z,.4)' in s
+          m=re.search(r'<script type="module">(.*?)</script>',s,re.S)
+          assert m, 'module script missing'
+          Path('/tmp/brainrot-module.mjs').write_text(m.group(1))
+          print('First sweeper timing lock v155 contract: SUCCESS')
+          PY
+          node --check /tmp/brainrot-module.mjs
+          node scripts/final-puncher-physics-contract-v65.mjs
+          node scripts/final-finish-residual-momentum-check.mjs
+          node scripts/final-finish-soft-hold-check.mjs
+          node scripts/final-finish-charge-check.mjs
+          if [ -f scripts/second-pit-full-route-continuity-v70.mjs ]; then node scripts/second-pit-full-route-continuity-v70.mjs; fi
+      - name: Commit real level change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-level-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
+          git commit -m "Level: mechanical first sweeper timing lock v155"
+          git push origin HEAD:new-player-glb-overhaul
