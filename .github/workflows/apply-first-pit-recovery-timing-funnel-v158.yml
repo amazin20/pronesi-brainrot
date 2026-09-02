@@ -1,0 +1,72 @@
+name: Apply First Pit Recovery Timing Funnel v158
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-first-pit-recovery-timing-funnel-v158.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+      - name: Build first-pit recovery timing funnel v158
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          if 'FIRST_PIT_RECOVERY_TIMING_FUNNEL_MODEL_V158=true' in s:
+              raise SystemExit('v158 already present')
+          anchor='const SECOND_SWEEPER_STAGING_PAD_MODEL_V129=true;'
+          if s.count(anchor) != 1:
+              raise SystemExit(f'v158 anchor count={s.count(anchor)}')
+          model="""const FIRST_PIT_RECOVERY_TIMING_FUNNEL_MODEL_V158=true,FIRST_PIT_RECOVERY_FUNNEL_Z_MIN=-1.86,FIRST_PIT_RECOVERY_FUNNEL_Z_MAX=-1.34,FIRST_PIT_RECOVERY_FUNNEL_Z=(FIRST_PIT_RECOVERY_FUNNEL_Z_MIN+FIRST_PIT_RECOVERY_FUNNEL_Z_MAX)*.5;const firstPitRecoveryTimingFunnelV158=new THREE.Group();firstPitRecoveryTimingFunnelV158.name='FirstPitRecoveryTimingFunnelAssemblyV158';firstPitRecoveryTimingFunnelV158.position.set(0,0,FIRST_PIT_RECOVERY_FUNNEL_Z);scene.add(firstPitRecoveryTimingFunnelV158);const fprfDarkV158=mat(0x121a2c),fprfSteelV158=mat(0xe8f6ff),fprfCyanV158=mat(0x45e8ff),fprfAmberV158=mat(0xffb12b),fprfGreenV158=mat(0x49ff79),fprfRedV158=mat(0xff315d);fprfDarkV158.metalness=.66;fprfDarkV158.roughness=.26;fprfSteelV158.metalness=.52;fprfSteelV158.roughness=.19;const fprfFrameV158=new THREE.Mesh(new THREE.BoxGeometry(3.46,.10,.56),fprfDarkV158);fprfFrameV158.name='FirstPitRecoveryTimingFunnelFrameV158';fprfFrameV158.position.y=.05;fprfFrameV158.castShadow=fprfFrameV158.receiveShadow=true;firstPitRecoveryTimingFunnelV158.add(fprfFrameV158);const fprfSlatGeoV158=new THREE.BoxGeometry(.38,.07,.42),fprfTowerGeoV158=new THREE.BoxGeometry(.30,1.52,.34),fprfRingGeoV158=new THREE.TorusGeometry(.145,.034,7,14),fprfRollerGeoV158=new THREE.CylinderGeometry(.095,.095,.20,10),fprfArmGeoV158=new THREE.BoxGeometry(.76,.13,.20);[-1.40,-.94,-.47,0,.47,.94,1.40].forEach((x,i)=>{const slat=new THREE.Mesh(fprfSlatGeoV158,i===3?fprfSteelV158:(i<3?fprfCyanV158:fprfAmberV158));slat.name='FirstPitRecoveryTimingFunnelSlatV158';slat.position.set(x,.12,0);slat.castShadow=slat.receiveShadow=true;slat.material.emissive=new THREE.Color(i===3?0x42667d:(i<3?0x087fa8:0xa95a00));slat.material.emissiveIntensity=i===3?.34:.54;firstPitRecoveryTimingFunnelV158.add(slat)});[-1,1].forEach((side,si)=>{const rail=new THREE.Mesh(new THREE.BoxGeometry(.12,.18,.52),fprfDarkV158);rail.name='FirstPitRecoveryTimingFunnelSideRailV158';rail.position.set(side*1.57,.25,0);rail.castShadow=rail.receiveShadow=true;firstPitRecoveryTimingFunnelV158.add(rail);const tower=new THREE.Mesh(fprfTowerGeoV158,fprfDarkV158);tower.name='FirstPitRecoveryTimingFunnelServoTowerV158';tower.position.set(side*1.70,.80,.02);tower.castShadow=tower.receiveShadow=true;firstPitRecoveryTimingFunnelV158.add(tower);[.32,.78,1.24].forEach((y,k)=>{const halo=new THREE.Mesh(fprfRingGeoV158,k===1?fprfSteelV158:(si?fprfAmberV158:fprfCyanV158));halo.name='FirstPitRecoveryTimingFunnelTowerHaloV158';halo.rotation.x=Math.PI/2;halo.position.set(side*1.70,y,.02);halo.castShadow=true;halo.material.emissive=new THREE.Color(k===1?0x42667d:(si?0xa95a00:0x087fa8));halo.material.emissiveIntensity=.74;firstPitRecoveryTimingFunnelV158.add(halo)});const pivot=new THREE.Group();pivot.name='FirstPitRecoveryTimingFunnelGuidePivotV158';pivot.position.set(side*1.52,.56,.03);pivot.userData.side=side;const arm=new THREE.Mesh(fprfArmGeoV158,si?fprfAmberV158:fprfCyanV158);arm.name='FirstPitRecoveryTimingFunnelGuideArmV158';arm.position.set(-side*.35,0,0);arm.castShadow=arm.receiveShadow=true;arm.material.emissive=new THREE.Color(si?0xa95a00:0x087fa8);arm.material.emissiveIntensity=.58;pivot.add(arm);[-.58,-.24].forEach((lx,k)=>{const roller=new THREE.Mesh(fprfRollerGeoV158,k?fprfGreenV158:(si?fprfAmberV158:fprfCyanV158));roller.name='FirstPitRecoveryTimingFunnelRollerV158';roller.rotation.z=Math.PI/2;roller.position.set(side*lx,-.12,0);roller.castShadow=roller.receiveShadow=true;roller.material.emissive=new THREE.Color(k?0x159b43:(si?0xa95a00:0x087fa8));roller.material.emissiveIntensity=.78;roller.onBeforeRender=()=>{const u=performance.now()*.001;roller.rotation.x=u*(5.6+k*.55)*(si?1:-1);roller.material.emissiveIntensity=.62+.42*(.5+.5*Math.sin(u*10.4+k+si))};pivot.add(roller)});pivot.onBeforeRender=()=>{const u=performance.now()*.001,p=.5+.5*Math.sin(u*1.65+si*Math.PI);pivot.rotation.z=side*(.20-.16*p);pivot.position.x=side*(1.52-.07*p);arm.material.emissiveIntensity=.48+.46*p};firstPitRecoveryTimingFunnelV158.add(pivot)});const fprfHeaderV158=new THREE.Mesh(new THREE.BoxGeometry(3.62,.20,.30),fprfDarkV158);fprfHeaderV158.name='FirstPitRecoveryTimingFunnelTimingBeamV158';fprfHeaderV158.position.set(0,1.62,.04);fprfHeaderV158.castShadow=fprfHeaderV158.receiveShadow=true;firstPitRecoveryTimingFunnelV158.add(fprfHeaderV158);[-1.18,-.59,0,.59,1.18].forEach((x,i)=>{const lamp=new THREE.Mesh(new THREE.OctahedronGeometry(.085,0),i===2?fprfGreenV158:fprfSteelV158);lamp.name='FirstPitRecoveryTimingFunnelLampV158';lamp.position.set(x,1.63,.21);lamp.castShadow=true;lamp.material.emissive=new THREE.Color(i===2?0x159b43:(i<2?0x087fa8:0xa95a00));lamp.material.emissiveIntensity=.88;lamp.onBeforeRender=()=>{const u=performance.now()*.001,w=.5+.5*Math.sin(u*8.4-i*.55);lamp.material.color.setHex(w>.58?(i===2?0x49ff79:(i<2?0x45e8ff:0xffb12b)):0xe8f6ff);lamp.material.emissiveIntensity=.62+.64*w};firstPitRecoveryTimingFunnelV158.add(lamp)});const fprfCenterRingV158=new THREE.Mesh(new THREE.TorusGeometry(.28,.052,8,18),fprfGreenV158);fprfCenterRingV158.name='FirstPitRecoveryTimingFunnelCenterRingV158';fprfCenterRingV158.rotation.x=Math.PI/2;fprfCenterRingV158.position.set(0,.20,.10);fprfCenterRingV158.castShadow=true;fprfCenterRingV158.material.emissive=new THREE.Color(0x159b43);fprfCenterRingV158.material.emissiveIntensity=.92;fprfCenterRingV158.onBeforeRender=()=>{const u=performance.now()*.001,p=.5+.5*Math.sin(u*5.2);fprfCenterRingV158.rotation.z=u*(.7+1.6*p);fprfCenterRingV158.scale.setScalar(.94+.10*p);fprfCenterRingV158.material.emissiveIntensity=.72+.66*p};firstPitRecoveryTimingFunnelV158.add(fprfCenterRingV158);[-.88,0,.88].forEach((x,i)=>{const guide=new THREE.Mesh(new THREE.TorusGeometry(.105,.026,6,10),i===1?fprfGreenV158:fprfSteelV158);guide.name='FirstPitRecoveryTimingFunnelFloorGuideV158';guide.rotation.x=Math.PI/2;guide.position.set(x,.15,-.10);guide.castShadow=true;guide.material.emissive=new THREE.Color(i===1?0x159b43:(i<1?0x087fa8:0xa95a00));guide.material.emissiveIntensity=i===1?1.04:.78;firstPitRecoveryTimingFunnelV158.add(guide)});"""
+          s=s.replace(anchor,model+anchor,1)
+          p.write_text(s)
+      - name: Verify v158 and preserved obstacle physics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          required=['FIRST_PIT_RECOVERY_TIMING_FUNNEL_MODEL_V158=true','FIRST_PIT_RECOVERY_FUNNEL_Z_MIN=-1.86','FIRST_PIT_RECOVERY_FUNNEL_Z_MAX=-1.34','FirstPitRecoveryTimingFunnelAssemblyV158','FirstPitRecoveryTimingFunnelFrameV158','FirstPitRecoveryTimingFunnelServoTowerV158','FirstPitRecoveryTimingFunnelGuideArmV158','FirstPitRecoveryTimingFunnelRollerV158','FirstPitRecoveryTimingFunnelTimingBeamV158','FirstPitRecoveryTimingFunnelLampV158','FirstPitRecoveryTimingFunnelCenterRingV158','FIRST_PIT_SECOND_SWEEPER_HANDOFF_MODEL_V134=true','FIRST_PIT_EXIT_LANDING_MODEL_V133=true','SECOND_SWEEPER_STAGING_PAD_MODEL_V129=true','SECOND_SWEEPER_GATE_Z=-.48','SECOND_SWEEPER_STAGING_Z_MIN=-1.82','SECOND_SWEEPER_STAGING_Z_MAX=-.60','SECOND_SWEEPER_STAGING_HALF_X=1.72','PITS=[[-15.2,-13.55],[-4.85,-3.55],[5.05,5.82]]','onBeforeRender']
+          for token in required: assert token in s, token
+          assert s.count('FIRST_PIT_RECOVERY_TIMING_FUNNEL_MODEL_V158=true') == 1
+          assert s.count("name='FirstPitRecoveryTimingFunnelAssemblyV158'") == 1
+          m=re.search(r'<script type="module">(.*?)</script>',s,re.S)
+          assert m, 'module script missing'
+          Path('/tmp/brainrot-module.mjs').write_text(m.group(1))
+          print('First-pit recovery timing funnel v158 contract: SUCCESS')
+          PY
+          node --check /tmp/brainrot-module.mjs
+          node scripts/final-puncher-physics-contract-v65.mjs
+          node scripts/final-finish-residual-momentum-check.mjs
+          node scripts/final-finish-soft-hold-check.mjs
+          node scripts/final-finish-charge-check.mjs
+          if [ -f scripts/second-pit-full-route-continuity-v70.mjs ]; then node scripts/second-pit-full-route-continuity-v70.mjs; fi
+      - name: Commit real level change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-level-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
+          git commit -m "Level: mechanical first-pit recovery timing funnel v158"
+          git push origin HEAD:new-player-glb-overhaul
