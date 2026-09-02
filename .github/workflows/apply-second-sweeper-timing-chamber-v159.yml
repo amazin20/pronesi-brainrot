@@ -1,0 +1,102 @@
+name: Apply Second Sweeper Timing Chamber v159
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-second-sweeper-timing-chamber-v159.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+      - name: Build mechanical second sweeper timing chamber v159
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          if 'SECOND_SWEEPER_TIMING_CHAMBER_MODEL_V159=true' in s:
+              raise SystemExit('v159 already present')
+          anchor="const secondSweeperShieldL=makeSecondSweeperShieldRail(-SECOND_SWEEPER_STAGING_HALF_X-.10),secondSweeperShieldR=makeSecondSweeperShieldRail(SECOND_SWEEPER_STAGING_HALF_X+.10);[secondSweeperStagePad,secondSweeperGateL,secondSweeperGateR,secondSweeperGate].forEach(o=>{o.material.emissive=new THREE.Color(o===secondSweeperGate?0xa20d38:0xb86a00);o.material.emissiveIntensity=.82});const SECOND_SWEEPER_RECOVERY_MODEL_V89=true"
+          if anchor not in s:
+              raise SystemExit('second sweeper staging anchor missing')
+          model="""const secondSweeperShieldL=makeSecondSweeperShieldRail(-SECOND_SWEEPER_STAGING_HALF_X-.10),secondSweeperShieldR=makeSecondSweeperShieldRail(SECOND_SWEEPER_STAGING_HALF_X+.10);[secondSweeperStagePad,secondSweeperGateL,secondSweeperGateR,secondSweeperGate].forEach(o=>{o.material.emissive=new THREE.Color(o===secondSweeperGate?0xa20d38:0xb86a00);o.material.emissiveIntensity=.82});const SECOND_SWEEPER_TIMING_CHAMBER_MODEL_V159=true;secondSweeperGate.name='SecondSweeperTimingChamberCollisionBarV159';secondSweeperGate.material.transparent=true;secondSweeperGate.material.opacity=.032;secondSweeperGate.material.depthWrite=false;[secondSweeperGateL,secondSweeperGateR].forEach(o=>o.traverse(n=>{if(!n.isMesh||!n.material)return;n.name=n.name||'SecondSweeperLegacyTimingCarrierV159';n.material.transparent=true;n.material.opacity=Math.min(n.material.opacity??1,.05);n.material.depthWrite=false}));const secondSweeperTimingChamberV159=new THREE.Group();secondSweeperTimingChamberV159.name='SecondSweeperTimingChamberAssemblyV159';secondSweeperTimingChamberV159.position.set(0,0,SECOND_SWEEPER_GATE_Z);scene.add(secondSweeperTimingChamberV159);const sstcDarkV159=mat(0x111827),sstcSteelV159=mat(0xe8f7ff),sstcCyanV159=mat(0x45e8ff),sstcAmberV159=mat(0xffb12b),sstcGreenV159=mat(0x49ff79),sstcRedV159=mat(0xff315d);sstcDarkV159.metalness=.68;sstcDarkV159.roughness=.24;sstcSteelV159.metalness=.54;sstcSteelV159.roughness=.18;const sstcDeckV159=new THREE.Mesh(new THREE.BoxGeometry(4.16,.11,1.96),sstcDarkV159);sstcDeckV159.name='SecondSweeperTimingChamberDeckV159';sstcDeckV159.position.set(0,.055,-.55);sstcDeckV159.castShadow=sstcDeckV159.receiveShadow=true;secondSweeperTimingChamberV159.add(sstcDeckV159);[-1.62,-1.08,-.54,0,.54,1.08,1.62].forEach((x,i)=>{[-1.28,-.82,-.36,.10].forEach((z,j)=>{const plate=new THREE.Mesh(new THREE.BoxGeometry(.42,.065,.32),i===3?sstcSteelV159:(j<2?sstcAmberV159:sstcCyanV159));plate.name='SecondSweeperTimingChamberDeckPlateV159';plate.position.set(x,.12,z);plate.castShadow=plate.receiveShadow=true;plate.material.emissive=new THREE.Color(i===3?0x42667d:(j<2?0xa95a00:0x087fa8));plate.material.emissiveIntensity=i===3?.36:.48;secondSweeperTimingChamberV159.add(plate)})});const secondSweeperTimingShuttersV159=[],secondSweeperTimingPistonsV159=[],secondSweeperTimingRollersV159=[],secondSweeperTimingLampsV159=[];[-1,1].forEach((side,si)=>{const tower=new THREE.Mesh(new THREE.BoxGeometry(.36,2.20,.52),sstcDarkV159);tower.name='SecondSweeperTimingChamberServoTowerV159';tower.position.set(side*1.94,1.12,.02);tower.castShadow=tower.receiveShadow=true;secondSweeperTimingChamberV159.add(tower);[.32,.82,1.32,1.82].forEach((y,k)=>{const collar=new THREE.Mesh(new THREE.TorusGeometry(.19,.042,7,14),k===1?sstcSteelV159:(si?sstcCyanV159:sstcAmberV159));collar.name='SecondSweeperTimingChamberTowerCollarV159';collar.rotation.x=Math.PI/2;collar.position.set(side*1.94,y,.02);collar.castShadow=true;collar.material.emissive=new THREE.Color(k===1?0x42667d:(si?0x087fa8:0xa95a00));collar.material.emissiveIntensity=.74;secondSweeperTimingChamberV159.add(collar)});const piston=new THREE.Mesh(new THREE.CylinderGeometry(.075,.095,.82,10),sstcSteelV159);piston.name='SecondSweeperTimingChamberHydraulicPistonV159';piston.rotation.z=Math.PI/2;piston.position.set(side*1.50,.70,.02);piston.castShadow=piston.receiveShadow=true;piston.userData.side=side;secondSweeperTimingChamberV159.add(piston);secondSweeperTimingPistonsV159.push(piston);const shutter=new THREE.Group();shutter.name='SecondSweeperTimingChamberShutterV159';shutter.position.set(side*.80,.70,.02);shutter.userData.side=side;const panel=new THREE.Mesh(new THREE.BoxGeometry(1.48,.54,.34),si?sstcCyanV159:sstcAmberV159);panel.name='SecondSweeperTimingChamberShutterPanelV159';panel.position.set(-side*.70,0,0);panel.castShadow=panel.receiveShadow=true;panel.material.emissive=new THREE.Color(si?0x087fa8:0xa95a00);panel.material.emissiveIntensity=.50;shutter.add(panel);[-1.16,-.73,-.30].forEach((lx,k)=>{const rib=new THREE.Mesh(new THREE.BoxGeometry(.18,.64,.40),k===1?sstcSteelV159:sstcDarkV159);rib.name='SecondSweeperTimingChamberShutterRibV159';rib.position.set(side*lx,0,0);rib.castShadow=rib.receiveShadow=true;shutter.add(rib);const roller=new THREE.Mesh(new THREE.CylinderGeometry(.105,.105,.20,10),k===1?sstcGreenV159:(si?sstcCyanV159:sstcAmberV159));roller.name='SecondSweeperTimingChamberShutterRollerV159';roller.rotation.z=Math.PI/2;roller.position.set(side*lx,-.35,0);roller.castShadow=roller.receiveShadow=true;roller.material.emissive=new THREE.Color(k===1?0x159b43:(si?0x087fa8:0xa95a00));roller.material.emissiveIntensity=.78;shutter.add(roller);secondSweeperTimingRollersV159.push(roller)});secondSweeperTimingChamberV159.add(shutter);secondSweeperTimingShuttersV159.push(shutter);const lamp=new THREE.Mesh(new THREE.OctahedronGeometry(.12,0),si?sstcCyanV159:sstcAmberV159);lamp.name='SecondSweeperTimingChamberStatusLampV159';lamp.position.set(side*1.94,2.33,.02);lamp.castShadow=true;lamp.material.emissive=new THREE.Color(si?0x087fa8:0xa95a00);lamp.material.emissiveIntensity=1.0;secondSweeperTimingChamberV159.add(lamp);secondSweeperTimingLampsV159.push(lamp);[-1.15,-.60,-.08].forEach((z,k)=>{const guide=new THREE.Mesh(new THREE.CylinderGeometry(.095,.095,.20,10),k===2?sstcGreenV159:(si?sstcCyanV159:sstcAmberV159));guide.name='SecondSweeperTimingChamberFloorRollerV159';guide.rotation.z=Math.PI/2;guide.position.set(side*1.72,.23,z);guide.castShadow=guide.receiveShadow=true;guide.material.emissive=new THREE.Color(k===2?0x159b43:(si?0x087fa8:0xa95a00));guide.material.emissiveIntensity=.72;secondSweeperTimingChamberV159.add(guide);secondSweeperTimingRollersV159.push(guide)})});const sstcHeaderV159=new THREE.Mesh(new THREE.BoxGeometry(4.08,.24,.42),sstcDarkV159);sstcHeaderV159.name='SecondSweeperTimingChamberHeaderV159';sstcHeaderV159.position.set(0,2.43,.02);sstcHeaderV159.castShadow=sstcHeaderV159.receiveShadow=true;secondSweeperTimingChamberV159.add(sstcHeaderV159);[-1.28,-.64,0,.64,1.28].forEach((x,i)=>{const lamp=new THREE.Mesh(new THREE.OctahedronGeometry(.09,0),i===2?sstcGreenV159:sstcSteelV159);lamp.name='SecondSweeperTimingChamberHeaderLampV159';lamp.position.set(x,2.44,.25);lamp.castShadow=true;lamp.material.emissive=new THREE.Color(i===2?0x159b43:(i<2?0xa95a00:0x087fa8));lamp.material.emissiveIntensity=.84;secondSweeperTimingChamberV159.add(lamp);secondSweeperTimingLampsV159.push(lamp)});const sstcFlywheelV159=new THREE.Mesh(new THREE.TorusGeometry(.34,.065,8,20),sstcGreenV159);sstcFlywheelV159.name='SecondSweeperTimingChamberFlywheelV159';sstcFlywheelV159.rotation.x=Math.PI/2;sstcFlywheelV159.position.set(0,.24,-.18);sstcFlywheelV159.castShadow=true;sstcFlywheelV159.material.emissive=new THREE.Color(0x159b43);sstcFlywheelV159.material.emissiveIntensity=.90;secondSweeperTimingChamberV159.add(sstcFlywheelV159);[-1.18,0,1.18].forEach((x,i)=>{const guide=new THREE.Mesh(new THREE.TorusGeometry(.11,.027,6,10),i===1?sstcGreenV159:sstcSteelV159);guide.name='SecondSweeperTimingChamberFloorGuideV159';guide.rotation.x=Math.PI/2;guide.position.set(x,.16,-.72);guide.castShadow=true;guide.material.emissive=new THREE.Color(i===1?0x159b43:(i<1?0xa95a00:0x087fa8));guide.material.emissiveIntensity=i===1?1.05:.80;secondSweeperTimingChamberV159.add(guide)});const SECOND_SWEEPER_RECOVERY_MODEL_V89=true"""
+          s=s.replace(anchor,model,1)
+          anim_anchor="[secondSweeperGateL,secondSweeperGateR].forEach(o=>{o.material.color.setHex(secondGateColor);o.material.emissive.setHex(secondGateOpen?0x149343:0xb86a00);o.material.emissiveIntensity=secondGateOpen?1.05:.72+.45*secondGatePulse});secondSweeperStagePad.material.color.setHex"
+          if anim_anchor not in s:
+              raise SystemExit('second sweeper runtime anchor missing')
+          anim="""[secondSweeperGateL,secondSweeperGateR].forEach(o=>{o.material.color.setHex(secondGateColor);o.material.emissive.setHex(secondGateOpen?0x149343:0xb86a00);o.material.emissiveIntensity=secondGateOpen?1.05:.72+.45*secondGatePulse});const sstcOpenV159=Math.max(0,Math.min(1,(secondSweeperGate.position.y-SECOND_SWEEPER_GATE_CLOSED_Y)/(SECOND_SWEEPER_GATE_OPEN_Y-SECOND_SWEEPER_GATE_CLOSED_Y))),sstcPulseV159=.5+.5*Math.sin(t*15.8);secondSweeperTimingShuttersV159.forEach(n=>{const side=n.userData.side;n.position.x=side*(.80+.80*sstcOpenV159);n.position.y=.70+.18*sstcOpenV159;n.children.forEach(c=>{if(c.isMesh&&c.material?.emissive)c.material.emissiveIntensity=secondGateOpen?.72+.46*sstcPulseV159:(secondActive?.90+.38*sstcPulseV159:.44)})});secondSweeperTimingPistonsV159.forEach(n=>{const side=n.userData.side;n.scale.y=.44+.56*sstcOpenV159;n.position.x=side*(1.50+.18*sstcOpenV159);n.material.emissive=n.material.emissive||new THREE.Color(0x42667d);n.material.emissiveIntensity=.36+.64*sstcOpenV159});secondSweeperTimingRollersV159.forEach((n,i)=>{n.rotation.x+=dt*(secondGateOpen?7.8:(secondActive?4.0:(secondWarning?2.0:.7)))*(i%2?-1:1);n.material.emissiveIntensity=secondGateOpen?.82+.38*sstcPulseV159:(secondActive?.88+.42*sstcPulseV159:.54)});secondSweeperTimingLampsV159.forEach((n,i)=>{const c=secondGateOpen?0x49ff79:(secondActive?0xff315d:(secondWarning?0xffb12b:(i%2?0x45e8ff:0xffb12b)));n.material.color.setHex(c);n.material.emissive.setHex(secondGateOpen?0x159b43:(secondActive?0xa20d38:(secondWarning?0xa95a00:(i%2?0x087fa8:0xa95a00))));n.material.emissiveIntensity=secondGateOpen?1.12+.56*sstcPulseV159:(secondWarning||secondActive?1.0+.58*sstcPulseV159:.72)});sstcFlywheelV159.rotation.z+=dt*(secondGateOpen?2.8:(secondActive?6.4:(secondWarning?1.5:.22)));sstcFlywheelV159.scale.setScalar(.94+.12*sstcOpenV159);sstcFlywheelV159.material.color.setHex(secondGateOpen?0x49ff79:(secondActive?0xff315d:0xffb12b));sstcFlywheelV159.material.emissive.setHex(secondGateOpen?0x159b43:(secondActive?0xa20d38:0xa95a00));sstcFlywheelV159.material.emissiveIntensity=secondGateOpen?.94+.54*sstcPulseV159:(secondWarning||secondActive?1.0+.55*sstcPulseV159:.64);sstcHeaderV159.material.emissive=sstcHeaderV159.material.emissive||new THREE.Color(0xa95a00);sstcHeaderV159.material.emissive.setHex(secondGateOpen?0x159b43:(secondActive?0xa20d38:0xa95a00));sstcHeaderV159.material.emissiveIntensity=secondGateOpen?.24+.44*sstcOpenV159:(secondWarning||secondActive?.22+.36*sstcPulseV159:.08);sstcDeckV159.material.emissive=sstcDeckV159.material.emissive||new THREE.Color(secondGateOpen?0x159b43:0xa95a00);sstcDeckV159.material.emissive.setHex(secondGateOpen?0x159b43:(secondActive?0xa20d38:0xa95a00));sstcDeckV159.material.emissiveIntensity=(secondGateSensor||secondSweeperGateCrossing)?.20+.46*sstcPulseV159:.06;secondSweeperStagePad.material.color.setHex"""
+          s=s.replace(anim_anchor,anim,1)
+          p.write_text(s)
+      - name: Verify second sweeper timing chamber v159 and preserved physics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          required=[
+            'SECOND_SWEEPER_TIMING_CHAMBER_MODEL_V159=true',
+            'SecondSweeperTimingChamberCollisionBarV159',
+            'SecondSweeperTimingChamberAssemblyV159',
+            'SecondSweeperTimingChamberServoTowerV159',
+            'SecondSweeperTimingChamberHydraulicPistonV159',
+            'SecondSweeperTimingChamberShutterV159',
+            'SecondSweeperTimingChamberShutterPanelV159',
+            'SecondSweeperTimingChamberShutterRollerV159',
+            'SecondSweeperTimingChamberFloorRollerV159',
+            'SecondSweeperTimingChamberHeaderV159',
+            'SecondSweeperTimingChamberFlywheelV159',
+            'SECOND_SWEEPER_GATE_Z=-.48',
+            'SECOND_SWEEPER_GATE_HALF_X=1.72',
+            'SECOND_SWEEPER_GATE_CLOSED_Y=.62',
+            'SECOND_SWEEPER_GATE_OPEN_Y=2.82',
+            'SECOND_SWEEPER_GATE_HALF_Y=.11',
+            'SECOND_SWEEPER_STAGING_Z_MIN=-1.82',
+            'SECOND_SWEEPER_STAGING_Z_MAX=-.60',
+            'SECOND_SWEEPER_STAGING_HALF_X=1.72',
+            'function secondSweeperTimingGateBlocks(x,z,r=.4,top=LIFT_GATE_PLAYER_TOP)',
+            'barBottom=secondSweeperGate.position.y-SECOND_SWEEPER_GATE_HALF_Y',
+            'secondSweeperGate.position.y+=Math.max(-secondGateStep,Math.min(secondGateStep,secondGateTarget-secondSweeperGate.position.y))'
+          ]
+          for token in required:
+              assert token in s, token
+          assert s.count('SECOND_SWEEPER_TIMING_CHAMBER_MODEL_V159=true') == 1
+          assert s.count("name='SecondSweeperTimingChamberCollisionBarV159'") == 1
+          assert 'secondSweeperTimingGateBlocks(x,z,.4)' in s
+          m=re.search(r'<script type="module">(.*?)</script>',s,re.S)
+          assert m, 'module script missing'
+          Path('/tmp/brainrot-module.mjs').write_text(m.group(1))
+          print('Second sweeper timing chamber v159 contract: SUCCESS')
+          PY
+          node --check /tmp/brainrot-module.mjs
+          node scripts/final-puncher-physics-contract-v65.mjs
+          node scripts/final-finish-residual-momentum-check.mjs
+          node scripts/final-finish-soft-hold-check.mjs
+          node scripts/final-finish-charge-check.mjs
+          if [ -f scripts/second-pit-full-route-continuity-v70.mjs ]; then node scripts/second-pit-full-route-continuity-v70.mjs; fi
+      - name: Commit real level change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-level-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
+          git commit -m "Level: mechanical second sweeper timing chamber v159"
+          git push origin HEAD:new-player-glb-overhaul
