@@ -1,0 +1,118 @@
+name: Apply Second Sweeper Recovery Capture v160
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-second-sweeper-recovery-capture-v160.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+
+      - name: Build mechanical second sweeper recovery capture v160
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          if 'SECOND_SWEEPER_RECOVERY_CAPTURE_MODEL_V160=true' in s:
+              raise SystemExit('v160 already present')
+
+          model_anchor="function makeSecondSweeperRecoveryGuard(side){"
+          if s.count(model_anchor) != 1:
+              raise SystemExit(f'expected one recovery guard anchor, got {s.count(model_anchor)}')
+
+          model="""const SECOND_SWEEPER_RECOVERY_CAPTURE_MODEL_V160=true,SECOND_SWEEPER_RECOVERY_CAPTURE_Z_MIN=SECOND_SWEEPER_RECOVERY_Z_MIN,SECOND_SWEEPER_RECOVERY_CAPTURE_Z_MAX=3.86,SECOND_SWEEPER_RECOVERY_CAPTURE_Z=(SECOND_SWEEPER_RECOVERY_CAPTURE_Z_MIN+SECOND_SWEEPER_RECOVERY_CAPTURE_Z_MAX)*.5;const secondSweeperRecoveryCaptureV160=new THREE.Group();secondSweeperRecoveryCaptureV160.name='SecondSweeperRecoveryCaptureAssemblyV160';secondSweeperRecoveryCaptureV160.position.set(0,0,SECOND_SWEEPER_RECOVERY_CAPTURE_Z);scene.add(secondSweeperRecoveryCaptureV160);const ssrcDarkV160=mat(0x111827),ssrcSteelV160=mat(0xe8f7ff),ssrcGreenV160=mat(0x49ff79),ssrcCyanV160=mat(0x45e8ff),ssrcAmberV160=mat(0xffb12b);ssrcDarkV160.metalness=.68;ssrcDarkV160.roughness=.24;ssrcSteelV160.metalness=.54;ssrcSteelV160.roughness=.18;const ssrcLengthV160=SECOND_SWEEPER_RECOVERY_CAPTURE_Z_MAX-SECOND_SWEEPER_RECOVERY_CAPTURE_Z_MIN,ssrcFrameV160=new THREE.Mesh(new THREE.BoxGeometry(3.92,.10,ssrcLengthV160+.08),ssrcDarkV160);ssrcFrameV160.name='SecondSweeperRecoveryCaptureFrameV160';ssrcFrameV160.position.y=.055;ssrcFrameV160.castShadow=ssrcFrameV160.receiveShadow=true;secondSweeperRecoveryCaptureV160.add(ssrcFrameV160);[-1.58,-1.06,-.53,0,.53,1.06,1.58].forEach((x,i)=>{const rib=new THREE.Mesh(new THREE.BoxGeometry(.40,.075,ssrcLengthV160-.06),i===3?ssrcSteelV160:(i<3?ssrcGreenV160:ssrcCyanV160));rib.name='SecondSweeperRecoveryCaptureDeckRibV160';rib.position.set(x,.125,0);rib.castShadow=rib.receiveShadow=true;rib.material.emissive=new THREE.Color(i===3?0x42667d:(i<3?0x159b43:0x087fa8));rib.material.emissiveIntensity=i===3?.34:.48;secondSweeperRecoveryCaptureV160.add(rib)});[-1,1].forEach((side,si)=>{const rail=new THREE.Mesh(new THREE.BoxGeometry(.12,.22,ssrcLengthV160+.02),ssrcDarkV160);rail.name='SecondSweeperRecoveryCaptureSideRailV160';rail.position.set(side*1.80,.24,0);rail.castShadow=rail.receiveShadow=true;secondSweeperRecoveryCaptureV160.add(rail)});const secondSweeperRecoveryCaptureArmsV160=[],secondSweeperRecoveryCaptureDampersV160=[],secondSweeperRecoveryCaptureRollersV160=[],secondSweeperRecoveryCaptureLampsV160=[];[-1,1].forEach((side,si)=>{[-.20,.20].forEach((z,zi)=>{const tower=new THREE.Mesh(new THREE.BoxGeometry(.30,1.44,.30),ssrcDarkV160);tower.name='SecondSweeperRecoveryCaptureServoTowerV160';tower.position.set(side*1.88,.76,z);tower.castShadow=tower.receiveShadow=true;secondSweeperRecoveryCaptureV160.add(tower);[.30,.74,1.18].forEach((y,k)=>{const collar=new THREE.Mesh(new THREE.TorusGeometry(.155,.034,7,14),k===1?ssrcSteelV160:(si?ssrcCyanV160:ssrcGreenV160));collar.name='SecondSweeperRecoveryCaptureTowerCollarV160';collar.rotation.x=Math.PI/2;collar.position.set(side*1.88,y,z);collar.castShadow=true;collar.material.emissive=new THREE.Color(k===1?0x42667d:(si?0x087fa8:0x159b43));collar.material.emissiveIntensity=.72;secondSweeperRecoveryCaptureV160.add(collar)});const damper=new THREE.Mesh(new THREE.CylinderGeometry(.075,.095,.72,10),zi?ssrcCyanV160:ssrcGreenV160);damper.name='SecondSweeperRecoveryCaptureDamperV160';damper.rotation.z=Math.PI/2;damper.position.set(side*1.55,.48,z);damper.castShadow=damper.receiveShadow=true;damper.userData.side=side;damper.userData.phase=zi;damper.material.emissive=new THREE.Color(zi?0x087fa8:0x159b43);damper.material.emissiveIntensity=.58;secondSweeperRecoveryCaptureV160.add(damper);secondSweeperRecoveryCaptureDampersV160.push(damper)});const pivot=new THREE.Group();pivot.name='SecondSweeperRecoveryCaptureGuidePivotV160';pivot.position.set(side*1.70,.58,.04);pivot.userData.side=side;const arm=new THREE.Mesh(new THREE.BoxGeometry(.90,.15,.24),ssrcSteelV160);arm.name='SecondSweeperRecoveryCaptureGuideArmV160';arm.position.set(-side*.41,0,0);arm.castShadow=arm.receiveShadow=true;arm.material.emissive=new THREE.Color(si?0x087fa8:0x159b43);arm.material.emissiveIntensity=.42;pivot.add(arm);[-.66,-.28].forEach((lx,k)=>{const roller=new THREE.Mesh(new THREE.CylinderGeometry(.105,.105,.20,10),k?ssrcAmberV160:(si?ssrcCyanV160:ssrcGreenV160));roller.name='SecondSweeperRecoveryCaptureGuideRollerV160';roller.rotation.z=Math.PI/2;roller.position.set(side*lx,-.02,0);roller.castShadow=roller.receiveShadow=true;roller.material.emissive=new THREE.Color(k?0xa95a00:(si?0x087fa8:0x159b43));roller.material.emissiveIntensity=.78;pivot.add(roller);secondSweeperRecoveryCaptureRollersV160.push(roller)});secondSweeperRecoveryCaptureV160.add(pivot);secondSweeperRecoveryCaptureArmsV160.push(pivot);const lamp=new THREE.Mesh(new THREE.OctahedronGeometry(.105,0),si?ssrcCyanV160:ssrcGreenV160);lamp.name='SecondSweeperRecoveryCaptureStatusLampV160';lamp.position.set(side*1.88,1.58,.04);lamp.castShadow=true;lamp.material.emissive=new THREE.Color(si?0x087fa8:0x159b43);lamp.material.emissiveIntensity=.92;lamp.userData.stage=si*.58+.16;secondSweeperRecoveryCaptureV160.add(lamp);secondSweeperRecoveryCaptureLampsV160.push(lamp)});const ssrcHeaderV160=new THREE.Mesh(new THREE.BoxGeometry(3.82,.18,.22),ssrcDarkV160);ssrcHeaderV160.name='SecondSweeperRecoveryCaptureHeaderV160';ssrcHeaderV160.position.set(0,1.66,.20);ssrcHeaderV160.castShadow=ssrcHeaderV160.receiveShadow=true;secondSweeperRecoveryCaptureV160.add(ssrcHeaderV160);[-1.20,-.60,0,.60,1.20].forEach((x,i)=>{const lamp=new THREE.Mesh(new THREE.OctahedronGeometry(.082,0),i===2?ssrcAmberV160:ssrcSteelV160);lamp.name='SecondSweeperRecoveryCaptureHeaderLampV160';lamp.position.set(x,1.67,.34);lamp.castShadow=true;lamp.material.emissive=new THREE.Color(i===2?0xa95a00:(i<2?0x159b43:0x087fa8));lamp.material.emissiveIntensity=.84;lamp.userData.stage=.20+i*.14;secondSweeperRecoveryCaptureV160.add(lamp);secondSweeperRecoveryCaptureLampsV160.push(lamp)});const ssrcCenterRingV160=new THREE.Mesh(new THREE.TorusGeometry(.29,.052,8,18),ssrcAmberV160);ssrcCenterRingV160.name='SecondSweeperRecoveryCaptureCenterRingV160';ssrcCenterRingV160.rotation.x=Math.PI/2;ssrcCenterRingV160.position.set(0,.20,.16);ssrcCenterRingV160.castShadow=true;ssrcCenterRingV160.material.emissive=new THREE.Color(0xa95a00);ssrcCenterRingV160.material.emissiveIntensity=.88;secondSweeperRecoveryCaptureV160.add(ssrcCenterRingV160);[-.92,0,.92].forEach((x,i)=>{const guide=new THREE.Mesh(new THREE.TorusGeometry(.105,.026,6,10),i===1?ssrcAmberV160:ssrcSteelV160);guide.name='SecondSweeperRecoveryCaptureFloorGuideV160';guide.rotation.x=Math.PI/2;guide.position.set(x,.15,-.12);guide.castShadow=true;guide.material.emissive=new THREE.Color(i===1?0xa95a00:(i<1?0x159b43:0x087fa8));guide.material.emissiveIntensity=i===1?1.04:.78;secondSweeperRecoveryCaptureV160.add(guide)});"""
+          s=s.replace(model_anchor,model+model_anchor,1)
+
+          anim_anchor="const secondSweeperSecondPitHandoffActive=secondSweeperCleared&&p.z>3.30&&p.z<3.86,secondSweeperSecondPitHandoffPulse=.5+.5*Math.sin(t*7.2);secondSweeperSecondPitHandoffV136.children.forEach"
+          if s.count(anim_anchor) != 1:
+              raise SystemExit(f'expected one runtime handoff anchor, got {s.count(anim_anchor)}')
+          anim="""const secondSweeperSecondPitHandoffActive=secondSweeperCleared&&p.z>3.30&&p.z<3.86,secondSweeperSecondPitHandoffPulse=.5+.5*Math.sin(t*7.2);const secondSweeperRecoveryCaptureActiveV160=secondSweeperCleared&&p.z>SECOND_SWEEPER_RECOVERY_CAPTURE_Z_MIN-.06&&p.z<SECOND_SWEEPER_RECOVERY_CAPTURE_Z_MAX&&!win&&failTimer<=0,secondSweeperRecoveryCaptureProgressV160=Math.max(0,Math.min(1,(p.z-SECOND_SWEEPER_RECOVERY_CAPTURE_Z_MIN)/(SECOND_SWEEPER_RECOVERY_CAPTURE_Z_MAX-SECOND_SWEEPER_RECOVERY_CAPTURE_Z_MIN))),secondSweeperRecoveryCapturePulseV160=.5+.5*Math.sin(t*12.6),secondSweeperRecoveryCaptureSettleV160=secondSweeperRecoveryActive?1:Math.max(0,1-secondSweeperRecoveryCaptureProgressV160);secondSweeperRecoveryCaptureArmsV160.forEach(n=>{const side=n.userData.side,settle=secondSweeperRecoveryCaptureSettleV160;n.rotation.z=side*(.42-.30*settle);n.position.x=side*(1.70-.10*settle);n.children.forEach(c=>{if(c.isMesh&&c.material?.emissive)c.material.emissiveIntensity=secondSweeperRecoveryCaptureActiveV160?.62+.50*secondSweeperRecoveryCapturePulseV160:.42})});secondSweeperRecoveryCaptureDampersV160.forEach((n,i)=>{const compression=secondSweeperRecoveryActive?.58+.22*secondSweeperRecoveryCapturePulseV160:.12;n.scale.y=.62+.38*(1-compression);n.material.emissiveIntensity=secondSweeperRecoveryCaptureActiveV160?.58+.46*secondSweeperRecoveryCapturePulseV160:.40});secondSweeperRecoveryCaptureRollersV160.forEach((n,i)=>{n.rotation.x+=dt*(secondSweeperRecoveryCaptureActiveV160?8.2:1.0)*(i%2?-1:1);n.material.emissiveIntensity=secondSweeperRecoveryCaptureActiveV160?.76+.42*secondSweeperRecoveryCapturePulseV160:.52});secondSweeperRecoveryCaptureLampsV160.forEach((n,i)=>{const reached=secondSweeperRecoveryCaptureProgressV160>=Math.min(.95,n.userData.stage??i/Math.max(1,secondSweeperRecoveryCaptureLampsV160.length-1));n.material.color.setHex(reached?0x49ff79:(i%2?0x45e8ff:0xffb12b));n.material.emissive.setHex(reached?0x159b43:(i%2?0x087fa8:0xa95a00));n.material.emissiveIntensity=secondSweeperRecoveryCaptureActiveV160?(reached?1.12+.52*secondSweeperRecoveryCapturePulseV160:.70+.24*secondSweeperRecoveryCapturePulseV160):.66});ssrcCenterRingV160.rotation.z+=dt*(secondSweeperRecoveryCaptureActiveV160?2.45:.24);ssrcCenterRingV160.scale.setScalar(.94+.12*secondSweeperRecoveryCaptureProgressV160);ssrcCenterRingV160.material.color.setHex(secondSweeperRecoveryCaptureProgressV160>.72?0x49ff79:0xffb12b);ssrcCenterRingV160.material.emissive.setHex(secondSweeperRecoveryCaptureProgressV160>.72?0x159b43:0xa95a00);ssrcCenterRingV160.material.emissiveIntensity=secondSweeperRecoveryCaptureActiveV160?.86+.52*secondSweeperRecoveryCapturePulseV160:.62;ssrcFrameV160.material.emissive=ssrcFrameV160.material.emissive||new THREE.Color(0x159b43);ssrcFrameV160.material.emissiveIntensity=secondSweeperRecoveryCaptureActiveV160?.10+.30*secondSweeperRecoveryCaptureProgressV160:.03;secondSweeperSecondPitHandoffV136.children.forEach"""
+          s=s.replace(anim_anchor,anim,1)
+          p.write_text(s)
+
+      - name: Verify v160 contract and preserved obstacle physics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=[
+              'SECOND_SWEEPER_RECOVERY_CAPTURE_MODEL_V160=true',
+              'SecondSweeperRecoveryCaptureAssemblyV160',
+              'SecondSweeperRecoveryCaptureGuideArmV160',
+              'SecondSweeperRecoveryCaptureDamperV160',
+              'SecondSweeperRecoveryCaptureGuideRollerV160',
+              'secondSweeperRecoveryCaptureActiveV160',
+              'SECOND_SWEEPER_TIMING_CHAMBER_MODEL_V159=true',
+          ]
+          for token in required:
+              assert token in s, token
+          assert s.count('SECOND_SWEEPER_RECOVERY_CAPTURE_MODEL_V160=true') == 1
+          physics='SECOND_SWEEPER_RECOVERY_Z_MIN=3.18,SECOND_SWEEPER_RECOVERY_Z_MAX=3.55,SECOND_SWEEPER_RECOVERY_HALF_X=1.9,SECOND_SWEEPER_RECOVERY_DAMP=11.0'
+          assert physics in s, 'second sweeper recovery physics changed'
+          assert 'SECOND_SWEEPER_CLEAR_Z=3.18,SECOND_SWEEPER_GATE_Z=-.48' in s, 'second sweeper clear/gate physics changed'
+          assert 'SECOND_PIT_APPROACH_Z_MIN=3.48,SECOND_PIT_APPROACH_Z_MAX=5.04,SECOND_PIT_APPROACH_HALF_X=1.55' in s, 'second pit approach geometry changed'
+          print('V160_CONTRACT_SUCCESS')
+          PY
+
+          python - <<'PY'
+          import math
+          recovery_min,recovery_max,damp=3.18,3.55,11.0
+          handoff_max,approach_min,approach_max=3.86,3.48,5.04
+          assert recovery_min < approach_min < recovery_max < handoff_max < approach_max
+          for hz in (20,30,60,120):
+              dt=1/hz
+              v=5.0
+              elapsed=0.0
+              while elapsed + dt <= .36 + 1e-12:
+                  v *= math.exp(-damp*dt)
+                  elapsed += dt
+              expected=5.0*math.exp(-damp*elapsed)
+              assert abs(v-expected) < 1e-10
+              assert v < .16
+          print('SECOND_SWEEPER_RECOVERY_DAMPING_QA_PASS_20_30_60_120HZ')
+          PY
+
+      - name: Browser module syntax check
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          tag='<script type="module">'
+          a=s.index(tag)+len(tag)
+          b=s.index('</script>',a)
+          Path('/tmp/game.mjs').write_text(s[a:b])
+          PY
+          node --check /tmp/game.mjs
+
+      - name: Commit and push gameplay v160
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "openai-level-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay change produced'; exit 1; }
+          git commit -m "Level: mechanical second sweeper recovery capture v160"
+          git push origin HEAD:new-player-glb-overhaul
