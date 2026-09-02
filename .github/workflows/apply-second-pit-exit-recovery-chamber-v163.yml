@@ -1,0 +1,114 @@
+name: Apply second pit exit recovery chamber v163
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-second-pit-exit-recovery-chamber-v163.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+
+      - name: Guard current branch head
+        run: |
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+
+      - name: Build second pit exit recovery chamber v163
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          marker='SECOND_PIT_EXIT_RECOVERY_CHAMBER_MODEL_V163=true'
+          if marker in s:
+              raise SystemExit('v163 already present')
+          anchor='const FINAL_GAUNTLET_STAGING_GATE_MODEL_V141=true'
+          if anchor not in s:
+              raise SystemExit('model anchor missing')
+          model=r'''const SECOND_PIT_EXIT_RECOVERY_CHAMBER_MODEL_V163=true,SECOND_PIT_EXIT_RECOVERY_CHAMBER_Z_MIN=5.82,SECOND_PIT_EXIT_RECOVERY_CHAMBER_Z_MAX=6.72,SECOND_PIT_EXIT_RECOVERY_CHAMBER_Z=(SECOND_PIT_EXIT_RECOVERY_CHAMBER_Z_MIN+SECOND_PIT_EXIT_RECOVERY_CHAMBER_Z_MAX)*.5;[secondPitCheckpointCapturePad,checkpointPad,secondPitFunnelStripe].forEach(o=>{o.name='SecondPitExitRecoveryLegacyCollisionCarrierV163';o.material.transparent=true;o.material.opacity=.025;o.material.depthWrite=false});[secondPitFunnelL,secondPitFunnelR,checkpointL,checkpointR,checkpointTop,secondPitFinalHandoffV140].forEach(o=>o.traverse(n=>{if(!n.isMesh||!n.material)return;n.material.transparent=true;n.material.opacity=Math.min(n.material.opacity??1,.045);n.material.depthWrite=false}));const secondPitExitRecoveryChamberV163=new THREE.Group();secondPitExitRecoveryChamberV163.name='SecondPitExitRecoveryChamberAssemblyV163';secondPitExitRecoveryChamberV163.position.set(0,0,SECOND_PIT_EXIT_RECOVERY_CHAMBER_Z);scene.add(secondPitExitRecoveryChamberV163);const sperDarkV163=mat(0x101827),sperSteelV163=mat(0xe8f7ff),sperGreenV163=mat(0x49ff79),sperCyanV163=mat(0x45e8ff),sperAmberV163=mat(0xffb12b),sperPinkV163=mat(0xff557c);sperDarkV163.metalness=.70;sperDarkV163.roughness=.23;sperSteelV163.metalness=.56;sperSteelV163.roughness=.18;const sperLenV163=SECOND_PIT_EXIT_RECOVERY_CHAMBER_Z_MAX-SECOND_PIT_EXIT_RECOVERY_CHAMBER_Z_MIN,sperDeckGeoV163=new THREE.BoxGeometry(3.46,.10,sperLenV163),sperSlatGeoV163=new THREE.BoxGeometry(.38,.07,sperLenV163-.08),sperTowerGeoV163=new THREE.BoxGeometry(.30,1.76,.34),sperRingGeoV163=new THREE.TorusGeometry(.15,.035,7,14),sperArmGeoV163=new THREE.BoxGeometry(.82,.14,.22),sperRollerGeoV163=new THREE.CylinderGeometry(.10,.10,.20,10);const sperDeckV163=new THREE.Mesh(sperDeckGeoV163,sperDarkV163);sperDeckV163.name='SecondPitExitRecoveryChamberDeckV163';sperDeckV163.position.y=.05;sperDeckV163.castShadow=sperDeckV163.receiveShadow=true;secondPitExitRecoveryChamberV163.add(sperDeckV163);[-1.40,-.94,-.47,0,.47,.94,1.40].forEach((x,i)=>{const slat=new THREE.Mesh(sperSlatGeoV163,i===3?sperSteelV163:(i<3?sperGreenV163:sperCyanV163));slat.name='SecondPitExitRecoveryChamberDeckSlatV163';slat.position.set(x,.12,0);slat.castShadow=slat.receiveShadow=true;slat.material.emissive=new THREE.Color(i===3?0x42667d:(i<3?0x159b43:0x087fa8));slat.material.emissiveIntensity=i===3?.34:.46;secondPitExitRecoveryChamberV163.add(slat)});const secondPitExitRecoveryArmsV163=[],secondPitExitRecoveryDampersV163=[],secondPitExitRecoveryRollersV163=[],secondPitExitRecoveryLampsV163=[];[-.30,.30].forEach((z,zi)=>[-1,1].forEach((side,si)=>{const tower=new THREE.Mesh(sperTowerGeoV163,sperDarkV163);tower.name='SecondPitExitRecoveryServoTowerV163';tower.position.set(side*1.76,.90,z);tower.castShadow=tower.receiveShadow=true;secondPitExitRecoveryChamberV163.add(tower);[.32,.82,1.32].forEach((y,k)=>{const collar=new THREE.Mesh(sperRingGeoV163,k===1?sperSteelV163:(si?sperCyanV163:sperGreenV163));collar.name='SecondPitExitRecoveryTowerCollarV163';collar.rotation.x=Math.PI/2;collar.position.set(side*1.76,y,z);collar.castShadow=true;collar.material.emissive=new THREE.Color(k===1?0x42667d:(si?0x087fa8:0x159b43));collar.material.emissiveIntensity=.72;secondPitExitRecoveryChamberV163.add(collar)});const damper=new THREE.Mesh(new THREE.CylinderGeometry(.075,.095,.72,10),zi?sperCyanV163:sperGreenV163);damper.name='SecondPitExitRecoveryHydraulicDamperV163';damper.rotation.z=Math.PI/2;damper.position.set(side*1.48,.48,z);damper.userData.side=side;damper.userData.phase=zi;damper.castShadow=damper.receiveShadow=true;damper.material.emissive=new THREE.Color(zi?0x087fa8:0x159b43);damper.material.emissiveIntensity=.56;secondPitExitRecoveryChamberV163.add(damper);secondPitExitRecoveryDampersV163.push(damper);const pivot=new THREE.Group();pivot.name='SecondPitExitRecoveryGuidePivotV163';pivot.position.set(side*1.58,.58,z);pivot.userData.side=side;pivot.userData.phase=zi;const arm=new THREE.Mesh(sperArmGeoV163,zi?sperCyanV163:sperSteelV163);arm.name='SecondPitExitRecoveryGuideArmV163';arm.position.set(-side*.38,0,0);arm.castShadow=arm.receiveShadow=true;arm.material.emissive=new THREE.Color(zi?0x087fa8:0x42667d);arm.material.emissiveIntensity=.46;pivot.add(arm);[-.58,-.24].forEach((lx,k)=>{const roller=new THREE.Mesh(sperRollerGeoV163,k?sperAmberV163:(si?sperCyanV163:sperGreenV163));roller.name='SecondPitExitRecoveryGuideRollerV163';roller.rotation.z=Math.PI/2;roller.position.set(side*lx,-.02,0);roller.castShadow=roller.receiveShadow=true;roller.material.emissive=new THREE.Color(k?0xa95a00:(si?0x087fa8:0x159b43));roller.material.emissiveIntensity=.76;pivot.add(roller);secondPitExitRecoveryRollersV163.push(roller)});secondPitExitRecoveryChamberV163.add(pivot);secondPitExitRecoveryArmsV163.push(pivot)}));const sperHeaderV163=new THREE.Mesh(new THREE.BoxGeometry(3.82,.20,.34),sperDarkV163);sperHeaderV163.name='SecondPitExitRecoveryCheckpointHeaderV163';sperHeaderV163.position.set(0,1.88,CHECKPOINT_Z-SECOND_PIT_EXIT_RECOVERY_CHAMBER_Z);sperHeaderV163.castShadow=sperHeaderV163.receiveShadow=true;secondPitExitRecoveryChamberV163.add(sperHeaderV163);[-1.22,-.61,0,.61,1.22].forEach((x,i)=>{const lamp=new THREE.Mesh(new THREE.OctahedronGeometry(.09,0),i===2?sperAmberV163:sperSteelV163);lamp.name='SecondPitExitRecoveryCheckpointLampV163';lamp.position.set(x,1.89,CHECKPOINT_Z-SECOND_PIT_EXIT_RECOVERY_CHAMBER_Z+.21);lamp.userData.stage=.12+i*.19;lamp.castShadow=true;lamp.material.emissive=new THREE.Color(i===2?0xa95a00:(i<2?0x159b43:0x087fa8));lamp.material.emissiveIntensity=.82;secondPitExitRecoveryChamberV163.add(lamp);secondPitExitRecoveryLampsV163.push(lamp)});const sperCoreV163=new THREE.Mesh(new THREE.TorusGeometry(.31,.055,8,18),sperAmberV163);sperCoreV163.name='SecondPitExitRecoveryFlywheelV163';sperCoreV163.rotation.x=Math.PI/2;sperCoreV163.position.set(0,.20,.02);sperCoreV163.castShadow=true;sperCoreV163.material.emissive=new THREE.Color(0xa95a00);sperCoreV163.material.emissiveIntensity=.88;secondPitExitRecoveryChamberV163.add(sperCoreV163);[-.92,0,.92].forEach((x,i)=>{const guide=new THREE.Mesh(new THREE.TorusGeometry(.105,.026,6,10),i===1?sperAmberV163:sperSteelV163);guide.name='SecondPitExitRecoveryFloorGuideV163';guide.rotation.x=Math.PI/2;guide.position.set(x,.15,-.12);guide.castShadow=true;guide.material.emissive=new THREE.Color(i===1?0xa95a00:(i<1?0x159b43:0x087fa8));guide.material.emissiveIntensity=i===1?1.04:.78;secondPitExitRecoveryChamberV163.add(guide)});[-1,1].forEach((side,si)=>{const pivot=new THREE.Group();pivot.name='SecondPitExitRecoveryHandoffJawPivotV163';pivot.position.set(side*1.52,.74,sperLenV163*.47);pivot.userData.side=side;const jaw=new THREE.Mesh(new THREE.BoxGeometry(.88,.16,.28),si?sperPinkV163:sperAmberV163);jaw.name='SecondPitExitRecoveryHandoffJawV163';jaw.position.set(-side*.40,0,0);jaw.castShadow=jaw.receiveShadow=true;jaw.material.emissive=new THREE.Color(si?0xa20d38:0xa95a00);jaw.material.emissiveIntensity=.58;pivot.add(jaw);secondPitExitRecoveryChamberV163.add(pivot);secondPitExitRecoveryArmsV163.push(pivot);const lamp=new THREE.Mesh(new THREE.OctahedronGeometry(.11,0),si?sperPinkV163:sperAmberV163);lamp.name='SecondPitExitRecoveryHandoffLampV163';lamp.position.set(side*1.66,1.38,sperLenV163*.43);lamp.userData.stage=.78+si*.10;lamp.castShadow=true;lamp.material.emissive=new THREE.Color(si?0xa20d38:0xa95a00);lamp.material.emissiveIntensity=.90;secondPitExitRecoveryChamberV163.add(lamp);secondPitExitRecoveryLampsV163.push(lamp)});'''
+          s=s.replace(anchor,model+anchor,1)
+          runtime_anchor='const finalStageActiveV141='
+          if runtime_anchor not in s:
+              raise SystemExit('runtime anchor missing')
+          runtime=r'''const exitRecoveryActiveV163=p.z>SECOND_PIT_EXIT_RECOVERY_CHAMBER_Z_MIN-.16&&p.z<SECOND_PIT_EXIT_RECOVERY_CHAMBER_Z_MAX+.18,exitRecoveryProgressV163=Math.max(0,Math.min(1,(p.z-SECOND_PIT_EXIT_RECOVERY_CHAMBER_Z_MIN)/(SECOND_PIT_EXIT_RECOVERY_CHAMBER_Z_MAX-SECOND_PIT_EXIT_RECOVERY_CHAMBER_Z_MIN))),exitRecoveryPulseV163=.5+.5*Math.sin(t*11.4);secondPitExitRecoveryArmsV163.forEach((n,i)=>{const side=n.userData.side,phase=n.userData.phase||0,nudge=exitRecoveryActiveV163?.18*(1-exitRecoveryProgressV163):.04;n.rotation.z=side*(phase?.08+nudge:-.08-nudge);n.children.forEach(c=>{if(c.isMesh&&c.material?.emissive)c.material.emissiveIntensity=exitRecoveryActiveV163?.62+.42*exitRecoveryPulseV163:.44})});secondPitExitRecoveryDampersV163.forEach((n,i)=>{const side=n.userData.side,compress=exitRecoveryActiveV163?.55+.45*exitRecoveryProgressV163:.48;n.scale.y=compress;n.position.x=side*(1.48-.10*exitRecoveryProgressV163);n.material.emissiveIntensity=exitRecoveryActiveV163?.70+.34*exitRecoveryPulseV163:.48});secondPitExitRecoveryRollersV163.forEach((n,i)=>{n.rotation.x+=dt*(exitRecoveryActiveV163?7.2:1.0)*(i%2?-1:1);n.material.emissiveIntensity=exitRecoveryActiveV163?.76+.34*exitRecoveryPulseV163:.52});secondPitExitRecoveryLampsV163.forEach((n,i)=>{const reached=exitRecoveryProgressV163>=n.userData.stage;n.material.color.setHex(reached?(n.userData.stage>.75?0xffb12b:0x49ff79):0xe8f7ff);n.material.emissive.setHex(reached?(n.userData.stage>.75?0xa95a00:0x159b43):0x42667d);n.material.emissiveIntensity=exitRecoveryActiveV163?(reached?1.12+.52*exitRecoveryPulseV163:.52):.62});sperCoreV163.rotation.z+=dt*(exitRecoveryActiveV163?2.8:.25);sperCoreV163.scale.setScalar(.94+.10*(exitRecoveryActiveV163?exitRecoveryPulseV163:.2));sperCoreV163.material.color.setHex(exitRecoveryProgressV163>.76?0xff557c:(exitRecoveryProgressV163>.42?0xffb12b:0x49ff79));sperCoreV163.material.emissive.setHex(exitRecoveryProgressV163>.76?0xa20d38:(exitRecoveryProgressV163>.42?0xa95a00:0x159b43));sperCoreV163.material.emissiveIntensity=exitRecoveryActiveV163?.78+.52*exitRecoveryPulseV163:.58;sperDeckV163.material.emissive=sperDeckV163.material.emissive||new THREE.Color(0x159b43);sperDeckV163.material.emissiveIntensity=exitRecoveryActiveV163?.18+.24*exitRecoveryProgressV163:.06;'''
+          s=s.replace(runtime_anchor,runtime+runtime_anchor,1)
+          p.write_text(s)
+          PY
+
+      - name: Verify v163 contract and preserved route physics
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=[
+            'SECOND_PIT_EXIT_RECOVERY_CHAMBER_MODEL_V163=true',
+            'SecondPitExitRecoveryChamberAssemblyV163',
+            'SecondPitExitRecoveryServoTowerV163',
+            'SecondPitExitRecoveryHydraulicDamperV163',
+            'SecondPitExitRecoveryGuideArmV163',
+            'SecondPitExitRecoveryCheckpointHeaderV163',
+            'SecondPitExitRecoveryHandoffJawV163',
+            'exitRecoveryActiveV163=',
+            'secondPitExitRecoveryRollersV163.forEach'
+          ]
+          for token in required:
+              assert token in s, token
+          preserved=[
+            'PITS=[[-15.2,-13.55],[-4.85,-3.55],[5.05,5.82]]',
+            'SECOND_PIT_EXIT_BRIDGE_Z=5.80',
+            'SECOND_PIT_EXIT_RELEASE_Z=6.02',
+            'SECOND_PIT_CHECKPOINT_CAPTURE_Z_MIN=6.02,SECOND_PIT_CHECKPOINT_CAPTURE_Z_MAX=6.82,SECOND_PIT_CHECKPOINT_CAPTURE_HALF_X=1.55,SECOND_PIT_CHECKPOINT_CAPTURE_DAMP=14.5,SECOND_PIT_CHECKPOINT_CAPTURE_PULL=2.2',
+            'CHECKPOINT_Z=6.35,CHECKPOINT_X=3.35',
+            'SECOND_PIT_FINAL_HANDOFF_Z_MIN=6.16,SECOND_PIT_FINAL_HANDOFF_Z_MAX=6.70',
+            'FINAL_GAUNTLET_APPROACH_Z_MIN=6.72'
+          ]
+          for token in preserved:
+              assert token in s, 'preserved contract missing: '+token
+          assert s.count('SECOND_PIT_EXIT_RECOVERY_CHAMBER_MODEL_V163=true')==1
+          print('V163_CONTRACT_SUCCESS')
+          PY
+
+      - name: Run second pit route checks
+        run: |
+          node scripts/second-pit-route-continuity-v70-check.mjs
+          node scripts/second-pit-platform-motion-v71-check.mjs
+          node scripts/second-pit-carry-window-check.mjs
+          node scripts/second-pit-checkpoint-funnel-check.mjs
+
+      - name: Browser module syntax check
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          m=re.search(r'<script type="module">(.*?)</script>',s,re.S)
+          assert m, 'module script missing'
+          js=m.group(1)
+          js=re.sub(r'^import .*?;\s*$', '', js, flags=re.M)
+          Path('/tmp/browser-module-v163.mjs').write_text(js)
+          PY
+          node --check /tmp/browser-module-v163.mjs
+
+      - name: Recheck linear head before commit
+        run: |
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+
+      - name: Commit gameplay change
+        run: |
+          git config user.name openai-level-bot
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay diff'; exit 1; }
+          git commit -m 'Level: mechanical second pit exit recovery chamber v163'
+          git push origin HEAD:new-player-glb-overhaul
