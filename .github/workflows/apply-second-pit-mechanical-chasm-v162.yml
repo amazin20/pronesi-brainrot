@@ -1,0 +1,101 @@
+name: Apply second pit mechanical chasm v162
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-second-pit-mechanical-chasm-v162.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+
+      - name: Guard current branch head
+        run: |
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+
+      - name: Build second pit mechanical chasm v162
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          marker='SECOND_PIT_MECHANICAL_CHASM_MODEL_V162=true'
+          if marker in s:
+              raise SystemExit('v162 already present')
+          anchor='const SECOND_PIT_ENTRY_CAPTURE_MODEL_V161=true'
+          if anchor not in s:
+              raise SystemExit('model anchor missing')
+          model=r'''const SECOND_PIT_MECHANICAL_CHASM_MODEL_V162=true,SECOND_PIT_CHASM_Z_MIN=PITS[2][0],SECOND_PIT_CHASM_Z_MAX=PITS[2][1],SECOND_PIT_CHASM_CZ=(SECOND_PIT_CHASM_Z_MIN+SECOND_PIT_CHASM_Z_MAX)*.5;const secondPitMechanicalChasmV162=new THREE.Group();secondPitMechanicalChasmV162.name='SecondPitMechanicalChasmAssemblyV162';scene.add(secondPitMechanicalChasmV162);const spmcDarkV162=mat(0x101827),spmcSteelV162=mat(0xe8f7ff),spmcPinkV162=mat(0xff5fc7),spmcCyanV162=mat(0x45e8ff),spmcGreenV162=mat(0x49ff79),spmcAmberV162=mat(0xffb12b),spmcRedV162=mat(0xff315d);spmcDarkV162.metalness=.70;spmcDarkV162.roughness=.23;spmcSteelV162.metalness=.54;spmcSteelV162.roughness=.18;const secondPitChasmDrumsV162=[],secondPitChasmJawsV162=[],secondPitChasmLampsV162=[],secondPitChasmRollersV162=[];[SECOND_PIT_CHASM_Z_MIN,SECOND_PIT_CHASM_Z_MAX].forEach((z,edge)=>{const g=new THREE.Group();g.name='SecondPitChasmEdgeMachineV162';g.position.set(0,0,z);secondPitMechanicalChasmV162.add(g);const beam=new THREE.Mesh(new THREE.BoxGeometry(3.52,.18,.30),spmcDarkV162);beam.name='SecondPitChasmEdgeBeamV162';beam.position.y=.08;beam.castShadow=beam.receiveShadow=true;g.add(beam);[-1.45,-.96,-.48,0,.48,.96,1.45].forEach((x,i)=>{const tooth=new THREE.Mesh(new THREE.BoxGeometry(.30,.13,.31),i===3?spmcSteelV162:(edge?spmcGreenV162:spmcAmberV162));tooth.name='SecondPitChasmEdgeToothV162';tooth.position.set(x,.20,edge?-.02:.02);tooth.rotation.x=edge?.17:-.17;tooth.castShadow=tooth.receiveShadow=true;tooth.material.emissive=new THREE.Color(i===3?0x42667d:(edge?0x159b43:0xa95a00));tooth.material.emissiveIntensity=i===3?.38:.66;g.add(tooth)});[-1,1].forEach((side,si)=>{const tower=new THREE.Mesh(new THREE.BoxGeometry(.34,1.82,.42),spmcDarkV162);tower.name='SecondPitChasmServoTowerV162';tower.position.set(side*1.78,.93,0);tower.castShadow=tower.receiveShadow=true;g.add(tower);[.31,.80,1.34].forEach((y,k)=>{const ring=new THREE.Mesh(new THREE.TorusGeometry(.18,.04,7,14),k===1?spmcSteelV162:(si?spmcCyanV162:spmcPinkV162));ring.name='SecondPitChasmTowerCollarV162';ring.rotation.x=Math.PI/2;ring.position.set(side*1.78,y,0);ring.castShadow=true;ring.material.emissive=new THREE.Color(k===1?0x42667d:(si?0x087fa8:0xa31a73));ring.material.emissiveIntensity=.72;g.add(ring)});const drum=new THREE.Mesh(new THREE.CylinderGeometry(.19,.19,.52,12),edge?spmcGreenV162:spmcAmberV162);drum.name='SecondPitChasmDriveDrumV162';drum.rotation.z=Math.PI/2;drum.position.set(side*1.48,.47,edge?-.17:.17);drum.castShadow=drum.receiveShadow=true;drum.material.emissive=new THREE.Color(edge?0x159b43:0xa95a00);drum.material.emissiveIntensity=.70;g.add(drum);secondPitChasmDrumsV162.push(drum);const pivot=new THREE.Group();pivot.name='SecondPitChasmJawPivotV162';pivot.position.set(side*1.53,.92,edge?-.04:.04);pivot.userData.side=side;pivot.userData.edge=edge;const jaw=new THREE.Mesh(new THREE.BoxGeometry(.88,.17,.35),edge?spmcCyanV162:spmcPinkV162);jaw.name='SecondPitChasmSafetyJawV162';jaw.position.set(-side*.40,0,0);jaw.castShadow=jaw.receiveShadow=true;jaw.material.emissive=new THREE.Color(edge?0x087fa8:0xa31a73);jaw.material.emissiveIntensity=.58;pivot.add(jaw);g.add(pivot);secondPitChasmJawsV162.push(pivot);const lamp=new THREE.Mesh(new THREE.OctahedronGeometry(.12,0),edge?spmcGreenV162:spmcRedV162);lamp.name='SecondPitChasmStatusLampV162';lamp.position.set(side*1.78,1.92,0);lamp.castShadow=true;lamp.material.emissive=new THREE.Color(edge?0x159b43:0xa20d38);lamp.material.emissiveIntensity=.96;g.add(lamp);secondPitChasmLampsV162.push(lamp)});const header=new THREE.Mesh(new THREE.BoxGeometry(3.82,.21,.38),spmcDarkV162);header.name='SecondPitChasmHeaderV162';header.position.set(0,1.94,0);header.castShadow=header.receiveShadow=true;g.add(header)});[-1.62,1.62].forEach((x,si)=>{const rail=new THREE.Mesh(new THREE.BoxGeometry(.18,.23,SECOND_PIT_CHASM_Z_MAX-SECOND_PIT_CHASM_Z_MIN+.22),spmcDarkV162);rail.name='SecondPitChasmSideRailV162';rail.position.set(x,.13,SECOND_PIT_CHASM_CZ);rail.castShadow=rail.receiveShadow=true;secondPitMechanicalChasmV162.add(rail);[SECOND_PIT_CHASM_Z_MIN+.16,SECOND_PIT_CHASM_CZ,SECOND_PIT_CHASM_Z_MAX-.16].forEach((z,k)=>{const roller=new THREE.Mesh(new THREE.CylinderGeometry(.10,.10,.24,10),k===1?spmcAmberV162:(si?spmcCyanV162:spmcPinkV162));roller.name='SecondPitChasmSideRollerV162';roller.rotation.z=Math.PI/2;roller.position.set(x,.29,z);roller.castShadow=roller.receiveShadow=true;roller.material.emissive=new THREE.Color(k===1?0xa95a00:(si?0x087fa8:0xa31a73));roller.material.emissiveIntensity=.68;secondPitMechanicalChasmV162.add(roller);secondPitChasmRollersV162.push(roller)})});[-1.08,0,1.08].forEach((x,i)=>{const strut=new THREE.Mesh(new THREE.BoxGeometry(.16,1.12,.16),spmcDarkV162);strut.name='SecondPitChasmDepthStrutV162';strut.position.set(x,-.55,SECOND_PIT_CHASM_CZ);strut.castShadow=strut.receiveShadow=true;secondPitMechanicalChasmV162.add(strut);const ring=new THREE.Mesh(new THREE.TorusGeometry(.18,.036,7,14),i===1?spmcRedV162:spmcCyanV162);ring.name='SecondPitChasmDepthRingV162';ring.rotation.x=Math.PI/2;ring.position.set(x,-.90,SECOND_PIT_CHASM_CZ);ring.castShadow=true;ring.material.emissive=new THREE.Color(i===1?0xa20d38:0x087fa8);ring.material.emissiveIntensity=.72;secondPitMechanicalChasmV162.add(ring)});const secondPitCarrierMechanicalV162=[];secondPitPlatforms.forEach((platform,i)=>{const g=new THREE.Group();g.name='SecondPitCarrierMechanicalAssemblyV162';const accent=i?spmcCyanV162:spmcPinkV162;[-.78,-.39,0,.39,.78].forEach((x,k)=>{const slat=new THREE.Mesh(new THREE.BoxGeometry(.31,.075,.55),k===2?spmcSteelV162:accent);slat.name='SecondPitCarrierDeckSlatV162';slat.position.set(x,.16,0);slat.castShadow=slat.receiveShadow=true;slat.material.emissive=new THREE.Color(k===2?0x42667d:(i?0x087fa8:0xa31a73));slat.material.emissiveIntensity=k===2?.38:.54;g.add(slat)});[-.27,.27].forEach((z,k)=>{const rail=new THREE.Mesh(new THREE.CapsuleGeometry(.038,1.68,4,8),spmcSteelV162);rail.name='SecondPitCarrierEdgeRailV162';rail.rotation.z=Math.PI/2;rail.position.set(0,.29,z);rail.castShadow=rail.receiveShadow=true;rail.material.emissive=new THREE.Color(k?0x49ff79:(i?0x45e8ff:0xff5fc7));rail.material.emissiveIntensity=.68;g.add(rail)});const rollers=[];[-.82,.82].forEach((x,k)=>[-.23,.23].forEach((z,j)=>{const roller=new THREE.Mesh(new THREE.CylinderGeometry(.095,.095,.18,10),j?spmcAmberV162:accent);roller.name='SecondPitCarrierGuideRollerV162';roller.rotation.z=Math.PI/2;roller.position.set(x,.04,z);roller.castShadow=roller.receiveShadow=true;roller.material.emissive=new THREE.Color(j?0xa95a00:(i?0x087fa8:0xa31a73));roller.material.emissiveIntensity=.72;g.add(roller);rollers.push(roller)}));const core=new THREE.Mesh(new THREE.TorusGeometry(.20,.045,7,14),spmcGreenV162);core.name='SecondPitCarrierDockRingV162';core.rotation.x=Math.PI/2;core.position.set(0,.22,0);core.castShadow=true;core.material.emissive=new THREE.Color(0x159b43);core.material.emissiveIntensity=.82;g.add(core);platform.mesh.add(g);platform.mechanicalV162=g;platform.mechanicalRollersV162=rollers;platform.mechanicalCoreV162=core;secondPitCarrierMechanicalV162.push(g)});'''
+          s=s.replace(anchor,model+anchor,1)
+          runtime_anchor='const secondSweeperSecondPitHandoffActive=secondSweeperCleared'
+          if runtime_anchor not in s:
+              raise SystemExit('runtime anchor missing')
+          runtime=r'''const secondPitChasmActiveV162=secondPitBoarding||secondPitCrossing,secondPitChasmPulseV162=.5+.5*Math.sin(t*12.2),secondPitChasmProgressV162=Math.max(0,Math.min(1,(p.z-SECOND_PIT_CHASM_Z_MIN)/(SECOND_PIT_CHASM_Z_MAX-SECOND_PIT_CHASM_Z_MIN)));secondPitChasmDrumsV162.forEach((n,i)=>{n.rotation.x+=dt*(secondPitChasmActiveV162?7.8:1.0)*(i%2?-1:1);n.material.emissiveIntensity=secondPitChasmActiveV162?.76+.40*secondPitChasmPulseV162:.52});secondPitChasmJawsV162.forEach((n,i)=>{const side=n.userData.side,edge=n.userData.edge,close=secondPitChasmActiveV162?(edge?.12+.18*secondPitChasmProgressV162:.30-.16*secondPitChasmProgressV162):.10;n.rotation.z=side*close;n.children.forEach(c=>{if(c.isMesh&&c.material?.emissive)c.material.emissiveIntensity=secondPitChasmActiveV162?.66+.44*secondPitChasmPulseV162:.46})});secondPitChasmRollersV162.forEach((n,i)=>{n.rotation.x+=dt*(secondPitChasmActiveV162?6.4:1.0)*(i%2?-1:1);n.material.emissiveIntensity=secondPitChasmActiveV162?.74+.36*secondPitChasmPulseV162:.50});secondPitChasmLampsV162.forEach((n,i)=>{const reached=secondPitChasmProgressV162>=(i%2?.52:.18);n.material.color.setHex(reached?0x49ff79:(i<2?0xff315d:0x45e8ff));n.material.emissive.setHex(reached?0x159b43:(i<2?0xa20d38:0x087fa8));n.material.emissiveIntensity=secondPitChasmActiveV162?(reached?1.16+.48*secondPitChasmPulseV162:.76+.28*secondPitChasmPulseV162):.64});secondPitPlatforms.forEach((platform,i)=>{const selected=secondPitBoardingIndex===i&&(secondPitBoarding||secondPitCrossing),pulse=.5+.5*Math.sin(t*10.8+i);platform.mechanicalRollersV162.forEach((n,k)=>{n.rotation.x+=dt*(selected?9.2:1.2)*(k%2?-1:1);n.material.emissiveIntensity=selected?.90+.44*pulse:.58});platform.mechanicalCoreV162.rotation.z+=dt*(selected?2.7:.25);platform.mechanicalCoreV162.scale.setScalar(selected?1.05+.08*pulse:.96);platform.mechanicalCoreV162.material.color.setHex(selected?0x49ff79:(i?0x45e8ff:0xff5fc7));platform.mechanicalCoreV162.material.emissive.setHex(selected?0x159b43:(i?0x087fa8:0xa31a73));platform.mechanicalCoreV162.material.emissiveIntensity=selected?1.05+.45*pulse:.68});'''
+          s=s.replace(runtime_anchor,runtime+runtime_anchor,1)
+          p.write_text(s)
+          PY
+
+      - name: Verify v162 and preserved second pit physics
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=[
+            'SECOND_PIT_MECHANICAL_CHASM_MODEL_V162=true',
+            "SecondPitMechanicalChasmAssemblyV162",
+            "SecondPitChasmEdgeMachineV162",
+            "SecondPitChasmDriveDrumV162",
+            "SecondPitCarrierMechanicalAssemblyV162",
+            "SecondPitCarrierDeckSlatV162",
+            'secondPitChasmActiveV162=',
+            'secondPitPlatforms.forEach((platform,i)=>{const selected=secondPitBoardingIndex===i'
+          ]
+          for token in required:
+              assert token in s, token
+          preserved=[
+            'PITS=[[-15.2,-13.55],[-4.85,-3.55],[5.05,5.82]]',
+            'SECOND_PIT_STAGE_Z=4.55,SECOND_PIT_STAGE_Z_MIN=3.55,SECOND_PIT_STAGE_HALF_X=1.55',
+            'SECOND_PIT_BOARD_X=.16,SECOND_PIT_BOARD_SPEED=2.6',
+            'SECOND_PIT_BOARD_BRIDGE_Z=5.055',
+            'SECOND_PIT_EXIT_BRIDGE_Z=5.80',
+            'SECOND_PIT_EXIT_RELEASE_Z=6.02',
+            'SECOND_PIT_APPROACH_Z_MIN=3.48,SECOND_PIT_APPROACH_Z_MAX=5.04,SECOND_PIT_APPROACH_HALF_X=1.55'
+          ]
+          for token in preserved:
+              assert token in s, 'preserved contract missing: '+token
+          assert s.count('SECOND_PIT_MECHANICAL_CHASM_MODEL_V162=true')==1
+          print('V162_CONTRACT_SUCCESS')
+          PY
+
+      - name: Browser module syntax check
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          m=re.search(r'<script type="module">(.*?)</script>',s,re.S)
+          assert m, 'module script missing'
+          js=m.group(1)
+          js=re.sub(r'^import .*?;\s*$', '', js, flags=re.M)
+          Path('/tmp/browser-module-v162.mjs').write_text(js)
+          PY
+          node --check /tmp/browser-module-v162.mjs
+
+      - name: Commit gameplay change
+        run: |
+          git config user.name openai-level-bot
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add index.html
+          git diff --cached --quiet && { echo 'No gameplay diff'; exit 1; }
+          git commit -m 'Level: mechanical second pit chasm v162'
+          git push origin HEAD:new-player-glb-overhaul
