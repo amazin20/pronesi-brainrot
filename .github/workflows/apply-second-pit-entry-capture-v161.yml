@@ -1,0 +1,100 @@
+name: Apply Second Pit Entry Capture v161
+
+on:
+  push:
+    branches: [new-player-glb-overhaul]
+    paths:
+      - .github/workflows/apply-second-pit-entry-capture-v161.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: new-player-glb-overhaul
+          fetch-depth: 0
+
+      - name: Refuse stale/non-linear apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin new-player-glb-overhaul
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/new-player-glb-overhaul)"
+
+      - name: Build mechanical second pit entry capture v161
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          if 'SECOND_PIT_ENTRY_CAPTURE_MODEL_V161=true' in s:
+              raise SystemExit('v161 already present')
+
+          model_anchor='const SECOND_PIT_STAGE_MODEL_V85=true'
+          if s.count(model_anchor) != 1:
+              raise SystemExit(f'expected one second pit stage anchor, got {s.count(model_anchor)}')
+
+          model="""const SECOND_PIT_ENTRY_CAPTURE_MODEL_V161=true,SECOND_PIT_ENTRY_CAPTURE_Z_MIN=3.86,SECOND_PIT_ENTRY_CAPTURE_Z_MAX=SECOND_PIT_APPROACH_Z_MAX,SECOND_PIT_ENTRY_CAPTURE_Z=(SECOND_PIT_ENTRY_CAPTURE_Z_MIN+SECOND_PIT_ENTRY_CAPTURE_Z_MAX)*.5;const secondPitEntryCaptureV161=new THREE.Group();secondPitEntryCaptureV161.name='SecondPitEntryCaptureAssemblyV161';secondPitEntryCaptureV161.position.set(0,0,SECOND_PIT_ENTRY_CAPTURE_Z);scene.add(secondPitEntryCaptureV161);const specDarkV161=mat(0x10182b),specSteelV161=mat(0xe9fbff),specCyanV161=mat(0x45e8ff),specPinkV161=mat(0xff5fc7),specAmberV161=mat(0xffb12b),specGreenV161=mat(0x49ff79);specDarkV161.metalness=.72;specDarkV161.roughness=.22;specSteelV161.metalness=.58;specSteelV161.roughness=.16;const specLenV161=SECOND_PIT_ENTRY_CAPTURE_Z_MAX-SECOND_PIT_ENTRY_CAPTURE_Z_MIN;const specUnderframeV161=new THREE.Mesh(new THREE.BoxGeometry(3.54,.09,specLenV161),specDarkV161);specUnderframeV161.name='SecondPitEntryCaptureUnderframeV161';specUnderframeV161.position.y=.035;specUnderframeV161.castShadow=specUnderframeV161.receiveShadow=true;secondPitEntryCaptureV161.add(specUnderframeV161);[-1.38,-.92,-.46,0,.46,.92,1.38].forEach((x,i)=>{const slat=new THREE.Mesh(new THREE.BoxGeometry(.34,.065,specLenV161-.06),i===3?specSteelV161:(i<3?specPinkV161:specCyanV161));slat.name='SecondPitEntryCaptureDeckSlatV161';slat.position.set(x,.105,0);slat.castShadow=slat.receiveShadow=true;slat.material.emissive=new THREE.Color(i===3?0x4b7184:(i<3?0xa31a73:0x087fa8));slat.material.emissiveIntensity=i===3?.32:.46;secondPitEntryCaptureV161.add(slat)});[-1,1].forEach((side,si)=>{const rail=new THREE.Mesh(new THREE.BoxGeometry(.10,.20,specLenV161+.08),specDarkV161);rail.name='SecondPitEntryCaptureSideRailV161';rail.position.set(side*1.70,.23,0);rail.castShadow=rail.receiveShadow=true;secondPitEntryCaptureV161.add(rail)});const secondPitEntryCaptureArmsV161=[],secondPitEntryCaptureRollersV161=[],secondPitEntryCaptureLampsV161=[];[-.38,.38].forEach((z,zi)=>[-1,1].forEach((side,si)=>{const tower=new THREE.Mesh(new THREE.BoxGeometry(.28,1.50,.28),specDarkV161);tower.name='SecondPitEntryCaptureServoTowerV161';tower.position.set(side*1.78,.78,z);tower.castShadow=tower.receiveShadow=true;secondPitEntryCaptureV161.add(tower);[.32,.76,1.20].forEach((y,k)=>{const collar=new THREE.Mesh(new THREE.TorusGeometry(.145,.032,7,14),k===1?specSteelV161:(si?specCyanV161:specPinkV161));collar.name='SecondPitEntryCaptureTowerCollarV161';collar.rotation.x=Math.PI/2;collar.position.set(side*1.78,y,z);collar.castShadow=true;collar.material.emissive=new THREE.Color(k===1?0x4b7184:(si?0x087fa8:0xa31a73));collar.material.emissiveIntensity=.70;secondPitEntryCaptureV161.add(collar)});const pivot=new THREE.Group();pivot.name='SecondPitEntryCaptureJawPivotV161';pivot.position.set(side*1.66,.58,z);pivot.userData.side=side;pivot.userData.phase=zi;const arm=new THREE.Mesh(new THREE.BoxGeometry(.86,.14,.22),specSteelV161);arm.name='SecondPitEntryCaptureJawArmV161';arm.position.set(-side*.39,0,0);arm.castShadow=arm.receiveShadow=true;arm.material.emissive=new THREE.Color(si?0x087fa8:0xa31a73);arm.material.emissiveIntensity=.40;pivot.add(arm);[-.62,-.27].forEach((lx,k)=>{const roller=new THREE.Mesh(new THREE.CylinderGeometry(.10,.10,.18,10),k?specAmberV161:(si?specCyanV161:specPinkV161));roller.name='SecondPitEntryCaptureJawRollerV161';roller.rotation.z=Math.PI/2;roller.position.set(side*lx,-.015,0);roller.castShadow=roller.receiveShadow=true;roller.material.emissive=new THREE.Color(k?0xa95a00:(si?0x087fa8:0xa31a73));roller.material.emissiveIntensity=.78;pivot.add(roller);secondPitEntryCaptureRollersV161.push(roller)});secondPitEntryCaptureV161.add(pivot);secondPitEntryCaptureArmsV161.push(pivot)}));const specHeaderV161=new THREE.Mesh(new THREE.BoxGeometry(3.68,.18,.24),specDarkV161);specHeaderV161.name='SecondPitEntryCaptureHeaderV161';specHeaderV161.position.set(0,1.67,.39);specHeaderV161.castShadow=specHeaderV161.receiveShadow=true;secondPitEntryCaptureV161.add(specHeaderV161);[-1.18,-.59,0,.59,1.18].forEach((x,i)=>{const lamp=new THREE.Mesh(new THREE.OctahedronGeometry(.085,0),i===2?specAmberV161:(i<2?specPinkV161:specCyanV161));lamp.name='SecondPitEntryCaptureStatusLampV161';lamp.position.set(x,1.67,.54);lamp.castShadow=true;lamp.userData.stage=.14+i*.18;lamp.material.emissive=new THREE.Color(i===2?0xa95a00:(i<2?0xa31a73:0x087fa8));lamp.material.emissiveIntensity=.86;secondPitEntryCaptureV161.add(lamp);secondPitEntryCaptureLampsV161.push(lamp)});const specMouthRingV161=new THREE.Mesh(new THREE.TorusGeometry(.34,.055,8,20),specAmberV161);specMouthRingV161.name='SecondPitEntryCaptureMouthRingV161';specMouthRingV161.rotation.x=Math.PI/2;specMouthRingV161.position.set(0,.20,specLenV161*.44);specMouthRingV161.castShadow=true;specMouthRingV161.material.emissive=new THREE.Color(0xa95a00);specMouthRingV161.material.emissiveIntensity=.92;secondPitEntryCaptureV161.add(specMouthRingV161);[-1.16,-.58,0,.58,1.16].forEach((x,i)=>{const tooth=new THREE.Mesh(new THREE.BoxGeometry(.22,.12,.20),i===2?specGreenV161:(i<2?specPinkV161:specCyanV161));tooth.name='SecondPitEntryCapturePitLipToothV161';tooth.position.set(x,.18,specLenV161*.49);tooth.rotation.x=-.12;tooth.castShadow=tooth.receiveShadow=true;tooth.material.emissive=new THREE.Color(i===2?0x159b43:(i<2?0xa31a73:0x087fa8));tooth.material.emissiveIntensity=.70;secondPitEntryCaptureV161.add(tooth)});"""
+          s=s.replace(model_anchor,model+model_anchor,1)
+
+          anim_anchor='const secondSweeperSecondPitHandoffActive=secondSweeperCleared'
+          if s.count(anim_anchor) != 1:
+              raise SystemExit(f'expected one runtime handoff anchor, got {s.count(anim_anchor)}')
+          anim="""const secondPitEntryCaptureActiveV161=secondSweeperCleared&&p.z>SECOND_PIT_ENTRY_CAPTURE_Z_MIN-.08&&p.z<SECOND_PIT_ENTRY_CAPTURE_Z_MAX+.02&&!win&&failTimer<=0,secondPitEntryCaptureProgressV161=Math.max(0,Math.min(1,(p.z-SECOND_PIT_ENTRY_CAPTURE_Z_MIN)/(SECOND_PIT_ENTRY_CAPTURE_Z_MAX-SECOND_PIT_ENTRY_CAPTURE_Z_MIN))),secondPitEntryCapturePulseV161=.5+.5*Math.sin(t*11.4);secondPitEntryCaptureArmsV161.forEach((n,i)=>{const side=n.userData.side,phase=n.userData.phase,close=.20+.20*(1-secondPitEntryCaptureProgressV161)+.035*Math.sin(t*4.2+phase*Math.PI);n.rotation.z=side*close;n.position.x=side*(1.66-.07*secondPitEntryCaptureProgressV161);n.children.forEach(c=>{if(c.isMesh&&c.material?.emissive)c.material.emissiveIntensity=secondPitEntryCaptureActiveV161?.56+.46*secondPitEntryCapturePulseV161:.38})});secondPitEntryCaptureRollersV161.forEach((n,i)=>{n.rotation.x+=dt*(secondPitEntryCaptureActiveV161?9.4:1.1)*(i%2?-1:1);n.material.emissiveIntensity=secondPitEntryCaptureActiveV161?.76+.40*secondPitEntryCapturePulseV161:.52});secondPitEntryCaptureLampsV161.forEach((n,i)=>{const reached=secondPitEntryCaptureProgressV161>=(n.userData.stage??i*.18);n.material.color.setHex(reached?0x49ff79:(i===2?0xffb12b:(i<2?0xff5fc7:0x45e8ff)));n.material.emissive.setHex(reached?0x159b43:(i===2?0xa95a00:(i<2?0xa31a73:0x087fa8)));n.material.emissiveIntensity=secondPitEntryCaptureActiveV161?(reached?1.16+.48*secondPitEntryCapturePulseV161:.72+.22*secondPitEntryCapturePulseV161):.64});specMouthRingV161.rotation.z+=dt*(secondPitEntryCaptureActiveV161?2.8:.28);specMouthRingV161.scale.setScalar(.94+.14*secondPitEntryCaptureProgressV161);specMouthRingV161.material.color.setHex(secondPitEntryCaptureProgressV161>.78?0x49ff79:0xffb12b);specMouthRingV161.material.emissive.setHex(secondPitEntryCaptureProgressV161>.78?0x159b43:0xa95a00);specMouthRingV161.material.emissiveIntensity=secondPitEntryCaptureActiveV161?.90+.54*secondPitEntryCapturePulseV161:.62;specUnderframeV161.material.emissive=specUnderframeV161.material.emissive||new THREE.Color(0x087fa8);specUnderframeV161.material.emissiveIntensity=secondPitEntryCaptureActiveV161?.08+.28*secondPitEntryCaptureProgressV161:.02;"""
+          s=s.replace(anim_anchor,anim+anim_anchor,1)
+          p.write_text(s)
+
+      - name: Verify v161 contract and preserved second pit physics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          required=[
+            'SECOND_PIT_ENTRY_CAPTURE_MODEL_V161=true',
+            'SecondPitEntryCaptureAssemblyV161',
+            'SecondPitEntryCaptureJawArmV161',
+            'SecondPitEntryCaptureJawRollerV161',
+            'SecondPitEntryCapturePitLipToothV161',
+            'secondPitEntryCaptureActiveV161',
+            'SECOND_SWEEPER_RECOVERY_CAPTURE_MODEL_V160=true',
+          ]
+          for token in required: assert token in s, token
+          assert s.count('SECOND_PIT_ENTRY_CAPTURE_MODEL_V161=true')==1
+          assert 'SECOND_PIT_APPROACH_Z_MIN=3.48,SECOND_PIT_APPROACH_Z_MAX=5.04,SECOND_PIT_APPROACH_HALF_X=1.55' in s, 'second pit approach physics changed'
+          assert 'PITS=[[-15.2,-13.55],[-4.85,-3.55],[5.05,5.82]]' in s, 'pit geometry changed'
+          assert 'SECOND_PIT_STAGE_Z=4.55,SECOND_PIT_STAGE_Z_MIN=3.55,SECOND_PIT_STAGE_HALF_X=1.55' in s, 'second pit stage geometry changed'
+          print('V161_CONTRACT_SUCCESS')
+          PY
+
+      - name: Browser module syntax check
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          start=s.index('<script type="module">')+len('<script type="module">')
+          end=s.index('</script>',start)
+          mod=s[start:end]
+          mod=mod.replace("import * as THREE from 'three';",'')
+          mod=mod.replace("import{GLTFLoader}from'three/addons/loaders/GLTFLoader.js';",'')
+          Path('/tmp/browser-module-v161.mjs').write_text(mod)
+          PY
+          node --check /tmp/browser-module-v161.mjs
+
+      - name: Commit gameplay change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name openai-level-bot
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add index.html
+          git diff --cached --quiet && { echo 'no gameplay diff'; exit 1; }
+          git commit -m 'Level: mechanical second pit entry capture v161'
+          git push origin HEAD:new-player-glb-overhaul
