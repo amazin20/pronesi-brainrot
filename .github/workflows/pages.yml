@@ -14,11 +14,16 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+env:
+  DEPLOY_REF: ${{ contains(github.event.head_commit.message, '[fresh-preview]') && 'level-from-scratch-v1' || github.ref }}
+
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEPLOY_REF }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -32,13 +37,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEPLOY_REF }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - name: Prepare immutable-versioned site
         run: npm run build
         env:
-          BUILD_SHA: ${{ github.sha }}
+          BUILD_SHA: ${{ env.DEPLOY_REF }}
       - uses: actions/configure-pages@v5
         with:
           enablement: true
