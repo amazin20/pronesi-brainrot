@@ -1,8 +1,8 @@
-name: Deploy overhaul preview to GitHub Pages
+name: Deploy from-scratch level preview to GitHub Pages
 
 on:
   push:
-    branches: [massive-game-overhaul]
+    branches: [level-from-scratch-v1]
   workflow_dispatch:
 
 permissions:
@@ -25,6 +25,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Validate preview branch
+        run: npm run check
       - name: Build preview from exact branch commit
         run: npm run build
         env:
@@ -35,6 +37,6 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
-      - name: Deploy overhaul preview
+      - name: Deploy from-scratch preview
         id: deployment
         uses: actions/deploy-pages@v4
