@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>ПРОНЕСИ ЭТО!</title>
+<title>ПРОНЕСИ ЭТО! — Новый уровень</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,21 +15,21 @@
 <canvas id="gl" aria-label="ПРОНЕСИ ЭТО! 3D"></canvas>
 <div id="vignette"></div>
 <header id="hud">
-  <div class="brand"><b>ПРОНЕСИ ЭТО!</b><span id="levelLabel">1 · ДИВАН В ДВЕРЬ</span></div>
-  <div class="objective"><span>ДОСТАВЬ</span><b id="cargoLabel">ДИВАН · 72 КГ</b></div>
+  <div class="brand"><b>ПРОНЕСИ ЭТО!</b><span id="levelLabel">НОВЫЙ УРОВЕНЬ · ЗИГЗАГ-ДОСТАВКА</span></div>
+  <div class="objective"><span>ДОСТАВЬ</span><b id="cargoLabel">КОРОБКА · 10 КГ</b></div>
   <div class="timer"><span>ВРЕМЯ</span><b id="timerLabel">00:00.0</b></div>
   <button id="resetBtn" class="iconBtn" aria-label="Перезапуск">↻</button>
   <button id="pauseBtn" class="iconBtn" aria-label="Пауза">Ⅱ</button>
 </header>
 <div id="hint" class="hint">WASD — относительно камеры · мышь — плавный поворот камеры · клик — толкнуть · удержать поверхность — физический хват</div>
-<div id="interaction" class="interaction hidden"><b id="interactionTitle">ДИВАН</b><span id="interactionText">Курсор задаёт физическое усилие</span></div>
+<div id="interaction" class="interaction hidden"><b id="interactionTitle">КОРОБКА</b><span id="interactionText">Курсор задаёт физическое усилие</span></div>
 <div id="gripMeter" class="gripMeter hidden"><span>ХВАТ</span><div><i id="gripFill"></i></div><b id="gripState">СТАБИЛЬНО</b></div>
 <div id="toast" class="toast hidden">БДЫЩ!</div>
 <div id="buildBadge">Build: <span id="buildSha">dev</span></div>
-<section id="menu" class="overlay"><div class="panel hero"><div class="eyebrow">PHYSICAL DELIVERY · REBUILD V2</div><h1>Большая вещь.<br>Маленькая дверь.<br><em>Удачи.</em></h1><p>Хватай прямо за поверхность. Тяни курсором силой, а не drag-and-drop. Лёгкое летит, тяжёлое сопротивляется, окружение падает вместе с твоим терпением.</p><div class="menuRow"><button id="playBtn" class="primary">ИГРАТЬ</button><button id="labBtn" class="secondary">PHYSICS LAB</button></div><small id="sdkBadge">LOCAL MODE</small></div></section>
+<section id="menu" class="overlay"><div class="panel hero"><div class="eyebrow">FROM-SCRATCH LEVEL PREVIEW</div><h1>Новый маршрут.<br>Тот же физический хаос.<br><em>Пронеси.</em></h1><p>Это отдельная preview-ветка с новым уровнем, собранным с нуля на текущем движке проекта. Забери коробку и протащи её через зигзаг, ступени и низкий финишный проход.</p><div class="menuRow"><button id="playBtn" class="primary">ИГРАТЬ</button><button id="labBtn" class="secondary">PHYSICS LAB</button></div><small id="sdkBadge">GITHUB PREVIEW</small></div></section>
 <section id="pause" class="overlay hidden"><div class="panel small"><div class="eyebrow">ПАУЗА</div><h2>Ничего не падает. Пока.</h2><button id="resumeBtn" class="primary">ПРОДОЛЖИТЬ</button><button id="restartPauseBtn" class="secondary">ЗАНОВО</button></div></section>
-<section id="complete" class="overlay hidden"><div class="panel small"><div class="emoji">📦✨</div><div class="eyebrow">ДОСТАВЛЕНО</div><h2 id="completeTitle">Оно влезло.</h2><p id="completeText">00:42.1</p><button id="nextBtn" class="primary">СЛЕДУЮЩИЙ УРОВЕНЬ</button></div></section>
-<section id="finish" class="overlay hidden"><div class="panel"><div class="emoji">🏆🛋️</div><div class="eyebrow">КАМПАНИЯ ПРОЙДЕНА</div><h2>Теперь ты сертифицированный переносчик странных вещей.</h2><p>Можно пройти уровни ещё раз и улучшить времена.</p><button id="againBtn" class="primary">ЕЩЁ РАЗ</button></div></section>
+<section id="complete" class="overlay hidden"><div class="panel small"><div class="emoji">📦✨</div><div class="eyebrow">ДОСТАВЛЕНО</div><h2 id="completeTitle">Готово.</h2><p id="completeText">00:42.1</p><button id="nextBtn" class="primary">ЕЩЁ РАЗ</button></div></section>
+<section id="finish" class="overlay hidden"><div class="panel"><div class="emoji">🏆📦</div><div class="eyebrow">ДЕМО ПРОЙДЕНО</div><h2>Новый уровень завершён.</h2><p>Можно пройти ещё раз и улучшить время.</p><button id="againBtn" class="primary">ЕЩЁ РАЗ</button></div></section>
 <div id="mobileControls">
   <div id="joystick"><i id="stick"></i></div>
   <button id="jumpBtn">ПРЫЖОК</button>
@@ -43,6 +43,7 @@
 <script src="src/overhaul/02-floor-v2.js"></script>
 <script src="src/overhaul/02-physics-v2.js"></script>
 <script src="src/overhaul/03-levels.js"></script>
+<script src="src/overhaul/03-fresh-demo-level.js"></script>
 <script src="src/overhaul/03-object-catalog-v2.js"></script>
 <script src="src/overhaul/03-world-v2.js"></script>
 <script src="src/overhaul/04-player-interaction-v2.js"></script>
